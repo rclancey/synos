@@ -1,0 +1,35 @@
+export const DISTINGUISHED_KINDS = {
+  65: 'downloaded_music',
+  4: 'music',
+  66: 'downloaded_movies',
+  2: 'movies',
+  67: 'downloaded_tvshows',
+  3: 'tvshows',
+  10: 'podcasts',
+  5: 'audiobooks',
+  19: 'purchased',
+};
+
+export const PLAYLIST_ORDER = {
+  music: 0,
+  movies: 10,
+  tvshows: 20,
+  audiobooks: 30,
+  books: 40,
+  podcasts: 50,
+  downloaded_music: -1,
+  downloaded_movies: -1,
+  downloaded_tvshows: -1,
+  artists: 80,
+  albums: 81,
+  songs: 82,
+  genres: 83,
+  music_videos: 84,
+
+  folder: 100,
+  purchased: 101,
+  mix: 102,
+  genius: 103,
+  smart: 104,
+  playlist: 199,
+};
