@@ -4,12 +4,15 @@ import (
 	"encoding/xml"
 	//"fmt"
 	"os"
+	"path/filepath"
+	"regexp"
 	"time"
 	"strconv"
 	"strings"
 	"net/url"
 
 	"golang.org/x/text/unicode/norm"
+	"github.com/dhowden/tag"
 )
 
 type TrackTime time.Time;
@@ -66,6 +69,7 @@ type Track struct {
 	Podcast              *bool      `json:"podcast,omitempty"`
 	Protected            *bool      `json:"protected,omitempty"`
 	Purchased            *bool      `json:"purchased,omitempty"`
+	PurchaseDate         *TrackTime `json:"purchase_date,omitempty"`
 	Rating               *int       `json:"rating,omitempty"`
 	RatingComputed       *bool      `json:"rating_computed,omitempty"`
 	ReleaseDate          *TrackTime `json:"release_date,omitempty"`
@@ -91,6 +95,11 @@ type Track struct {
 	Unplayed             *bool      `json:"unplayed,omitempty"`
 	VolumeAdjustment     *int       `json:"volume_adjustment,omitempty"`
 	Year                 *int       `json:"year,omitempty"`
+	finder               *FileFinder
+}
+
+func (t *Track) SetFinder(finder *FileFinder) {
+	t.finder = finder
 }
 
 func (t *Track) Set(key []byte, kind string, val []byte) {
@@ -195,6 +204,12 @@ func (t *Track) Path() string {
 	if err != nil {
 		return ""
 	}
+	if t.finder != nil {
+		fn, err := t.finder.FindFile(u.Path)
+		if err == nil {
+			return fn
+		}
+	}
 	repls := []string{
 		u.Path,
 		strings.Replace(u.Path, "/Volumes/MultiMedia/", "/Volumes/music/", 1),
@@ -224,5 +239,111 @@ func (t *Track) Path() string {
 		}
 	}
 	return u.Path
+}
+
+func (t *Track) getTag() (tag.Metadata, error) {
+	fn := t.Path()
+	f, err := os.Open(fn)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	m, err := tag.ReadFrom(f)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (t *Track) GetPurchaseDate() (*TrackTime, error) {
+	if t.PurchaseDate != nil {
+		return t.PurchaseDate, nil
+	}
+	if t.Purchased == nil || *t.Purchased == false {
+		return nil, nil
+	}
+	m, err := t.getTag()
+	if err != nil {
+		return nil, err
+	}
+	d := m.Raw()
+	v, ok := d["purd"]
+	if !ok {
+		return nil, nil
+	}
+	tm, err := time.Parse("2006-01-02 15:04:05", v.(string))
+	if err != nil {
+		return nil, err
+	}
+	tt := TrackTime(tm)
+	t.PurchaseDate = &tt
+	return t.PurchaseDate, nil
+}
+
+func (t *Track) GetName() (string, error) {
+	if t.Name != nil && *t.Name != "" {
+		return *t.Name, nil
+	}
+	m, err := t.getTag()
+	if err != nil {
+		return "", err
+	}
+	v := m.Title()
+	if v != "" {
+		t.Name = &v
+		return v, nil
+	}
+	fn := t.Path()
+	_, name := filepath.Split(fn)
+	ext := filepath.Ext(fn)
+	name = strings.TrimSuffix(name, ext)
+	name = strings.Replace(name, "_", " ", -1)
+	reg := regexp.MustCompile(`^\d+(\.\d+)[ \.\-]\s*`)
+	name = reg.ReplaceAllString(name, "")
+	t.Name = &name
+	return name, nil
+}
+
+func (t *Track) GetAlbum() (string, error) {
+	if t.Album != nil && *t.Album != "" {
+		return *t.Album, nil
+	}
+	m, err := t.getTag()
+	if err != nil {
+		return "", err
+	}
+	v := m.Album()
+	if v != "" {
+		t.Album = &v
+		return v, nil
+	}
+	fn := t.Path()
+	dir, _ := filepath.Split(fn)
+	_, name := filepath.Split(dir)
+	name = strings.Replace(name, "_", " ", -1)
+	t.Album = &name
+	return name, nil
+}
+
+func (t *Track) GetArtist() (string, error) {
+	if t.Artist != nil && *t.Artist != "" {
+		return *t.Artist, nil
+	}
+	m, err := t.getTag()
+	if err != nil {
+		return "", err
+	}
+	v := m.Artist()
+	if v != "" {
+		t.Artist = &v
+		return v, nil
+	}
+	fn := t.Path()
+	dir, _ := filepath.Split(fn)
+	dir, _ = filepath.Split(dir)
+	_, name := filepath.Split(dir)
+	name = strings.Replace(name, "_", " ", -1)
+	t.Artist = &name
+	return name, nil
 }
 

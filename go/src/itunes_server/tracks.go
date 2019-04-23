@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -31,7 +31,7 @@ func TrackCount(w http.ResponseWriter, req *http.Request) {
 	} else {
 		since_i, err := strconv.ParseInt(since_s, 10, 64)
 		if err != nil {
-			HTTPError(w, http.StatusBadRequest, fmt.Sprintf("since %s not an int: %s", since_s, err))
+			BadRequest.Raise(err, "since param %s not an int", since_s).Respond(w)
 			return
 		}
 		since = time.Unix(since_i / 1000, (since_i % 1000) * 1000000)
@@ -63,7 +63,7 @@ func ListTracks(w http.ResponseWriter, req *http.Request) {
 	} else {
 		count, err = strconv.Atoi(count_s)
 		if err != nil {
-			HTTPError(w, http.StatusBadRequest, fmt.Sprintf("count %s not an int: %s", count_s, err))
+			BadRequest.Raise(err, "count param %s not an int", count_s).Respond(w)
 			return
 		}
 	}
@@ -72,7 +72,7 @@ func ListTracks(w http.ResponseWriter, req *http.Request) {
 	} else {
 		page, err = strconv.Atoi(page_s)
 		if err != nil {
-			HTTPError(w, http.StatusBadRequest, fmt.Sprintf("page %s not an int: %s", page_s, err))
+			BadRequest.Raise(err, "page param %s not an int", page_s).Respond(w)
 			return
 		}
 	}
@@ -81,7 +81,7 @@ func ListTracks(w http.ResponseWriter, req *http.Request) {
 	} else {
 		since_i, err := strconv.ParseInt(since_s, 10, 64)
 		if err != nil {
-			HTTPError(w, http.StatusBadRequest, fmt.Sprintf("since %s not an int: %s", since_s, err))
+			BadRequest.Raise(err, "since param %s not an int", since_s).Respond(w)
 			return
 		}
 		since = time.Unix(since_i / 1000, (since_i % 1000) * 1000000)
@@ -112,11 +112,33 @@ func ListTracks(w http.ResponseWriter, req *http.Request) {
 	SendJSON(w, tracks)
 }
 
-func GetTrackCover(w http.ResponseWriter, req *http.Request) {
+func TrackHasCover(w http.ResponseWriter, req *http.Request) {
 	_, id := path.Split(req.URL.Path)
 	tr, ok := lib.Tracks[id]
 	if !ok {
-		HTTPError(w, http.StatusNotFound, fmt.Sprintf("track %s not found", id))
+		NotFound.Raise(nil, "Track %s does not exist", id).Respond(w)
+		return
+	}
+	fn := tr.Path()
+	dn, _ := filepath.Split(fn)
+	fn = filepath.Join(dn, "cover.jpg")
+	_, err := os.Stat(fn)
+	if err == nil {
+		SendJSON(w, true)
+		return
+	}
+	SendJSON(w, false)
+}
+
+func GetTrackCover(w http.ResponseWriter, req *http.Request) {
+	_, id := path.Split(req.URL.Path)
+	if strings.Contains(id, ".") {
+		parts := strings.Split(id, ".")
+		id = strings.Join(parts[:len(parts)-1], ".")
+	}
+	tr, ok := lib.Tracks[id]
+	if !ok {
+		NotFound.Raise(nil, "Track %s does not exist", id).Respond(w)
 		return
 	}
 	fn := tr.Path()
@@ -140,11 +162,20 @@ func GetTrackCover(w http.ResponseWriter, req *http.Request) {
 
 func GetTrack(w http.ResponseWriter, req *http.Request) {
 	_, id := path.Split(req.URL.Path)
+	if strings.Contains(id, ".") {
+		parts := strings.Split(id, ".")
+		id = strings.Join(parts[:len(parts)-1], ".")
+	}
 	tr, ok := lib.Tracks[id]
 	if !ok {
-		HTTPError(w, http.StatusNotFound, fmt.Sprintf("track %s not found", id))
+		NotFound.Raise(nil, "Track %s does not exist", id).Respond(w)
 		return
 	}
 	fn := tr.Path()
+	log.Println("serving track", id, fn)
+	h := w.Header()
+	h.Set("transferMode.dlna.org", "Streaming")
+	h.Set("X-XSS-Protection", "1; mode=block")
+	h.Set("X-Content-Type-Options", "nosniff")
 	http.ServeFile(w, req, fn)
 }

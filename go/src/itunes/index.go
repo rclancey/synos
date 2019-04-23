@@ -1,8 +1,10 @@
 package itunes
 
 import (
-	"strings"
 	"fmt"
+	"regexp"
+	"sort"
+	"strings"
 )
 
 type TrackIDIndex struct {
@@ -138,3 +140,255 @@ func (ti *TrackIndex) Search(query string) []*Track {
 	return retval
 }
 
+type SortableTable map[string]map[string]int
+
+func (st SortableTable) Add(name, sname *string) {
+	if name == nil {
+		return
+	}
+	v := *name
+	var k string
+	if sname == nil {
+		k = MakeKey(v)
+	} else {
+		k = MakeKey(*sname)
+	}
+	if k == "" {
+		return
+	}
+	m, ok := st[k]
+	if !ok {
+		m = map[string]int{v: 1}
+		st[k] = m
+	} else {
+		st[k][v] = st[k][v] + 1
+	}
+}
+
+type ValFreq struct {
+	Val string
+	Freq int
+}
+
+type SortableValFreq []ValFreq
+
+func (svf SortableValFreq) Len() int { return len(svf) }
+func (svf SortableValFreq) Swap(i, j int) { svf[i], svf[j] = svf[j], svf[i] }
+func (svf SortableValFreq) Less(i, j int) bool { return svf[i].Freq > svf[j].Freq }
+
+func (st SortableTable) Values() [][2]string {
+	keys := make([]string, len(st))
+	i := 0
+	for k := range st {
+		keys[i] = k
+		i += 1
+	}
+	sort.Strings(keys)
+	values := make([][2]string, len(keys))
+	for i, k := range keys {
+		m := st[k]
+		vals := make([]ValFreq, len(m))
+		j := 0
+		for v, f := range m {
+			vals[j] = ValFreq{Val: v, Freq: f}
+			j += 1
+		}
+		sort.Sort(SortableValFreq(vals))
+		values[i] = [2]string{vals[0].Val, k}
+	}
+	return values
+}
+
+var aAnThe = regexp.MustCompile(`^(a|an|the) `)
+var nonAlpha = regexp.MustCompile(`[^a-z0-9]+`)
+var spaces = regexp.MustCompile(`\s+`)
+var nums = regexp.MustCompile(`(\D*)(\d*)`)
+
+func MakeKey(v string) string {
+	s := strings.ToLower(v)
+	if strings.Contains(s, " feat ") {
+		s = strings.Split(s, " feat ")[0]
+	} else if strings.Contains(s, " feat. ") {
+		s = strings.Split(s, " feat. ")[0]
+	} else if strings.Contains(s, " featuring ") {
+		s = strings.Split(s, " featuring ")[0]
+	} else if strings.Contains(s, " with ") {
+		s = strings.Split(s, " with ")[0]
+	}
+	s = aAnThe.ReplaceAllString(s, "")
+	s = nonAlpha.ReplaceAllString(s, "")
+	s = nums.ReplaceAllString(s, " $1 ~$2 ")
+	s = strings.TrimSpace(s)
+	//s = spaces.ReplaceAllString(s, " ")
+	//s = aAnThe.ReplaceAllString(s, "")
+	//s = strings.TrimSpace(s)
+	return s
+}
+
+func IndexGenres(lib *Library) [][2]string {
+	genreMap := SortableTable{}
+	for _, t := range lib.Tracks {
+		genreMap.Add(t.Genre, nil)
+	}
+	return genreMap.Values()
+}
+
+func IndexArtists(lib *Library) map[string][][2]string {
+	artistIdx := map[string]SortableTable{
+		"": SortableTable{},
+	}
+	var g *string
+	var k string
+	var st SortableTable
+	var ok bool
+	es := ""
+	for _, t := range lib.Tracks {
+		for _, g = range []*string{t.Genre, &es} {
+			if g == nil {
+				continue
+			}
+			k = MakeKey(*g)
+			st, ok = artistIdx[k]
+			if !ok {
+				st = SortableTable{}
+				artistIdx[k] = st
+			}
+			st.Add(t.Artist, t.SortArtist)
+			st.Add(t.AlbumArtist, t.SortAlbumArtist)
+		}
+	}
+	idx := map[string][][2]string{}
+	for k, st = range artistIdx {
+		idx[k] = st.Values()
+	}
+	return idx
+}
+
+type AlbumKey struct {
+	Genre string
+	Artist string
+}
+
+func IndexAlbums(lib *Library) map[AlbumKey][][2]string {
+	albumIdx := map[AlbumKey]SortableTable{
+		AlbumKey{"", ""}: SortableTable{},
+	}
+	var ap, gp *string
+	var a, g string
+	var k AlbumKey
+	var st SortableTable
+	var ok bool
+	es := ""
+	for _, t := range lib.Tracks {
+		for _, gp = range []*string{t.Genre, &es} {
+			if gp == nil {
+				continue
+			}
+			g = MakeKey(*gp)
+			for _, ap = range []*string{t.Artist, t.SortArtist, t.AlbumArtist, t.SortAlbumArtist, &es} {
+				if ap == nil {
+					continue
+				}
+				a = MakeKey(*ap)
+				k = AlbumKey{g, a}
+				st, ok = albumIdx[k]
+				if !ok {
+					st = SortableTable{}
+					albumIdx[k] = st
+				}
+				st.Add(t.Album, t.SortAlbum)
+			}
+		}
+	}
+	idx := map[AlbumKey][][2]string{}
+	for k, st = range albumIdx {
+		idx[k] = st.Values()
+	}
+	return idx
+}
+
+type SongKey struct {
+	Artist string
+	Album string
+}
+
+type sortableAlbum []*Track
+func (sa sortableAlbum) Len() int { return len(sa) }
+func (sa sortableAlbum) Swap(i, j int) { sa[i], sa[j] = sa[j], sa[i] }
+func (sa sortableAlbum) Less(i, j int) bool {
+	var ad, at, bd, bt int
+	var an, bn string
+	if sa[i].DiscNumber != nil {
+		ad = *sa[i].DiscNumber
+	}
+	if sa[j].DiscNumber != nil {
+		bd = *sa[j].DiscNumber
+	}
+	if ad < bd {
+		return true
+	}
+	if ad > bd {
+		return false
+	}
+	if sa[i].TrackNumber != nil {
+		at = *sa[i].TrackNumber
+	}
+	if sa[j].TrackNumber != nil {
+		bt = *sa[j].TrackNumber
+	}
+	if at < bt {
+		return true
+	}
+	if at > bt {
+		return false
+	}
+	if sa[i].Name != nil {
+		an = MakeKey(*sa[i].Name)
+	}
+	if sa[j].Name != nil {
+		bn = MakeKey(*sa[j].Name)
+	}
+	return strings.Compare(an, bn) < 0
+}
+
+func IndexSongs(lib *Library) map[SongKey][]*Track {
+	songIdx := map[SongKey][]*Track{}
+	var art, alb string
+	var artp, albp *string
+	var k SongKey
+	var used map[SongKey]bool
+	var ts []*Track
+	var ok bool
+	es := ""
+	for _, t := range lib.Tracks {
+		used = map[SongKey]bool{}
+		for _, albp = range []*string{t.Album, t.SortAlbum, &es} {
+			if albp == nil {
+				continue
+			}
+			alb = MakeKey(*albp)
+			for _, artp = range []*string{t.Artist, t.SortArtist, t.AlbumArtist, t.SortAlbumArtist, &es} {
+				if artp == nil {
+					continue
+				}
+				art = MakeKey(*artp)
+				k = SongKey{art, alb}
+				if _, ok = used[k]; ok {
+					continue
+				}
+				used[k] = true
+				ts, ok = songIdx[k]
+				if !ok {
+					ts = []*Track{}
+				}
+				songIdx[k] = append(ts, t)
+			}
+		}
+	}
+	idx := map[SongKey][]*Track{}
+	for k, ts = range songIdx {
+		sort.Sort(sortableAlbum(ts))
+		idx[k] = ts
+	}
+	return idx
+}

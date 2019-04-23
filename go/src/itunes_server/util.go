@@ -4,14 +4,9 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"log"
+	"io/ioutil"
 	"net/http"
 )
-
-func HTTPError(w http.ResponseWriter, status int, text string) {
-	w.WriteHeader(status)
-	w.Write([]byte(text))
-}
 
 func Compress(w http.ResponseWriter, data []byte) ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
@@ -32,15 +27,13 @@ func Compress(w http.ResponseWriter, data []byte) ([]byte, error) {
 func SendJSON(w http.ResponseWriter, obj interface{}) {
 	data, err := json.Marshal(obj)
 	if err != nil {
-		log.Println(err)
-		HTTPError(w, http.StatusInternalServerError, "error serializing tracks to json")
+		InternalServerError.Raise(err, "Error serializing data to JSON").Respond(w)
 		return
 	}
 	if len(data) > 25000 {
 		data, err = Compress(w, data)
 		if err != nil {
-			log.Println(err)
-			HTTPError(w, http.StatusInternalServerError, "error gzipping track list")
+			InternalServerError.Raise(err, "Error compressing JSON data").Respond(w)
 			return
 		}
 	}
@@ -50,3 +43,14 @@ func SendJSON(w http.ResponseWriter, obj interface{}) {
 	w.Write(data)
 }
 
+func ReadJSON(req *http.Request, target interface{}) *HTTPError {
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return BadRequest.Raise(err, "Failed to read request payload")
+	}
+	err = json.Unmarshal(body, target)
+	if err != nil {
+		return BadRequest.Raise(err, "Malformed JSON input")
+	}
+	return nil
+}

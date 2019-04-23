@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"path"
@@ -22,14 +21,19 @@ func PlaylistTracks(w http.ResponseWriter, req *http.Request) {
 	_, id := path.Split(req.URL.Path)
 	pl, ok := lib.PlaylistIDIndex[id]
 	if !ok {
-		HTTPError(w, http.StatusNotFound, fmt.Sprintf("playlist %s not found", id))
+		NotFound.Raise(nil, "playlist %s not found", id).Respond(w)
 		return
 	}
-	trackIds := make([]string, 0, len(pl.PlaylistItems))
-	for _, t := range pl.PlaylistItems {
-		if t.PersistentID != nil {
-			trackIds = append(trackIds, *t.PersistentID)
+	full := req.URL.Query().Get("full")
+	if full == "true" {
+		SendJSON(w, pl.PlaylistItems)
+	} else {
+		trackIds := make([]string, 0, len(pl.PlaylistItems))
+		for _, t := range pl.PlaylistItems {
+			if t.PersistentID != nil {
+				trackIds = append(trackIds, *t.PersistentID)
+			}
 		}
+		SendJSON(w, trackIds)
 	}
-	SendJSON(w, trackIds)
 }

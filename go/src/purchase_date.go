@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 	"github.com/dhowden/tag"
 )
 
@@ -33,8 +34,12 @@ func main() {
 					n = 100
 				}
 				fmt.Println(k, "=", s[:n])
+				if k == "purd" {
+					t, _ := time.Parse("2006-01-02 15:04:05", s)
+					fmt.Println(t)
+				}
 			} else {
-				fmt.Println(k, "=", v)
+				fmt.Printf("%s = %v (%T)\n", k, v, v)
 			}
 		}
 	//}

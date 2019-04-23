@@ -2,8 +2,8 @@ package itunes
 
 import (
 	"encoding/xml"
-	"fmt"
 	"io"
+	"log"
 	"os"
 	"sort"
 	"strings"
@@ -42,9 +42,14 @@ type Library struct {
 	LastTrackSearch []*Track
 	LastPlaylistSearch []*Playlist
 	CurrentPlaylist *Playlist
+	GenreIndex [][2]string
+	ArtistIndex map[string][][2]string
+	AlbumIndex map[AlbumKey][][2]string
+	SongIndex map[SongKey][]*Track
+	finder *FileFinder
 }
 
-func NewLibrary() *Library {
+func NewLibrary(finder *FileFinder) *Library {
 	lib := &Library{}
 	lib.Tracks = make(map[string]*Track)
 	lib.TrackList = []*Track{}
@@ -52,25 +57,27 @@ func NewLibrary() *Library {
 	lib.TrackIDIndex = NewTrackIDIndex()
 	lib.TrackLocIndex = make(map[string]*Track)
 	lib.PlaylistIDIndex = make(map[string]*Playlist)
+	lib.finder = finder
 	return lib
 }
 
 func (lib *Library) Load(fn string) error {
 	f, err := os.Open(fn)
 	if err != nil {
-		fmt.Println("error opening file", err.Error())
+		log.Println("error opening file", err.Error())
 		return err
 	}
 	dec := xml.NewDecoder(f)
 	lib.FileName = fn
 	err = lib.Parse(dec)
 	if err != nil {
-		fmt.Println("error parsing file", err.Error())
+		log.Println("error parsing file", err.Error())
 		return err
 	}
-	lib.Index()
+	//lib.Index()
 	lib.TrackList = make([]*Track, 0, len(lib.Tracks))
 	for _, t := range lib.Tracks {
+		t.SetFinder(lib.finder)
 		if t.Location != nil && *t.Location != "" {
 			lib.TrackList = append(lib.TrackList, t)
 		}
@@ -80,7 +87,7 @@ func (lib *Library) Load(fn string) error {
 }
 
 func (lib *Library) Index() {
-	fmt.Println("indexing tracks")
+	log.Println("indexing tracks")
 	lib.TrackIndex = NewTrackIndex()
 	for _, t := range lib.Tracks {
 		lib.TrackIndex.Add(t)
@@ -90,7 +97,11 @@ func (lib *Library) Index() {
 		}
 		*/
 	}
-	fmt.Printf("index: %d / %d\n", lib.TrackIndex.Values(), lib.TrackIndex.Keys())
+	lib.GenreIndex = IndexGenres(lib)
+	lib.ArtistIndex = IndexArtists(lib)
+	lib.AlbumIndex = IndexAlbums(lib)
+	lib.SongIndex = IndexSongs(lib)
+	log.Printf("index: %d / %d\n", lib.TrackIndex.Values(), lib.TrackIndex.Keys())
 }
 
 func (lib *Library) Set(key []byte, kind string, val []byte) {
@@ -149,11 +160,21 @@ func (lib *Library) Parse(dec *xml.Decoder) error {
 					if err != nil {
 						return err
 					}
-					if track.PersistentID != nil {
-						lib.Tracks[*track.PersistentID] = track
-						//lib.Tracks = append(lib.Tracks, track)
-						lib.TrackIDIndex.Add(track)
+					/*
+					if track.Protected != nil && *track.Protected {
+						if track.Location != nil {
+							log.Println("skipping protected", *track.Location)
+						}
+					} else {
+					*/
+						if track.PersistentID != nil {
+							lib.Tracks[*track.PersistentID] = track
+							//lib.Tracks = append(lib.Tracks, track)
+							lib.TrackIDIndex.Add(track)
+						}
+					/*
 					}
+					*/
 					keyStackSize--
 					tagStackSize--
 				}
@@ -168,7 +189,7 @@ func (lib *Library) Parse(dec *xml.Decoder) error {
 						if ok {
 							parent.Children = append(parent.Children, playlist)
 						} else {
-							fmt.Println("warning: parent playlist not found", *playlist.ParentPersistentID)
+							log.Println("warning: parent playlist not found", *playlist.ParentPersistentID)
 							lib.Playlists = append(lib.Playlists, playlist)
 						}
 					} else {

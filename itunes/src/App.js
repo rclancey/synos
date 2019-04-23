@@ -6,6 +6,7 @@ import 'react-sortable-tree/style.css';
 import '@fortawesome/fontawesome-free/css/all.css';
 import './App.css';
 import { Library } from './components/Library';
+import { HomeList } from './components/HomeList';
 
 class App extends Component {
   constructor(props) {
@@ -18,9 +19,12 @@ class App extends Component {
   render() {
     return (
       <div className="App">
+        <HomeList />
+        {/*
         <DragDropContextProvider backend={HTML5Backend}>
           <Library />
         </DragDropContextProvider>
+        */}
       </div>
     );
   }

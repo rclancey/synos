@@ -287,57 +287,74 @@
 }
 */
 
-.playlistBrowser .icon.songs {
+.icon.artists {
+  background-image: url('icons/artists.png');
+}
+
+.icon.albums {
+  background-image: url('icons/albums.png');
+}
+
+.icon.genres {
+  background-image: url('icons/genres.png');
+}
+
+.icon.songs {
   background-image: url('icons/songs.png');
 }
 
-.playlistBrowser .icon.audiobooks {
+.icon.audiobooks {
   background-image: url('icons/audiobooks.png');
 }
 
-.playlistBrowser .icon.books {
+.icon.books {
   background-image: url('icons/books.png');
 }
 
-.playlistBrowser .icon.music {
+.icon.music {
   background-image: url('icons/music.png');
 }
 
-.playlistBrowser .icon.tvshows {
+.icon.tvshows {
   background-image: url('icons/tvshows.png');
 }
 
-.playlistBrowser .icon.movies {
+.icon.movies {
   background-image: url('icons/movies.png');
 }
 
-.playlistBrowser .icon.podcasts {
+.icon.podcasts {
   background-image: url('icons/podcasts.png');
 }
 
-.playlistBrowser .icon.purchased {
+.icon.purchased {
   background-image: url('icons/purchased.png');
 }
 
-.playlistBrowser .icon.downloaded_music,
-.playlistBrowser .icon.downloaded_tvshows,
-.playlistBrowser .icon.downloaded_movies {
+.icon.recent {
+  background-image: url('icons/recent.png');
+}
+
+.icon.downloaded_music,
+.icon.downloaded_tvshows,
+.icon.downloaded_movies {
   background-image: url('icons/downloaded.png');
 }
 
-.playlistBrowser .icon.folder {
+.icon.folder {
   background-image: url('icons/folder.png');
 }
 
-.playlistBrowser .icon.smart {
+.icon.smart {
   background-image: url('icons/smart.png');
 }
 
-.playlistBrowser .icon.genius {
+.icon.genius {
   background-image: url('icons/genius.png');
 }
 
-.playlistBrowser .icon.playlist {
+.icon.playlists,
+.icon.playlist {
   background-image: url('icons/playlist.png');
 }
 
@@ -682,4 +699,408 @@
     background-color: #666;
     margin-top: 2px;
     margin-left: 2px;
+}
+
+.back {
+    /*
+    flex: 1;
+    width: 18px;
+    min-width: 18px;
+    max-width: 18px;
+    */
+    background-color: #f7f7f7;
+    background-image: url(icons/back.png);
+    background-size: contain;
+    background-repeat: no-repeat;
+    padding: 3px 6px 3px 36px;
+    border-left: solid transparent 6px;
+    border-top: solid transparent 12px;
+    border-bottom: solid transparent 12px;
+    color: #2687fb;
+    position: fixed;
+    z-index: 2;
+    width: 100vw;
+    box-sizing: border-box;
+    font-size: 18px;
+}
+
+.header {
+    /*
+    display: flex;
+    flex-direction: row;
+    */
+    /*
+    border-bottom: solid #ccc 1px;
+    */
+    padding: 0.5em;
+    background-color: #f7f7f7;
+    padding-top: 54px;
+}
+
+.header .icon {
+    /*
+    flex: 1;
+    */
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    max-width: 18px;
+    background-size: cover;
+}
+
+.header .icon.artists {
+    background-image: url(icons/artists.png);
+}
+
+.header .icon.playlists {
+    background-image: url(icons/playlist.png);
+}
+
+.header .title {
+    /*
+    flex: 2;
+    text-align: center;
+    */
+    font-size: 24pt;
+    font-weight: bold;
+    margin-top: 0.5em;
+    padding-left: 0.5em;
+}
+
+.home .items {
+    width: 100vw;
+}
+
+.home .item {
+    display: flex;
+    flex-direction: row;
+    padding: 9px 9px 0px 9px;
+}
+
+.home .item .icon {
+    flex: 1;
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    height: 36px;
+    opacity: 0.75;
+}
+
+.home .item .title {
+    flex: 10;
+    font-size: 18px;
+    padding: 9px 9px 18px 9px;
+    border-bottom: solid #ccc 1px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: hidden;
+}
+
+.playlistList .item {
+    display: flex;
+    padding: 9px 9px 0px 9px;
+}
+
+.playlistList .item .icon {
+    flex: 1;
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    height: 36px;
+    box-sizing: border-box;
+    /*
+    border: solid transparent 1px;
+    border-radius: 50%;
+    */
+    background-size: cover;
+    opacity: 0.75;
+}
+
+.playlistList .item .title {
+    flex: 10;
+    font-size: 18px;
+    padding: 9px 9px 18px 9px;
+    border-bottom: solid #ccc 1px;
+}
+
+.artistList {
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.artistList .index {
+    position: fixed;
+    z-index: 3;
+    right: 5px;
+    font-size: 12px;
+    color: #ff2d55;
+}
+
+.artistList .items {
+    height: calc(100vh - 116px);
+}
+
+.artistList .item {
+    display: flex;
+    padding: 9px 9px 0px 9px;
+    height: 58px;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.artistList .item .artistImage {
+    flex: 1;
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    height: 36px;
+    box-sizing: border-box;
+    border: solid transparent 1px;
+    border-radius: 50%;
+    background-color: #868b95;
+    /*
+    background: linear-gradient(#a5aab6, #868b95);
+    */
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    background-position: 50%;
+}
+
+.artistList .item .title {
+    flex: 10;
+    font-size: 18px;
+    padding: 9px 9px 18px 9px;
+    border-bottom: solid #ccc 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.albumList .row {
+    display: flex;
+    flex-direction: row;
+    padding-top: 1em;
+}
+
+.albumList .padding {
+    flex: 1;
+    min-width: 5px;
+}
+
+.albumList .item {
+    flex: 10;
+    width: 155px;
+    min-width: 155px;
+    max-width: 155px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.albumList .item .coverArt {
+    width: 155px;
+    height: 155px;
+    border: solid transparent 1px;
+    border-radius: 10px;
+    background-size: cover;
+}
+
+.albumList .item .title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11pt;
+    padding-top: 5px;
+}
+
+.songList {
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.songList .header {
+    display: flex;
+    flex-direction: row;
+}
+
+.songList .header .cover {
+    flex: 1;
+    width: 140px;
+    min-width: 140px;
+    max-width: 140px;
+    height: 140px;
+    background-size: cover;
+    border: solid transparent 1px;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.songList .header .cover .row {
+    display: flex;
+    flex-direction: row;
+}
+
+.songList .header .cover .col {
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+    height: 70px;
+    background-size: cover;
+}
+
+.songList .header .title {
+    flex: 10;
+    font-weight: normal;
+    margin-top: 0;
+}
+
+.songList .header .title .album {
+    font-size: 16pt;
+    font-weight: bold;
+}
+
+.songList .header .title .artist {
+    font-size: 12pt;
+}
+
+.songList .header .title .genre {
+    font-size: 12pt;
+    color: #999;
+}
+
+.songList .items {
+    height: calc(100vh - 204px);
+}
+
+.songList .item {
+    display: flex;
+    padding: 9px 9px 0px 9px;
+    /*
+    height: 70px;
+    */
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.songList .item .cover {
+    flex: 1;
+    width: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    height: 48px;
+    box-sizing: border-box;
+    border: solid transparent 1px;
+    border-radius: 4px;
+    background-color: #868b95;
+    /*
+    background: linear-gradient(#a5aab6, #868b95);
+    */
+    background-size: cover;
+}
+
+.songList .item .tracknum {
+    flex: 1;
+    width: 24px;
+    min-width: 24px;
+    max-width: 24px;
+    font-size: 18px;
+    padding-top: 9px;
+    text-align: right;
+    color: #999;
+}
+
+.songList .item .title {
+    flex: 10;
+    font-size: 18px;
+    padding: 9px 0px 0px 0px;
+    border-bottom: solid #ccc 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-left: 9px;
+}
+
+.songList .item .title .song {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.songList .item .title .artist {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #999;
+    font-size: 14px;
+}
+
+.songList .item .dotsmenu {
+    flex: 1;
+    padding-top: 12px;
+}
+    
+.disabler {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.trackMenu {
+    position: fixed;
+    z-index: 2;
+    left: 20px;
+    bottom: 20px;
+    width: calc(100vw - 40px);
+    border: solid transparent 1px;
+    border-radius: 20px;
+    background-color: white;
+    max-height: 60vh;
+}
+
+.trackMenu .header {
+    padding: 0.5em;
+    background: none;
+    border-bottom: solid #ccc 1px;
+}
+
+.trackMenu .header .title {
+    border: none;
+}
+
+.trackMenu .header .title .name {
+    font-size: 12pt;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.trackMenu .header .title .album {
+    font-size: 10pt;
+    font-weight: normal;
+    color: #999;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.trackMenu .items {
+    height: auto;
+}
+
+.trackMenu .item {
+    padding: 0;
+    color: #ff2d55;
+}
+
+.trackMenu .item .title {
+    margin: 0;
+    padding: 1em;
+}
+
+.trackMenu .cancel {
+    padding: 1.5em;
+    text-align: center;
+    color: #ff2d55;
+    font-weight: bold;
 }
