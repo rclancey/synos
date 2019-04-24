@@ -20,6 +20,7 @@ import (
 
 type Sonos struct {
 	player *sonos.Sonos
+	reactor upnp.Reactor
 	rootUrl *url.URL
 	lib *itunes.Library
 }
@@ -31,11 +32,13 @@ func NewSonos(iface string, rootUrl *url.URL, lib *itunes.Library) (*Sonos, erro
 		ssdp.ServiceKey("schemas-upnp-org-MusicServices"): -1,
 	}
 	var player *sonos.Sonos
+	var reactor upnp.Reactor
 	result := mgr.QueryServices(qry)
 	if dev_list, has := result["schemas-upnp-org-MusicServices"]; has {
 		for _, dev := range dev_list {
 			if dev.Product() == "Sonos" {
-				player = sonos.Connect(dev, nil, sonos.SVC_CONNECTION_MANAGER|sonos.SVC_CONTENT_DIRECTORY|sonos.SVC_RENDERING_CONTROL|sonos.SVC_AV_TRANSPORT)
+				reactor = sonos.MakeReactor(iface, "11210")
+				player = sonos.Connect(dev, reactor, sonos.SVC_CONNECTION_MANAGER|sonos.SVC_CONTENT_DIRECTORY|sonos.SVC_RENDERING_CONTROL|sonos.SVC_AV_TRANSPORT)
 				break
 			}
 		}
@@ -43,7 +46,7 @@ func NewSonos(iface string, rootUrl *url.URL, lib *itunes.Library) (*Sonos, erro
 	if player == nil {
 		return nil, errors.New("No Sonos device found on network")
 	}
-	return &Sonos{player: player, rootUrl: rootUrl, lib: lib}, nil
+	return &Sonos{player: player, reactor: reactor, rootUrl: rootUrl, lib: lib}, nil
 }
 
 type Queue struct {
@@ -263,5 +266,9 @@ func (s *Sonos) Seek(ms int) error {
 		t = 0
 	}
 	return s.SeekTo(t)
+}
+
+func (s *Sonos) Events() chan upnp.Event {
+	return s.reactor.Channel()
 }
 

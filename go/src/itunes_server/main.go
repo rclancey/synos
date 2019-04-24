@@ -11,6 +11,7 @@ import (
 
 var lib *itunes.Library
 var dev *sonos.Sonos
+var hub *Hub
 var cfg *SynosConfig
 
 func main() {
@@ -28,6 +29,8 @@ func main() {
 		} else {
 			log.Println("sonos configured")
 			dev = s
+			hub = NewHub(dev)
+			go hub.Run()
 		}
 	}()
 
@@ -88,6 +91,7 @@ func main() {
 	mux.HandleFunc("/api/sonos/seek", SonosSeek)
 	mux.HandleFunc("/api/sonos/play", SonosPlay)
 	mux.HandleFunc("/api/sonos/pause", SonosPause)
+	mux.HandleFunc("/api/sonos/ws", ServeWS)
 	err = http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), mux)
 	log.Println(err)
 }
