@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -44,6 +45,16 @@ func (e *HTTPError) Respond(w http.ResponseWriter) {
 	}
 	w.WriteHeader(e.Status)
 	w.Write([]byte(e.Message))
+}
+
+func (e *HTTPError) RespondJSON(w http.ResponseWriter) {
+	if e.Status >= 500 {
+		log.Println(e.Status, "Error", e.Message, ":", e.Err)
+	}
+	data, _ := json.Marshal(map[string]interface{}{ "status": "error", "code": e.Status, "message": e.Message })
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(e.Status)
+	w.Write(data)
 }
 
 func (e *HTTPError) IsA(other error) bool {

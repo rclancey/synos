@@ -96,6 +96,7 @@ export class ArtistList extends React.Component {
           artist={this.state.artist}
           onClose={this.onClose}
           onTrackMenu={this.props.onTrackMenu}
+          onPlaylistMenu={this.props.onPlaylistMenu}
         />
       );
     }

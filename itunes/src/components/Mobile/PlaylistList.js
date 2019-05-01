@@ -1,6 +1,6 @@
 import React from 'react';
 import _ from 'lodash';
-import { DISTINGUISHED_KINDS, PLAYLIST_ORDER } from '../lib/distinguished_kinds';
+import { DISTINGUISHED_KINDS, PLAYLIST_ORDER } from '../../lib/distinguished_kinds';
 import { Playlist } from './SongList';
 
 export class PlaylistList extends React.Component {
@@ -89,6 +89,7 @@ export class PlaylistList extends React.Component {
             onClose={this.onClose}
             onEnqueue={this.props.onEnqueue}
             onTrackMenu={this.props.onTrackMenu}
+            onPlaylistMenu={this.props.onPlaylistMenu}
           />
         );
       }

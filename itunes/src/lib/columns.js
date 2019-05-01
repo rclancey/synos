@@ -130,10 +130,14 @@ export const displayDate = (t) => {
 
 export const displayTime = (t) => {
   if (t) {
-    const h = Math.floor(t / 3600000);
-    const m = Math.floor((t % 3600000) / 60000);
-    const s = Math.floor((t % 60000) / 1000);
+    const sign = t < 0 ? -1 : 1;
+    const h = Math.floor(sign * t / 3600000);
+    const m = Math.floor(((sign * t) % 3600000) / 60000);
+    const s = Math.floor(((sign * t) % 60000) / 1000);
     let d = '';
+    if (sign == -1) {
+      d += '-';
+    }
     if (h > 0) {
       d += `${h}:`;
       if (m >= 10) {
