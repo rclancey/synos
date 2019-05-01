@@ -56,6 +56,7 @@ export class Playlist extends React.Component {
           {`${this.state.tracks.length} Tracks`}
           {`\u00a0\u2219\u00a0${dur}`}
         </div>
+        <DotsMenu track={this.state.tracks} onOpen={tracks => this.props.onPlaylistMenu(this.props.playlist.name, tracks)} />
       </div>
     );
   }
@@ -138,6 +139,7 @@ export class Album extends React.Component {
           {first.genre}
           {first.year ? `\u00a0\u2219\u00a0${first.year}` : ''}
         </div>
+        <DotsMenu track={this.state.tracks} onOpen={tracks => this.props.onPlaylistMenu(first.album, tracks)} />
       </div>
     );
   }

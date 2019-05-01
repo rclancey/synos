@@ -56,6 +56,7 @@ export class AlbumList extends React.Component {
           album={this.state.album}
           onClose={this.onClose}
           onTrackMenu={this.props.onTrackMenu}
+          onPlaylistMenu={this.props.onPlaylistMenu}
         />
       );
     }
