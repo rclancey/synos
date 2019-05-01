@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 
 	"itunes"
@@ -91,8 +94,50 @@ func main() {
 	mux.HandleFunc("/api/sonos/seek", SonosSeek)
 	mux.HandleFunc("/api/sonos/play", SonosPlay)
 	mux.HandleFunc("/api/sonos/pause", SonosPause)
+	mux.HandleFunc("/api/sonos/volume", SonosVolume)
 	mux.HandleFunc("/api/sonos/ws", ServeWS)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), mux)
+	lm := &LogMux{ mux: mux }
+	err = http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), lm)
 	log.Println(err)
 }
 
+type ResponseLogger struct {
+	w http.ResponseWriter
+	StatusCode int
+}
+
+func (rl *ResponseLogger) Header() http.Header {
+	return rl.w.Header()
+}
+
+func (rl *ResponseLogger) Write(data []byte) (int, error) {
+	if rl.StatusCode == 0 {
+		rl.StatusCode = http.StatusOK
+	}
+	return rl.w.Write(data)
+}
+
+func (rl *ResponseLogger) WriteHeader(statusCode int) {
+	rl.StatusCode = statusCode
+	rl.w.WriteHeader(statusCode)
+}
+
+func (rl *ResponseLogger) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hj, ok := rl.w.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("webserver doesn't support hijacking")
+		http.Error(rl, "webserver doesn't support hijacking", http.StatusInternalServerError)
+	}
+	return hj.Hijack()
+}
+
+type LogMux struct {
+	mux *http.ServeMux
+}
+
+func (lm *LogMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Println("Serving", r.Method, r.URL.String())
+	rl := &ResponseLogger{w: w}
+	lm.mux.ServeHTTP(rl, r)
+	log.Println(r.Method, r.URL.String(), "responded with HTTP", rl.StatusCode)
+}

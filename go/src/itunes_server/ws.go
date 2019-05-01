@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/ianr0bkny/go-sonos/upnp"
+	//"github.com/ianr0bkny/go-sonos/upnp"
 
 	"sonos"
 )
@@ -22,11 +24,14 @@ var newline = []byte{'\n'}
 var upgrader = websocket.Upgrader{
 	ReadBufferSize: 1024,
 	WriteBufferSize: 1024,
+	CheckOrigin: func(req *http.Request) bool {
+		return true
+	},
 }
 
 type Hub struct {
 	clients map[*Client]bool
-	Events chan upnp.Event
+	Events chan interface{}
 	Broadcast chan []byte
 	Register chan *Client
 	Unregister chan *Client
@@ -35,7 +40,7 @@ type Hub struct {
 func NewHub(dev *sonos.Sonos) *Hub {
 	return &Hub{
 		Broadcast: make(chan []byte),
-		Events: dev.Events(),
+		Events: dev.Events,
 		Register: make(chan *Client),
 		Unregister: make(chan *Client),
 		clients: make(map[*Client]bool),
@@ -43,39 +48,61 @@ func NewHub(dev *sonos.Sonos) *Hub {
 }
 
 func (h *Hub) Run() {
+	log.Println("sonos hub running")
 	for {
 		select {
 		case client := <-h.Register:
-			h.Clients[client] = true
+			log.Println("registering client", client)
+			h.clients[client] = true
 		case client := <-h.Unregister:
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.Send)
 			}
 		case evt := <-h.Events:
-			svc := evt.Service()
-			typ := evt.Type()
-			log.Printf("%T event: %#v\n", evt, evt)
-			log.Println("service:", svc.Actions())
+			//svc := evt.Service()
+			//typ := evt.Type()
+			var info []byte
 			switch event := evt.(type) {
-			case upnp.AVTRansportEvent:
-				log.Println("AVTransportEvent:", event.LastChange)
-			case *upnp.AVTransportEvent:
-				log.Println("*AVTransportEvent:", event.LastChange)
-			case upnp.RenderingControlEvent:
-				log.Println("RenderingControlEvent:", event.LastChange)
-			case *upnp.RenderingControlEvent:
-				log.Println("*RenderingControlEvent:", event.LastChange)
+			case *sonos.AVTransportEvent:
+				//info, _ = json.MarshalIndent(event, "", "  ")
+				info, _ = json.Marshal(event)
+				//log.Println("AVTransportEvent:", string(info))
+				//h.Broadcast <- info
+			case *sonos.RenderingControlEvent:
+				//info, _ = json.MarshalIndent(event, "", "  ")
+				info, _ = json.Marshal(event)
+				//log.Println("RenderingControlEvent:", string(info))
+				//h.Broadcast <- info
+			case *sonos.Queue:
+				//info, _ = json.MarshalIndent(event, "", " ")
+				info, _ = json.Marshal(event)
+				//log.Println("QueueEvent:", string(info))
+				//h.Broadcast <- info
 			default:
-				log.Println("other event")
+				log.Printf("other event: %T", event)
+				info = []byte(fmt.Sprintf(`{"event": "%T"}`, event))
+			}
+			for client := range h.clients {
+				//log.Println("attempting to send", string(info), "to", client)
+				select {
+				case client.Send <- info:
+					//log.Println("sent", string(info), "to", client)
+				default:
+					log.Println("can't send to client", client, "closing")
+					close(client.Send)
+					delete(h.clients, client)
+				}
 			}
 		case message := <-h.Broadcast:
 			for client := range h.clients {
 				select {
 				case client.Send <- message:
+					//log.Println("sent", string(message), "to", client)
 				default:
+					log.Println("can't send to client", client, "closing")
 					close(client.Send)
-					delete(h.Clients, client)
+					delete(h.clients, client)
 				}
 			}
 		}
@@ -117,6 +144,7 @@ func (c *Client) WritePump() {
 	for {
 		select {
 		case message, ok := <-c.Send:
+			//log.Println("client", c, "got message to send", string(message))
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				log.Println("sonos channel closed, shutting down websocket")
@@ -153,7 +181,7 @@ func (c *Client) WritePump() {
 
 func ServeWS(w http.ResponseWriter, req *http.Request) {
 	if hub == nil {
-		ServiceUnavailable.Raise("", "sonos not available").Respond(w)
+		ServiceUnavailable.Raise(nil, "sonos not available").Respond(w)
 		return
 	}
 	conn, err := upgrader.Upgrade(w, req, nil)
@@ -161,7 +189,8 @@ func ServeWS(w http.ResponseWriter, req *http.Request) {
 		log.Println("error upgrading websocket connection:", err)
 		return
 	}
-	client := &Client{s: s, conn: conn, Send: make(chan []byte, 256)}
+	log.Println("opening websocket")
+	client := &Client{hub: hub, conn: conn, Send: make(chan []byte, 256)}
 	client.hub.Register <- client
 	// Allow collection of memory referenced by the caller by doing all
 	// work in new goroutines
