@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"net/url"
+	"path"
 
 	"golang.org/x/text/unicode/norm"
 	"github.com/dhowden/tag"
@@ -347,3 +348,29 @@ func (t *Track) GetArtist() (string, error) {
 	return name, nil
 }
 
+var kindExt = map[string]string{
+	"Purchased AAC audio file": ".m4a",
+	"Protected AAC audio file": ".m4p",
+	"MPEG audio file": ".mp3",
+	"WAV audio file": ".wav",
+	"MPEG-4 video file": ".m4v",
+	"Protected MPEG-4 video file": ".m4v",
+	"Purchased MPEG-4 video file": ".m4v",
+	"QuickTime movie file": ".mov",
+}
+
+func (t *Track) GetExt() string {
+	if t.Kind != nil {
+		ext, ok := kindExt[*t.Kind]
+		if ok {
+			return ext
+		}
+	}
+	if t.Location != nil {
+		u, err := url.Parse(*t.Location)
+		if err == nil {
+			return path.Ext(u.Path)
+		}
+	}
+	return ""
+}
