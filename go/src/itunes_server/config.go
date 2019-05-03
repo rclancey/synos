@@ -25,6 +25,7 @@ type SynosConfig struct {
 	} `json:"ssl"`
 	Port int `json:"port"`
 	Netmask string `json:"netmask"`
+	StaticRoot string `json:"static_root"`
 	ItunesLibrary string `json:"itunes_library"`
 	MediaFolder string `json:"media_folder"`
 	MediaPath []string `json:"media_path"`
@@ -66,6 +67,7 @@ func (cfg *SynosConfig) LoadFromFile(fn string) error {
 	cfg.SSL = xcfg.SSL
 	cfg.Port = xcfg.Port
 	cfg.Netmask = xcfg.Netmask
+	cfg.StaticRoot = xcfg.StaticRoot
 	cfg.ItunesLibrary = xcfg.ItunesLibrary
 	cfg.MediaFolder = xcfg.MediaFolder
 	cfg.MediaPath = xcfg.MediaPath
@@ -171,6 +173,7 @@ func Configure() (*SynosConfig, error) {
 	ssl_key := parser.String("k", "ssl-key", &argparse.Options{Required: false, Help: "Path to SSL key file"})
 	port := parser.Int("p", "port", &argparse.Options{Required: false, Help: "Network port to listen on"})
 	netmask := parser.String("n", "network", &argparse.Options{Required: false, Help: "Network to bind to"})
+	staticRoot := parser.String("r", "root", &argparse.Options{Required: false, Help: "Document root for static files"})
 	mediaLibFolder := parser.String("f", "folder", &argparse.Options{Required: false, Help: "Common root music library folder"})
 	mediaPaths := parser.List("p", "path", &argparse.Options{Required: false, Help: "Search path for music libraries"})
 	coverArt := parser.List("a", "cover-art", &argparse.Options{Required: false, Help: "Filenames for cover art"})
@@ -197,6 +200,9 @@ func Configure() (*SynosConfig, error) {
 	}
 	if netmask != nil && *netmask != "" {
 		cfg.Netmask = *netmask
+	}
+	if staticRoot != nil && *staticRoot != "" {
+		cfg.StaticRoot = *staticRoot
 	}
 	if mediaLibFolder != nil && *mediaLibFolder != "" {
 		cfg.MediaFolder = *mediaLibFolder

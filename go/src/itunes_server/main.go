@@ -96,6 +96,7 @@ func main() {
 	mux.HandleFunc("/api/sonos/pause", SonosPause)
 	mux.HandleFunc("/api/sonos/volume", SonosVolume)
 	mux.HandleFunc("/api/sonos/ws", ServeWS)
+	mux.Handle("/", http.FileServer(http.Dir(cfg.StaticRoot)))
 	lm := &LogMux{ mux: mux }
 	err = http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), lm)
 	log.Println(err)
