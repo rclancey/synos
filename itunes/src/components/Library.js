@@ -1,7 +1,7 @@
 import React from 'react';
 import _ from 'lodash';
 import { trackDB } from '../lib/trackdb';
-import { Controls } from './Controls';
+import { Controls } from './Desktop/Controls';
 import { PlaylistBrowser } from './PlaylistBrowser';
 import { TrackBrowser } from './TrackBrowser';
 import { ProgressBar } from './ProgressBar';
@@ -11,18 +11,12 @@ export class Library extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      search: null,
-      queue: {
-        index: -1,
-        tracks: [],
-      },
       trackCount: 1,
       loaded: 0,
       tracks: [],
       playlists: [],
       playlist: null,
       openFolders: {},
-      currentTrack: null,
     };
     this.onSearch = this.onSearch.bind(this);
     this.onSelectPlaylist = this.onSelectPlaylist.bind(this);
@@ -199,7 +193,7 @@ export class Library extends React.Component {
 
   onTrackPlay({ event, index, rowData, list }) {
     console.debug('play %o', { event, index, rowData, list });
-    this.setQueue(list.slice(index)).then(() => this.advanceQueue());
+    this.setQueue(list.slice(index));//.then(() => this.advanceQueue());
     //this.setState({ currentTrack: rowData });
   }
 
@@ -281,11 +275,14 @@ export class Library extends React.Component {
   }
 
   setQueue(tracks) {
+    this.props.onReplaceQueue(tracks);
+    /*
     const queue = {
       tracks: tracks,
       index: -1,
     };
     return new Promise(resolve => this.setState({ queue }, resolve));
+    */
   }
 
   appendToQueue(tracks) {
@@ -342,16 +339,29 @@ export class Library extends React.Component {
   render() {
     return [
       <div key="library" className="library">
+        {/*
         <Controls
+          status={this.props.status}
+          queue={this.props.queue}
+          queueIndex={this.props.queueIndex}
+          currentTime={this.props.currentTime}
+          duration={this.props.duration}
+          volume={this.props.volume}
+          sonos={this.props.sonos}
           search={this.state.search}
-          track={this.state.currentTrack}
-          queue={this.state.queue.tracks}
-          index={this.state.queue.index}
-          onAdvanceQueue={() => this.advanceQueue()}
-          onRewindQueue={() => this.rewindQueue()}
-          onSearch={this.onSearch}
+          onPlay={this.props.onPlay}
+          onPause={this.props.onPause}
+          onSkipTo={this.props.onSkipTo}
+          onSkipBy={this.props.onSkipBy}
+          onSeekTo={this.props.onSeekTo}
+          onSeekBy={this.props.onSeekBy}
+          onSetVolumeTo={this.props.onSetVolumeTo}
+          onEnableSonos={this.props.onEnableSonos}
+          onDisableSonos={this.props.onDisableSonos}
+          onSearch={this.props.onSearch}
         />
         <div className="dataContainer">
+        */}
           <PlaylistBrowser
             playlists={this.state.playlists}
             openFolders={this.state.openFolders}
@@ -369,7 +379,9 @@ export class Library extends React.Component {
             onPlay={this.onTrackPlay}
             search={this.state.search}
           />
+        {/*
         </div>
+        */}
       </div>,
       <ProgressBar key="progress" total={this.state.trackCount} complete={this.state.loaded} />
     ];

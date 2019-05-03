@@ -72,7 +72,9 @@ class App extends Component {
         { this.state.installPrompt ? (
           <InstallAppButton onInstall={this.onInstall} />
         ) : null }
-        <Player mobile={this.state.mobile} />
+        <DragDropContextProvider backend={HTML5Backend}>
+          <Player mobile={this.state.mobile} />
+        </DragDropContextProvider>
         {/*
         <HomeList />
         */}

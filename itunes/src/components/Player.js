@@ -498,6 +498,16 @@ export class Player extends React.Component {
     }
   }
 
+  trackUrl(track) {
+    let url = `/api/track/${track.persistent_id}`;
+    if (track.kind === 'MPEG audio file') {
+      url += '.mp3';
+    } else if (track.kind === 'Purchased AAC audio file') {
+      url += '.m4a';
+    }
+    return url;
+  }
+
   renderCurrentAudio() {
     if (this.state.sonos) {
       return null;
@@ -510,7 +520,7 @@ export class Player extends React.Component {
       <audio
         key={track.persistent_id}
         ref={this.currentPlayer}
-        src={`/api/track/${track.persistent_id}`}
+        src={this.trackUrl(track)}
         volume={this.state.volume / 100.0}
         onCanPlay={evt => { evt.target.volume = this.state.volume / 100; this.state.status === 'PLAYING' && evt.target.play(); }}
         onDurationChange={evt => this.setState({ duration: Math.round(evt.target.duration * 1000) })}
@@ -535,7 +545,7 @@ export class Player extends React.Component {
       <audio
         key={track.persistent_id}
         ref={this.nextPlayer}
-        src={`/api/track/${track.persistent_id}`}
+        src={this.trackUrl(track)}
         preload="auto"
       />
     );

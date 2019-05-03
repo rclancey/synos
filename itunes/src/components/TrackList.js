@@ -188,6 +188,7 @@ export class TrackList extends React.Component {
     return (
       <div
         ref={node => this.node = node}
+        style={{ height: '100%' }}
         onFocus={() => this.setState({ focused: true })}
         onBlur={() => this.setState({ focused: false })}
       >

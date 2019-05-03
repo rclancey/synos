@@ -1,10 +1,178 @@
 import React from 'react';
-import { displayTime } from '../lib/columns';
-import { DesktopQueue } from './Queue';
-import { Playback } from './Playback';
 import { TrackTime } from './TrackInfo';
 
-export const Progress = ({ currentTime, duration, onSeekTo }) => {
+const orientations = {
+  right: ['Top', 'Bottom', 'Left'],
+  left: ['Top', 'Bottom', 'Right'],
+  top: ['Left', 'Right', 'Bottom'],
+  bottom: ['Left', 'Right', 'Top'],
+};
+
+const root3 = Math.sqrt(3);
+  let sizeV, sizeU;
+
+const parseSize = (size, dflt) => {
+  if (size === null || size === undefined) {
+    return { v: dflt, u: 'px' };
+  }
+  if (typeof size === 'number') {
+    return { v: size, u: 'px' };
+  }
+  const m = size.match(/^([0-9\.]+)(px|pt|pc|q|mm|cm|in|em|rem|ex|ch|vw|vh)?$/);
+  if (m) {
+    return { v: parseFloat(m[1]), u: m[2] || 'px' };
+  }
+  return { v: dflt, u: 'px' };
+};
+
+export const Triangle = ({ orientation, size, color, style, ...props }) => {
+  const sz = parseSize(size, 24);
+  const xstyle = Object.assign({}, style, {
+    width: 0,
+    height: 0,
+  });
+  const ori = orientations[orientation] || orientations.right;
+  ori.slice(0, 2).forEach(d => {
+    xstyle[`border${d}Color`] = 'transparent';
+    xstyle[`border${d}Style`] = 'solid';
+    xstyle[`border${d}Width`] = `${sz.v / root3}${sz.u}`;
+  });
+  const d = ori[2];
+  xstyle[`border${d}Color`] = color || 'black';
+  xstyle[`border${d}Style`] = 'solid';
+  xstyle[`border${d}Width`] = `${sz.v}${sz.u}`;
+  return (<div style={xstyle} {...props} />);
+};
+
+
+export const PlayButton = ({ size, onPlay }) => (
+  <Triangle orientation="right" size={size || 24} color="#444" className="play" onClick={onPlay} />
+);
+
+export const PauseButton = ({ size, onPause }) => {
+  const sz = parseSize(sz, 24);
+  const style = {
+    width: `${sz.v / 4}${sz.u}`,
+    height: `${sz.v * 2 / root3}${sz.u}`,
+    borderLeftStyle: 'solid',
+    borderLeftColor: '#444',
+    borderLeftWidth: `${sz.v / 4}${sz.u}`,
+    borderRightStyle: 'solid',
+    borderRightColor: '#444',
+    borderRightWidth: `${sz.v / 4}${sz.u}`,
+    marginLeft: `${sz.v / 8}${sz.u}`,
+    marginRight: `${sz.v / 8}${sz.u}`,
+  };
+  return (
+    <div style={style} className="pause" onClick={onPause} />
+  );
+};
+
+export const PlayPauseButton = ({ size, paused, onPlay, onPause }) => {
+  if (paused) {
+    return (<PlayButton size={size} onPlay={onPlay} />);
+  }
+  return (<PauseButton size={size} onPause={onPause} />);
+};
+
+export class Seeker extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      seeking: false,
+    };
+    this.div = React.createRef();
+    this.beginSeek = this.beginSeek.bind(this);
+  }
+
+  beginSeek(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    if (this.state.seeking) {
+      return false;
+    } 
+    if (evt.type == 'mousedown') {
+      document.addEventListener('mouseup', () => this.setState({ seeking: false }), { once: true });
+    } else if (evt.type == 'touchstart') { 
+      document.addEventListener('touchend', () => this.setState({ seeking: false }), { once: true });
+    } 
+    this.setState({ seeking: true }, () => {
+      const startTime = Date.now();
+      this.interval = setInterval(() => {
+        const t = Date.now() - startTime;
+        if (this.state.seeking) {
+          if (t >= 250) {
+            this.props.onSeek();
+          } 
+        } else {
+          clearInterval(this.interval);
+          if (t < 250) {
+            this.props.onSkip();
+          } 
+        } 
+      }, 40);
+    });
+  } 
+  
+  render() {
+    return (
+      <div 
+        ref={this.div}
+        className={this.props.className}
+        style={this.props.style}
+        onMouseDown={this.beginSeek}
+        onTouchStart={this.beginSeek}
+      > 
+        {this.props.children}
+      </div>
+    );
+  } 
+}
+
+export const RewindButton = ({ size, onSkipBy, onSeekBy }) => (
+  <Seeker style={{ display: 'flex' }} className="rewind" onSkip={() => onSkipBy(-1)} onSeek={() => onSeekBy(-200)}>
+    <Triangle orientation="left" size={size || 15} color="#444" />
+    <Triangle orientation="left" size={size || 15} color="#444" />
+  </Seeker>
+);
+
+export const FastForwardButton = ({ size, onSkipBy, onSeekBy }) => (
+  <Seeker style={{ display: 'flex' }} className="ffwd" onSkip={() => onSkipBy(1)} onSeek={() => onSeekBy(200)}>
+    <Triangle orientation="right" size={size || 15} color="#444" />
+    <Triangle orientation="right" size={size || 15} color="#444" />
+  </Seeker>
+);
+
+export const PlayPauseSkip = ({ size, paused, onPlay, onPause, onSkipBy, onSeekBy, style, ...props }) => {
+  const sz = parseSize(size, 24);
+  return (
+    <div style={{ display: 'flex', ...style }} {...props}>
+      <RewindButton size={`${sz.v * 0.625}${sz.u}`} onSkipBy={onSkipBy} onSeekBy={onSeekBy} />
+      <PlayPauseButton size={`${sz.v}${sz.u}`} paused={paused} onPlay={onPlay} onPause={onPause} />
+      <FastForwardButton size={`${sz.v * 0.625}${sz.u}`} onSkipBy={onSkipBy} onSeekBy={onSeekBy} />
+    </div>
+  );
+};
+
+export const Volume = ({ volume, onChange, style, ...props }) => (
+  <div style={{ ...style, display: 'flex' }} {...props}>
+    <div className="fas fa-volume-down" style={{ flex: 1 }}  onClick={() => onChange(volume - 10)} />
+    <div style={{ flex: 10, paddingLeft: '1em', paddingRight: '1em' }}>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={1}
+        value={volume}
+        style={{ width: '100%' }}
+        onChange={evt => onChange(parseInt(evt.target.value))}
+      />
+    </div>
+    <div className="fas fa-volume-up" style={{ flex: 1 }} onClick={() => onChange(volume + 10)}/>
+  </div>
+);
+
+export const Progress = ({ currentTime, duration, onSeekTo, height, background, color, style, ...props }) => {
   const seekTo = evt => {
     let l = 0;
     let node = evt.target;
@@ -19,9 +187,28 @@ export const Progress = ({ currentTime, duration, onSeekTo }) => {
     onSeekTo(t);
   };
   const pct = duration > 0 ? 100 * currentTime / duration : 0;
+  const sz = parseSize(height, 4)
   return (
-    <div className="progressContainer" onClick={seekTo}>
-      <div className="progress" style={{width: `${pct}%`}} />
+    <div
+      style={{
+        ...style,
+        minHeight: `${sz.v}${sz.u}`,
+        maxHeight: `${sz.v}${sz.u}`,
+        height: `${sz.v}${sz.u}`,
+        backgroundColor: background || '#ccc',
+      }}
+      onClick={seekTo}
+      {...props}
+    >
+      <div
+        className="progress"
+        style={{
+          width: `${pct}%`,
+          height: `${sz.v}${sz.u}`,
+          backgroundColor: color || '#666',
+          pointerEvents: 'none',
+        }}
+      />
     </div>
   );
 };
@@ -41,464 +228,3 @@ export const ProgressTimer = ({ currentTime, duration, onSeekTo, className, styl
   </div>
 );
 
-export class Seeker extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      seeking: false,
-    };
-    this.div = React.createRef();
-    this.beginSeek = this.beginSeek.bind(this);
-  }
-
-  beginSeek(evt) {
-    console.debug(evt.nativeEvent);
-    if (evt.target != this.div.current) {
-      console.debug("event target %o != seeker div %o", evt.target, this.div.current);
-    }
-    evt.preventDefault();
-    evt.stopPropagation();
-    if (this.state.seeking) {
-      return false;
-    }
-    console.debug('beginSeek');
-    if (evt.type == 'mousedown') {
-      document.addEventListener('mouseup', () => this.setState({ seeking: false }), { once: true });
-    } else if (evt.type == 'touchstart') {
-      document.addEventListener('touchend', () => this.setState({ seeking: false }), { once: true });
-    } else {
-      console.debug('unknown event: %o', evt.type);
-    }
-    this.setState({ seeking: true }, () => {
-      const startTime = Date.now();
-      this.interval = setInterval(() => {
-        const t = Date.now() - startTime;
-        if (this.state.seeking) {
-          if (t >= 250) {
-            this.props.onSeek();
-          }
-        } else {
-          clearInterval(this.interval);
-          if (t < 250) {
-            console.debug('skipping!');
-            this.props.onSkip();
-          }
-        }
-      }, 40);
-    });
-  }
-
-  render() {
-    return (
-      <div
-        ref={this.div}
-        className={this.props.className}
-        style={this.props.style}
-        onMouseDown={this.beginSeek}
-        onTouchStart={this.beginSeek}
-      >
-        {this.props.children}
-      </div>
-    );
-  }
-}
-
-export const Rewind = ({ onSkipBy, onSeekBy }) => (
-  <Seeker className="rewind fas fa-backward" onSkip={() => onSkipBy(-1)} onSeek={() => onSeekBy(-200)} />
-);
-
-export const FastForward = ({ onSkipBy, onSeekBy }) => (
-  <Seeker className="ffwd fas fa-forward" onSkip={() => onSkipBy(1)} onSeek={() => onSeekBy(200)} />
-);
-
-export const Play = ({ onPlay }) => (
-  <div className="play fas fa-play" onClick={() => onPlay()} />
-);
-
-export const Pause = ({ onPause }) => (
-  <div className="pause fas fa-pause" onClick={() => onPause()} />
-);
-
-export const PlayPause = ({ paused, onPlay, onPause }) => {
-  if (paused) {
-    return (<Play onPlay={onPlay} />);
-  }
-  return (<Pause onPause={onPause} />);
-};
-
-export const PlayPauseSkip = ({ paused, onPlay, onPause, onSkipBy, onSeekBy, className, style }) => (
-  <div className={className} style={style}>
-    <Rewind onSkipBy={onSkipBy} onSeekBy={onSeekBy} />
-    <PlayPause paused={paused} onPlay={onPlay} onPause={onPause} />
-    <FastForward onSkipBy={onSkipBy} onSeekBy={onSeekBy} />
-  </div>
-);
-
-export const Volume = ({ volume, onChange, className, style }) => (
-  <div className={className} style={style}>
-    <div className="fas fa-volume-down" />
-    <div style={{flex: 10, paddingLeft: '1em', paddingRight: '1em'}}>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        step={1}
-        value={volume}
-        style={{ width: '100%' }}
-        onChange={evt => onChange(parseInt(evt.target.value))}
-      />
-    </div>
-    <div className="fas fa-volume-up" />
-  </div>
-);
-
-export class NowPlaying extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      playing: false,
-      duration: 0,
-      currentTime: 0,
-    };
-    this.playbackRef = React.createRef();
-    window.playbackRef = this.playbackRef;
-    this.timeUpdate = this.timeUpdate.bind(this);
-    this.onPlaying = this.onPlaying.bind(this);
-    this.onComplete = this.onComplete.bind(this);
-    this.seekTo = this.seekTo.bind(this);
-  }
-
-  timeUpdate(evt) {
-    const node = evt.nativeEvent.target;
-    this.setState({ currentTime: node.currentTime, duration: node.duration });
-  }
-
-  onPlaying() {
-    this.setState({ playing: true });
-    this.props.onPlaying();
-  }
-
-  onComplete() {
-    this.setState({ playing: false });
-    this.props.onComplete();
-  }
-
-  audioNode() {
-    let node = this.playbackRef.current;
-    if (!node) {
-      return null;
-    }
-    node = node.currentPlayer.current;
-    if (!node) {
-      return null;
-    }
-    return node;
-  }
-
-  seekTo(evt) {
-    console.debug(evt.nativeEvent);
-    const audioNode = this.audioNode();
-    let l = 0;
-    let node = evt.target;
-    while (node !== null && node !== undefined) {
-      l += node.offsetLeft;
-      node = node.offsetParent;
-    }
-    const xevt = Object.assign({}, evt);
-    const x = evt.pageX - l;
-    const w = evt.target.offsetWidth;
-    const t = audioNode.duration * x / w;
-    console.debug({ xevt, l, layerX: evt.pageX, x, w, t, duration: audioNode.duration });
-    audioNode.currentTime = t;
-  }
-
-  componentDidUpdate(prevProps) {
-    const node = this.audioNode();
-    if (node) {
-      if (prevProps.paused !== this.props.paused) {
-        if (this.props.paused) {
-          node.pause();
-        } else {
-          node.play();
-        }
-      }
-    }
-  }
-
-  render() {
-    const track = this.props.queue ? this.props.queue[this.props.index] : null;
-    if (!track) {
-      return (
-        <span
-          className="fab fa-apple"
-          style={{
-            fontSize: '36pt',
-            textAlign: 'center',
-            width: '100%',
-            padding: '4px',
-          }}
-        />
-      );
-    }
-    const dur = this.state.duration;
-    const cur = this.state.currentTime;
-    const pct = (dur > 0 ? 100 * cur / dur : 0);
-    return (
-      <div>
-        <Playback
-          ref={this.playbackRef}
-          currentTrack={this.props.queue[this.props.index]}
-          nextTrack={this.props.queue[this.props.index+1]}
-          onDurationChange={this.timeUpdate}
-          onAdvanceQueue={this.props.onAdvanceQueue}
-          onPause={() => this.setState({ playing: false })}
-          onPlaying={() => this.setState({ playing: true })}
-          onSeeked={this.timeUpdate}
-          onTimeUpdate={this.timeUpdate}
-        />
-        {/*
-          onCanPlayThrough={evt => console.debug(evt.nativeEvent)}
-          onEmptied={evt => console.debug(evt.nativeEvent)}
-          onLoadedData={evt => console.debug(evt.nativeEvent)}
-          onLoadedMetadata={evt => console.debug(evt.nativeEvent)}
-          onPlay={evt => console.debug(evt.nativeEvent)}
-          onRateChange={evt => console.debug(evt.nativeEvent)}
-          onSeeking={evt => console.debug(evt.nativeEvent)}
-          onStalled={evt => console.debug(evt.nativeEvent)}
-          onVolumeChange={evt => console.debug(evt.nativeEvent)}
-          onWaiting={evt => console.debug(evt.nativeEvent)}
-        */}
-        <div
-          className="coverart"
-          style={{ backgroundImage: `url(/api/cover/${track.persistent_id})` }}
-        />
-        <div
-          style={{
-            flex: 100,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <div
-            style={{
-              flex: 100,
-              display: 'flex',
-              flexDirection: 'row',
-            }}
-          >
-            <div className="timer">
-              <div style={{ flex: 100 }}></div>
-              <div className="currentTime">
-                {displayTime(1000 * this.state.currentTime)}
-              </div>
-            </div>
-            <div className="trackinfo">
-              <div className="name">{track.name}</div>
-              <div className="artist">
-                {track.artist}
-                {' - '}
-                {track.album}
-              </div>
-            </div>
-            <div className="timer">
-              <div style={{ flex: 100 }}></div>
-              <div className="currentTime">
-                {'-'+displayTime(1000 * (this.state.duration - this.state.currentTime))}
-              </div>
-            </div>
-          </div>
-          <div className="progressContainer" onClick={this.seekTo}>
-            <div className="progress" style={{width: `${pct}%`}} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-}
-
-export class Controls extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      playing: false,
-      showQueue: false,
-    };
-    this.nowPlayingRef = React.createRef();
-    this.queueRef = React.createRef();
-    this.beginSeek = this.beginSeek.bind(this);
-    this.play = this.play.bind(this);
-    this.pause = this.pause.bind(this);
-  }
-
-  audioNode() {
-    let node = this.nowPlayingRef.current;
-    if (!node) {
-      return null;
-    }
-    node = node.playbackRef.current;
-    if (!node) {
-      return null;
-    }
-    node = node.currentPlayer.current;
-    if (!node) {
-      return null;
-    }
-    return node;
-  }
-
-  beginSeek(dir) {
-    const audioNode = this.audioNode();
-    if (!audioNode) {
-      return;
-    }
-    document.addEventListener('mouseup', () => this.setState({ seeking: false }), { once: true });
-    this.setState({ seeking: true }, () => {
-      const startTime = Date.now();
-      this.interval = setInterval(() => {
-        if (this.state.seeking) {
-          const cur = audioNode.currentTime;
-          const dur = audioNode.duration;
-          const t = cur + dir;
-          if (t < 0) {
-            t = 0;
-          } else if (t >= dur) {
-            t = dur - 1;
-          }
-          audioNode.currentTime = t;
-        } else {
-          clearInterval(this.interval);
-          const t = Date.now() - startTime;
-          if (t < 250) {
-            if (dir < 0) {
-              this.seekTo(0);
-            } else {
-              this.seekTo(1);
-            }
-          }
-        }
-      }, 40);
-    });
-  }
-
-  seekTo(t) {
-    const audioNode = this.audioNode();
-    if (!audioNode) {
-      return;
-    }
-    audioNode.currentTime = audioNode.duration * t;
-  }
-
-  play() {
-    if (this.props.queue) {
-      this.setState({ playing: true });
-      if (this.props.index < 0) {
-        this.props.onAdvanceTrack();
-      }
-    }
-  }
-
-  pause() {
-    this.setState({ playing: false });
-  }
-
-  componentDidUpdate(prevProps) {
-    const prevTrack = prevProps.queue[prevProps.index];
-    const track = this.props.queue[this.props.index];
-    if (prevTrack !== track && !this.state.playing) {
-      this.setState({ playing: true });
-    }
-  }
-
-  toggleQueue() {
-    if (this.state.showQueue) {
-      this.setState({ showQueue: false });
-    } else {
-      let node = this.queueRef.current;
-      let x = node.offsetWidth / 2;
-      let y = node.offsetHeight;
-      while (node !== null && node !== undefined) {
-        x += node.offsetLeft;
-        y += node.offsetTop;
-        node = node.offsetParent;
-      }
-      this.setState({ showQueue: true, queueX: x, queueY: y });
-    }
-  }
-
-  render() {
-    const { search, onSearch } = this.props;
-    const track = this.props.queue[this.props.index];
-    return (
-      <div className="controls">
-        <div className="playpause">
-          <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '1em' }}>
-            <div style={{ flex: 2 }} />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
-              <div className="buttons">
-                <div className="rewind" onMouseDown={() => this.beginSeek(-0.2)}>
-                  <div />
-                  <div />
-                </div>
-                { track && this.state.playing ? (
-                  <div className="pause" onClick={this.pause} />
-                ) : (
-                  <div className="play" onClick={this.play} />
-                )}
-                <div className="fastforward" onMouseDown={() => this.beginSeek(0.2)}>
-                  <div />
-                  <div />
-                </div>
-              </div>
-            </div>
-            <div style={{ flex: 2 }} />
-          </div>
-        </div>
-        <div className="nowplaying">
-          <NowPlaying
-            ref={this.nowPlayingRef}
-            queue={this.props.queue}
-            index={this.props.index}
-            paused={!this.state.playing}
-            onAdvanceQueue={this.props.onAdvanceQueue}
-          />
-        </div>
-        <div className="search">
-          <span style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ flex: 2 }} />
-            <div ref={this.queueRef} className="queueMenu" onClick={() => this.toggleQueue()}>
-              <div>1<span className="row" /></div>
-              <div>2<span className="row" /></div>
-              <div>3<span className="row" /></div>
-            </div>
-            <div style={{ flex: 2 }} />
-            { this.state.showQueue ? [
-              (<div style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 9 }} onClick={() => this.toggleQueue()} />),
-              (<DesktopQueue
-                x={this.state.queueX}
-                y={this.state.queueY}
-                tracks={this.props.queue}
-                index={this.props.index}
-              />)
-            ] : null }
-          </span>
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            width: '50%',
-            flex: 10,
-            paddingLeft: '3em',
-          }}>
-            <div style={{ flex: 2 }} /> 
-            <input
-              type="text"
-              placeholder={'\u{1f50d} Search'}
-              value={search}
-              onChange={evt => onSearch(evt.target.value)}
-            />
-            <div style={{ flex: 2 }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-}
