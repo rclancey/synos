@@ -7,15 +7,21 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"path/filepath"
+	"time"
 
 	"itunes"
+	"lastfm"
 	"sonos"
+	"spotify"
 )
 
 var lib *itunes.Library
 var dev *sonos.Sonos
 var hub *Hub
 var cfg *SynosConfig
+var lastFm *lastfm.LastFM
+var spot *spotify.SpotifyClient
 
 func main() {
 	var err error
@@ -73,11 +79,16 @@ func main() {
 		log.Println("purchase dates loaded")
 	}()
 
+	cacheTime := 30 * 24 * time.Hour
+	lastFm = lastfm.NewLastFM(cfg.LastFMAPIKey, filepath.Join(cfg.CacheDirectory, "lastfm"), cacheTime)
+	spot, _ = spotify.NewSpotifyClient(cfg.SpotifyClientID, cfg.SpotifyClientSecret, filepath.Join(cfg.CacheDirectory, "spotify"), cacheTime)
+
 	log.Println("starting http server")
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/index/genres", ListGenres)
 	mux.HandleFunc("/api/index/artists", ListArtists)
 	mux.HandleFunc("/api/index/albums", ListAlbums)
+	mux.HandleFunc("/api/index/album-artist", ListAlbumsWithArtist)
 	mux.HandleFunc("/api/index/songs", ListSongs)
 	//mux.HandleFunc("/api/art/genre", GenreArt)
 	mux.HandleFunc("/api/art/artist", ArtistArt)

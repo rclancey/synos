@@ -62,6 +62,14 @@ func PlaylistTracks(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func m3uEscape(s string) string {
+	s = html.EscapeString(s)
+	s = strings.Replace(s, "&amp;", "%26", -1)
+	s = strings.Replace(s, "&lt;", "&#60;", -1)
+	s = strings.Replace(s, "&gt;", "&#62;", -1)
+	return s
+}
+
 func M3U(pl *itunes.Playlist) ([]string, error) {
 	lines := make([]string, len(pl.PlaylistItems) * 2 + 2)
 	lines[0] = "#EXTM3U"
@@ -85,7 +93,7 @@ func M3U(pl *itunes.Playlist) ([]string, error) {
 		}
 		u := cfg.GetRootURL()
 		u.Path = fmt.Sprintf("/api/track/%s%s", *track.PersistentID, track.GetExt())
-		lines[i * 2 + 1] = fmt.Sprintf("#EXTINF:%d,<%s><%s><%s>", t, html.EscapeString(artist), html.EscapeString(album), html.EscapeString(song))
+		lines[i * 2 + 1] = fmt.Sprintf("#EXTINF:%d,<%s><%s><%s>", t, m3uEscape(artist), m3uEscape(album), m3uEscape(song))
 		lines[i * 2 + 2] = u.String()
 	}
 	return lines, nil

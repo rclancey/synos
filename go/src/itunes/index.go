@@ -269,6 +269,10 @@ type AlbumKey struct {
 	Artist string
 }
 
+func (ak AlbumKey) MarshalText() ([]byte, error) {
+	return []byte(fmt.Sprintf("<%s,%s>", ak.Genre, ak.Artist)), nil
+}
+
 func IndexAlbums(lib *Library) map[AlbumKey][][2]string {
 	albumIdx := map[AlbumKey]SortableTable{
 		AlbumKey{"", ""}: SortableTable{},
@@ -310,6 +314,10 @@ func IndexAlbums(lib *Library) map[AlbumKey][][2]string {
 type SongKey struct {
 	Artist string
 	Album string
+}
+
+func (sk SongKey) MarshalText() ([]byte, error) {
+	return []byte(fmt.Sprintf("<%s,%s>", sk.Artist, sk.Album)), nil
 }
 
 type sortableAlbum []*Track
@@ -361,7 +369,7 @@ func IndexSongs(lib *Library) map[SongKey][]*Track {
 	var ok bool
 	es := ""
 	for _, t := range lib.Tracks {
-		used = map[SongKey]bool{}
+		used = map[SongKey]bool{SongKey{"", ""}: true}
 		for _, albp = range []*string{t.Album, t.SortAlbum, &es} {
 			if albp == nil {
 				continue

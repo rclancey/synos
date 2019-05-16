@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 	//"regexp"
-	//"sort"
-	//"strings"
+	"sort"
+	"strings"
 
 	"itunes"
 )
@@ -193,6 +193,40 @@ func ListAlbums(w http.ResponseWriter, req *http.Request) {
 	SendJSON(w, albumMap.Values())
 	*/
 	SendJSON(w, lib.AlbumIndex[itunes.AlbumKey{genre, artist}])
+}
+
+type SortableAlbumList [][3]string
+func (sal SortableAlbumList) Len() int { return len(sal) }
+func (sal SortableAlbumList) Swap(i, j int) { sal[i], sal[j] = sal[j], sal[i] }
+func (sal SortableAlbumList) Less(i, j int) bool { return strings.Compare(sal[i][2], sal[j][2]) == -1 }
+
+func ListAlbumsWithArtist(w http.ResponseWriter, req *http.Request) {
+	idx := [][3]string{}
+	seen := map[[2]string]bool{}
+	for _, tr := range lib.TrackList {
+		if tr.Album == nil {
+			continue
+		}
+		var art string
+		if tr.AlbumArtist != nil {
+			art = *tr.AlbumArtist
+		} else if tr.Artist != nil {
+			art = *tr.Artist
+		} else {
+			continue
+		}
+		k := [2]string{
+			itunes.MakeKey(*tr.Album),
+			itunes.MakeKey(*tr.Artist),
+		}
+		if _, ok := seen[k]; ok {
+			continue
+		}
+		idx = append(idx, [3]string{*tr.Album, art, k[0] + k[1]})
+		seen[k] = true
+	}
+	sort.Sort(SortableAlbumList(idx))
+	SendJSON(w, idx)
 }
 
 /*

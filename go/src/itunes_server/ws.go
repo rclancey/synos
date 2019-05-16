@@ -157,6 +157,7 @@ func (c *Client) WritePump() {
 				return
 			}
 			w.Write(message)
+			log.Println("ws send", string(message))
 			// flush queued messages
 			n := len(c.Send)
 			for i := 0; i < n; i++ {

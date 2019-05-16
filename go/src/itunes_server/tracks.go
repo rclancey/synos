@@ -141,19 +141,13 @@ func GetTrackCover(w http.ResponseWriter, req *http.Request) {
 		NotFound.Raise(nil, "Track %s does not exist", id).Respond(w)
 		return
 	}
-	fn := tr.Path()
-	dn, _ := filepath.Split(fn)
-	fn = filepath.Join(dn, "cover.jpg")
-	cand := []string{
-		fn,
-		"/Volumes/music/Music/iTunes/nocover.png",
-		"/volume1/music/Music/iTunes/nocover.png",
-		filepath.Join(os.Getenv("HOME"), "Music", "iTunes", "nocover.jpg"),
-	}
-	for _, x := range cand {
-		_, err := os.Stat(x)
-		if err == nil {
-			http.ServeFile(w, req, x)
+	fn, err := GetAlbumArtFilename(tr)
+	if err != nil {
+		log.Println("error getting cover art:", err)
+		http.Redirect(w, req, "/nocover.jpg", http.StatusFound)
+		return
+		if fn == "" {
+			NotFound.Raise(err, "cover art not available").Respond(w)
 			return
 		}
 	}

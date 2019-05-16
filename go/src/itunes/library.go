@@ -1,8 +1,10 @@
 package itunes
 
 import (
+	//"encoding/json"
 	"encoding/xml"
 	"io"
+	//"io/ioutil"
 	"log"
 	"os"
 	"sort"
@@ -101,7 +103,20 @@ func (lib *Library) Index() {
 	lib.ArtistIndex = IndexArtists(lib)
 	lib.AlbumIndex = IndexAlbums(lib)
 	lib.SongIndex = IndexSongs(lib)
+	/*
 	log.Printf("index: %d / %d\n", lib.TrackIndex.Values(), lib.TrackIndex.Keys())
+	data, err := json.MarshalIndent(map[string]interface{}{
+		"genreIndex": lib.GenreIndex,
+		"artistIndex": lib.ArtistIndex,
+		"albumIndex": lib.AlbumIndex,
+		"songIndex": lib.SongIndex,
+	}, "", "  ")
+	if err != nil {
+		log.Println("error dumping index:", err)
+	} else {
+		ioutil.WriteFile("libIndex.json", data, os.FileMode(0644))
+	}
+	*/
 }
 
 func (lib *Library) Set(key []byte, kind string, val []byte) {
