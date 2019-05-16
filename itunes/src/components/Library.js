@@ -377,7 +377,7 @@ export class Library extends React.Component {
             playlist={this.state.playlist}
             onReorderTracks={this.onReorderTracks}
             onPlay={this.onTrackPlay}
-            search={this.state.search}
+            search={this.props.search}
           />
         {/*
         </div>

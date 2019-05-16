@@ -1,14 +1,18 @@
 import React from 'react';
+import { List, AutoSizer } from "react-virtualized";
 import { Album } from './SongList';
 
 export class AlbumList extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      scrollTop: 0,
       albums: [],
       album: null,
     };
     this.onClose = this.onClose.bind(this);
+    this.rowRenderer = this.rowRenderer.bind(this);
+    this.onScroll = this.onScroll.bind(this);
   }
 
   componentDidMount() {
@@ -22,13 +26,15 @@ export class AlbumList extends React.Component {
   }
 
   loadAlbums() {
-    let url = '/api/index/albums';
+    let url = '/api/index/';
     if (this.props.artist) {
-      url += `?artist=${this.props.artist}`;
+      url += `albums?artist=${escape(this.props.artist)}`;
+    } else {
+      url += 'album-artist';
     }
     return fetch(url, { method: 'GET' })
       .then(resp => resp.json())
-      .then(albums => this.setState({ albums: albums ? albums.map(alb => alb[0]) : [] }));
+      .then(albums => this.setState({ albums }));
   }
 
   onOpen(album) {
@@ -44,7 +50,43 @@ export class AlbumList extends React.Component {
   }
 
   coverArtUrl(album) {
-    return `url(/api/art/album?artist=${escape(this.props.artist)}&album=${escape(album)})`;
+    let url = '/api/art/album?';
+    if (this.props.artist) {
+      url += `artist=${escape(this.props.artist)}`;
+    } else {
+      url += `artist=${escape(album[1])}`;
+    }
+    url += `&album=${escape(album[0])}`;
+    return `url(${url})`;
+    //return `url(/api/art/album?artist=${escape(this.props.artist)}&album=${escape(album)})`;
+  }
+
+  onScroll({ scrollTop }) {
+    this.setState({ scrollTop });
+  }
+
+  rowRenderer({ key, index, style }) {
+    const album1 = this.state.albums[index * 2];
+    const album2 = this.state.albums[index * 2 + 1];
+    return (
+      <div key={key} className="row" style={style}>
+        <div className="padding" />
+        <div className="item" onClick={() => this.onOpen(album1)}>
+          <div className="coverArt" style={{backgroundImage: this.coverArtUrl(album1)}} />
+          <div className="title">{album1[0]}</div>
+        </div>
+        <div className="padding" />
+        { album2 ? (
+          <div className="item" onClick={() => this.onOpen(album2)}>
+            <div className="coverArt" style={{backgroundImage: this.coverArtUrl(album2)}} />
+            <div className="title">{album2[0]}</div>
+          </div>
+        ) : (
+          <div className="item" />
+        ) }
+        <div className="padding" />
+      </div>
+    );
   }
 
   render() {
@@ -52,8 +94,8 @@ export class AlbumList extends React.Component {
       return (
         <Album
           prev={this.props.artist || "Albums"}
-          artist={this.props.artist}
-          album={this.state.album}
+          artist={this.props.artist || this.state.album[1]}
+          album={this.state.album[0]}
           onClose={this.onClose}
           onTrackMenu={this.props.onTrackMenu}
           onPlaylistMenu={this.props.onPlaylistMenu}
@@ -66,31 +108,21 @@ export class AlbumList extends React.Component {
         <div className="header">
           <div className="title">{this.props.artist}</div>
         </div>
-        {this.state.albums.map((album, i) => {
-          if (i % 2 == 1) {
-            return null;
-          }
-          const album2 = this.state.albums[i+1];
-          return (
-            <div className="row">
-              <div className="padding" />
-              <div className="item" onClick={() => this.onOpen(album)}>
-                <div className="coverArt" style={{backgroundImage: this.coverArtUrl(album)}} />
-                <div className="title">{album}</div>
-              </div>
-              <div className="padding" />
-              { album2 ? (
-                <div className="item" onClick={() => this.onOpen(album2)}>
-                  <div className="coverArt" style={{backgroundImage: this.coverArtUrl(album2)}} />
-                  <div className="title">{album2}</div>
-                </div>
-              ) : (
-                <div className="item" />
-              ) }
-              <div className="padding" />
-            </div>
-          )
-        })}
+        <div className="items">
+          <AutoSizer>
+            {({width, height}) => (
+              <List
+                width={width}
+                height={height}
+                rowCount={Math.ceil(this.state.albums.length / 2)}
+                rowHeight={195}
+                rowRenderer={this.rowRenderer}
+                scrollTop={this.state.scrollTop}
+                onScroll={this.onScroll}
+              />
+            )}
+          </AutoSizer>
+        </div>
       </div>
     );
   }

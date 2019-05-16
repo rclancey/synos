@@ -111,7 +111,7 @@ export class Album extends React.Component {
   }
 
   componentDidMount() {
-    fetch(`/api/index/songs?artist=${this.props.artist}&album=${this.props.album}`, { method: 'GET' })
+    fetch(`/api/index/songs?artist=${escape(this.props.artist)}&album=${escape(this.props.album)}`, { method: 'GET' })
       .then(resp => resp.json())
       .then(tracks => this.setState({ tracks }));
   }

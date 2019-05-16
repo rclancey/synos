@@ -123,7 +123,7 @@ export class Player extends React.Component {
     if (this.state.queue.length === 0) {
       this.setState({ sonos: true }, () => this.startupSonos());
     } else {
-      this.transferQueueToSonos();
+      this.transferQueueToSonos(this.state);
     }
   }
 
@@ -201,8 +201,10 @@ export class Player extends React.Component {
   onSonosError() {
     const sonos = this.sonos;
     this.sonos = null;
-    sonos.close();
-    this.startupSonos();
+    if (sonos) {
+      sonos.close();
+    }
+    setTimeout(() => this.startupSonos(), 1000);
   }
 
   onSonosClose() {
@@ -239,8 +241,10 @@ export class Player extends React.Component {
             }, () => console.debug('set sonos state %o', this.state));
           });
         setInterval(() => {
-          let t = Math.min(this.state.duration, Math.max(0, this.state.currentTimeSet + (Date.now() - this.state.currentTimeSetAt)));
-          this.setState({ currentTime: t });
+          if (this.state.status === 'PLAYING') {
+            let t = Math.min(this.state.duration, Math.max(0, this.state.currentTimeSet + (Date.now() - this.state.currentTimeSetAt)));
+            this.setState({ currentTime: t });
+          }
         }, 250);
         resolve(this.sonos);
       };
@@ -251,11 +255,14 @@ export class Player extends React.Component {
   }
 
   transferQueueToSonos() {
+    console.debug('transferQueueToSonos');
     const status = this.state.status;
-    this.currentPlayer.current.pause();
+    if (this.currentPlayer.current) {
+      this.currentPlayer.current.pause();
+    }
     const tracks = this.state.queue;
     const index = this.state.queueIndex;
-    const ms = this.currentPlayer.current.currentTime;
+    const ms = this.currentPlayer.current ? this.currentPlayer.current.currentTime * 1000 : 0;
     return new Promise(resolve => {
       this.setState({ sonos: true }, () => {
         this.startupSonos()
@@ -282,9 +289,8 @@ export class Player extends React.Component {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.volume = this.state.volume / 100;
         this.currentPlayer.current.play();
-      } else {
-        this.setState({ status: 'PLAYING' });
       }
+      this.setState({ status: 'PLAYING' });
     }
   }
 
@@ -294,9 +300,8 @@ export class Player extends React.Component {
     } else {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.pause();
-      } else {
-        this.setState({ status: 'PAUSED' });
       }
+      this.setState({ status: 'PAUSED' });
     }
   }
 
@@ -381,12 +386,12 @@ export class Player extends React.Component {
     if (this.state.sonos) {
       skipSonosBy(count);
     } else {
+      if (this.currentPlayer.current) {
+        this.currentPlayer.current.pause();
+      }
       const idx = this.state.queueIndex + count;
       if (idx < 0 || idx >= this.state.queue.length) {
-        if (this.currentPlayer.current) {
-          this.currentPlayer.current.pause();
-          this.setState({ queueIndex: 0, currentTime: 0 });
-        }
+        this.setState({ queueIndex: 0, currentTime: 0 });
       } else {
         this.setState({ queueIndex: idx });
       }
@@ -397,11 +402,11 @@ export class Player extends React.Component {
     if (this.state.sonos) {
       skipSonosTo(idx);
     } else {
+      if (this.currentPlayer.current) {
+        this.currentPlayer.current.pause();
+      }
       if (idx < 0 || idx >= this.state.queue.length) {
-        if (this.currentPlayer.current) {
-          this.currentPlayer.current.pause();
-          this.setState({ queueIndex: 0, currentTime: 0 });
-        }
+        this.setState({ queueIndex: 0, currentTime: 0 });
       } else {
         this.setState({ queueIndex: idx });
       }
@@ -450,16 +455,25 @@ export class Player extends React.Component {
     }
   }
 
-  onTrackEnd() {
-    console.debug('onTrackEnd');
+  onTrackEnd(evt) {
+    console.debug('onTrackEnd %o', evt.nativeEvent);
     const idx = this.state.queueIndex + 1;
     if (idx >= this.state.queue.length) {
       this.currentPlayer.current.pause();
       this.setState({ queueIndex: 0 });
     } else {
       if (this.nextPlayer.current) {
+        if (this.currentPlayer.current) {
+          console.debug('swapping current src');
+          const track = this.state.queue[idx];
+          this.currentPlayer.current.currentTime = 0;
+          this.currentPlayer.current.src = this.trackUrl(track);
+          this.currentPlayer.current.play();
+        }
+        /*
         this.nextPlayer.current.volume = this.state.volume / 100;
         this.nextPlayer.current.play();
+        */
       }
       this.setState({ queueIndex: idx });
     }
@@ -478,6 +492,8 @@ export class Player extends React.Component {
   componentDidUpdate(prevProps, prevState) {
     if (!this.state.sonos && this.state.status === 'PLAYING') {
       if (this.currentPlayer.current) {
+        //this.currentPlayer.current.volume = this.state.volume / 100;
+        //this.currentPlayer.current.play();
         const prevTrack = prevState.queue[prevState.queueIndex];
         const track = this.state.queue[this.state.queueIndex];
         if (prevTrack !== track) {
@@ -518,19 +534,27 @@ export class Player extends React.Component {
     }
     return (
       <audio
-        key={track.persistent_id}
-        ref={this.currentPlayer}
+        key="current"
+        ref={node => {
+          if (node !== null) {
+            if (this.currentPlayer.current !== node) {
+              console.log("current audio node changing! %o => %o", node, this.currentPlayer.current);
+            }
+            this.currentPlayer.current = node;
+          }
+        }}
         src={this.trackUrl(track)}
         volume={this.state.volume / 100.0}
         onCanPlay={evt => { evt.target.volume = this.state.volume / 100; this.state.status === 'PLAYING' && evt.target.play(); }}
         onDurationChange={evt => this.setState({ duration: Math.round(evt.target.duration * 1000) })}
         onEnded={this.onTrackEnd}
         onPlaying={evt => this.setState({ status: 'PLAYING' })}
-        onPause={() => this.setState({ status: 'PAUSED' })}
         onTimeUpdate={this.onTimeUpdate}
         onVolumeChange={evt => this.setState({ volume: Math.round(100 * evt.target.volume) })}
       />
     );
+        //onPause={evt => { console.debug('paused! %o', evt.nativeEvent); this.setState({ status: 'PAUSED' }); }}
+        //key={track.persistent_id}
   }
 
   renderNextAudio() {
@@ -543,12 +567,13 @@ export class Player extends React.Component {
     }
     return (
       <audio
-        key={track.persistent_id}
+        key="preload"
         ref={this.nextPlayer}
         src={this.trackUrl(track)}
         preload="auto"
       />
     );
+        //key={track.persistent_id}
   }
 
   render() {

@@ -56,6 +56,7 @@ export class NowPlaying extends React.Component {
           <TrackInfo track={track} />
           <PlayPauseSkip
             className="controls"
+            size={24}
             paused={this.props.status !== 'PLAYING'}
             onPlay={this.props.onPlay}
             onPause={this.props.onPause}
@@ -110,6 +111,7 @@ export class NowPlaying extends React.Component {
         <TrackInfo track={track} />
         <PlayPauseSkip
           className="controls"
+          size={18}
           paused={this.props.status !== 'PLAYING'}
           onPlay={this.props.onPlay}
           onPause={this.props.onPause}

@@ -41,7 +41,7 @@ export class GenreList extends React.Component {
   }
 
   genreImageUrl(genre) {
-    return `/api/genreArt?genre=${genre}`;
+    return `/api/genreArt?genre=${escape(genre)}`;
   }
 
   render() {

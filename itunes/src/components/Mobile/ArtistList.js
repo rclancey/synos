@@ -29,7 +29,7 @@ export class ArtistList extends React.Component {
   loadArtists() {
     let url = '/api/index/artists';
     if (this.props.genre) {
-      url += `?genre=${this.props.genre}`
+      url += `?genre=${escape(this.props.genre)}`
     }
     return fetch(url, { method: 'GET' })
       .then(resp => resp.json())

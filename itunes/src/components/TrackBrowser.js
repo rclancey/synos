@@ -182,6 +182,50 @@ export class TrackBrowser extends React.Component {
     return new Promise(resolve => this.setState({ tracks }, resolve));
   }
 
+  limitFilters(tracks, name) {
+    const genreSet = {};
+    const albumSet = {};
+    const artistSet = {};
+    const filterSet = {};
+    if (name === 'Genres') {
+      tracks.forEach(track => {
+        if (track.genre) {
+          filterSet[track.genre] = true;
+        }
+      });
+    } else if (name === 'Albums') {
+      tracks.forEach(track => {
+        if (track.album) {
+          filterSet[track.album] = true;
+        }
+      });
+    } else if (name === 'Artists') {
+      tracks.forEach(track => {
+        if (track.artist) {
+          filterSet[track.artist] = true;
+        }
+        if (track.album_artist) {
+          filterSet[track.album_artist] = true;
+        }
+        /*
+        if (track.composer) {
+          filterSet[track.composer] = true;
+        }
+        */
+      });
+    }
+    const setToFilter = (set, name) => {
+      const rows = _.sortBy(
+          Object.keys(set).filter(v => !!v && v.trim() !== ''),
+          [stringSorter]
+        )
+        .map(v => { return { name: v, val: v.toLowerCase() } });
+      rows.unshift({ name: `All (${rows.length} ${name})`, val: null });
+      return rows;
+    };
+    return setToFilter(filterSet, name);
+  }
+
   searchTracks() {
     let searched;
     if (!this.props.search) {
@@ -197,54 +241,26 @@ export class TrackBrowser extends React.Component {
       ];
       searched = this.state.tracks.filter(track => keys.some(key => (track[key] && track[key].match(query))));
     }
-    const genreSet = {};
-    const albumSet = {};
-    const artistSet = {};
-    searched.forEach(track => {
-      if (track.genre) {
-        genreSet[track.genre] = true;
-      }
-      if (track.album) {
-        albumSet[track.album] = true;
-      }
-      if (track.artist) {
-        artistSet[track.artist] = true;
-      }
-      if (track.album_artist) {
-        artistSet[track.album_artist] = true;
-      }
-      /*
-      if (track.composer) {
-        artistSet[track.composer] = true;
-      }
-      */
-    });
-    const setToFilter = (set, name) => {
-      const rows = _.sortBy(
-          Object.keys(set).filter(v => !!v && v.trim() !== ''),
-          [stringSorter]
-        )
-        .map(v => { return { name: v, val: v.toLowerCase() } });
-      rows.unshift({ name: `All (${rows.length} ${name})`, val: null });
-      return rows;
-    };
-    const genres = setToFilter(genreSet, 'Genres');
-    const albums = setToFilter(albumSet, 'Albums');
-    const artists = setToFilter(artistSet, 'Artists');
+    //const genres = this.limitFilters(searched, 'Genres');
+    //const albums = this.limitFilters(searched, 'Albums');
+    //const artists = this.limitFilters(searched, 'Artists');
     return new Promise(resolve => this.setState({
       searched,
-      genres,
-      albums,
-      artists,
+      //genres,
+      //albums,
+      //artists,
     }, resolve));
   }
 
   filterTracks() {
     let filtered = this.state.searched;
+    const genres = this.limitFilters(filtered, 'Genres');
     filtered = this.filterTracksByItem(filtered, 'genre');
-    filtered = this.filterTracksByItem(filtered, 'album');
+    const artists = this.limitFilters(filtered, 'Artists');
     filtered = this.filterTracksByItem(filtered, 'artist', ['artist', 'album_artist', 'composer']);
-    this.setState({ filtered });
+    const albums = this.limitFilters(filtered, 'Albums');
+    filtered = this.filterTracksByItem(filtered, 'album');
+    this.setState({ filtered, genres, albums, artists });
   }
 
   filterTracksByItem(tracks, kind, keys) {

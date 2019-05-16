@@ -50,18 +50,18 @@ export const PlayButton = ({ size, onPlay }) => (
 );
 
 export const PauseButton = ({ size, onPause }) => {
-  const sz = parseSize(sz, 24);
+  const sz = parseSize(size, 24);
   const style = {
     width: `${sz.v / 4}${sz.u}`,
     height: `${sz.v * 2 / root3}${sz.u}`,
     borderLeftStyle: 'solid',
     borderLeftColor: '#444',
-    borderLeftWidth: `${sz.v / 4}${sz.u}`,
+    borderLeftWidth: `${sz.v * 7 / 24}${sz.u}`,
     borderRightStyle: 'solid',
     borderRightColor: '#444',
-    borderRightWidth: `${sz.v / 4}${sz.u}`,
-    marginLeft: `${sz.v / 8}${sz.u}`,
-    marginRight: `${sz.v / 8}${sz.u}`,
+    borderRightWidth: `${sz.v * 7 / 24}${sz.u}`,
+    marginLeft: `${sz.v / 12}${sz.u}`,
+    marginRight: `${sz.v / 12}${sz.u}`,
   };
   return (
     <div style={style} className="pause" onClick={onPause} />
@@ -82,6 +82,7 @@ export class Seeker extends React.Component {
       seeking: false,
     };
     this.div = React.createRef();
+    this.interval = null;
     this.beginSeek = this.beginSeek.bind(this);
   }
 
@@ -91,6 +92,10 @@ export class Seeker extends React.Component {
     if (this.state.seeking) {
       return false;
     } 
+    if (this.interval !== null) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
     if (evt.type == 'mousedown') {
       document.addEventListener('mouseup', () => this.setState({ seeking: false }), { once: true });
     } else if (evt.type == 'touchstart') { 
@@ -106,6 +111,7 @@ export class Seeker extends React.Component {
           } 
         } else {
           clearInterval(this.interval);
+          this.interval = null;
           if (t < 250) {
             this.props.onSkip();
           } 

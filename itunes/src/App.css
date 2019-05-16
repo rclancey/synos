@@ -236,6 +236,7 @@ body {
 .desktop .columnBrowser {
   background-color: #f5f5f5;
   border-right: solid #ccc 1px;
+  overflow: hidden;
 }
 
 .desktop .columnBrowser .ReactVirtualized__Table__headerColumn {
@@ -303,6 +304,45 @@ body {
   padding-bottom: 3px;
 }
 */
+
+.desktop .airplayMenu .item {
+    display: flex;
+}
+
+.desktop .airplayMenu .item .icon {
+    flex: 1;
+    width: 18px;
+    min-width: 18px;
+    max-width: 18px;
+    height: 18px;
+    margin-right: 1em;
+    background-size: cover;
+}
+
+.desktop .airplayMenu .item .title {
+    flex: 10;
+    font-size: 13px;
+}
+
+.desktop .airplayMenu .item .checkbox {
+    flex: 1;
+}
+
+.icon.sonos {
+    background-image: url('icons/sonos.png');
+}
+
+.icon.appletv {
+    background-image: url('icons/appletv.png');
+}
+
+.icon.computer {
+    background-image: url('icons/computer.png');
+}
+
+.icon.airplay {
+    background-image: url('icons/airplay.png');
+}
 
 .icon.artists {
   background-image: url('icons/artists.png');
@@ -856,7 +896,8 @@ body {
     color: #ff2d55;
 }
 
-.artistList .items {
+.artistList .items,
+.albumList .items {
     height: calc(100vh - 116px);
 }
 
@@ -871,18 +912,19 @@ body {
 
 .artistList .item .artistImage {
     flex: 1;
-    width: 36px;
-    min-width: 36px;
-    max-width: 36px;
-    height: 36px;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    margin-top: -2px;
     box-sizing: border-box;
-    border: solid transparent 1px;
+    border: solid transparent 0px;
     border-radius: 50%;
     background-color: #868b95;
     /*
     background: linear-gradient(#a5aab6, #868b95);
     */
-    background-size: 24px 24px;
+    background-size: cover;
     background-repeat: no-repeat;
     background-position: 50%;
 }
@@ -1290,6 +1332,13 @@ body {
   padding-top: 5px;
 }
 
+.mobile .nowplaying .controls .rewind,
+.mobile .nowplaying .controls .ffwd {
+    padding-top: 3px;
+    margin-left: 1em;
+    margin-right: 1em;
+}
+
 .mobile .nowplaying.big .controls {
     display: flex;
     flex-direction: row;
@@ -1300,14 +1349,24 @@ body {
 }
 
 .mobile .nowplaying.big .controls .rewind {
+    /*
     flex: 10;
     text-align: right;
     padding-right: 1em;
+    */
+    padding-top: 5px;
+    margin-left: auto;
+    touch-action: none;
 }
 
 .mobile .nowplaying.big .controls .ffwd {
+    /*
     flex: 10;
     padding-left: 1em;
+    */
+    padding-top: 5px;
+    margin-right: auto;
+    touch-action: none;
 }
 
 .mobile .nowplaying.big .volume {
@@ -1316,9 +1375,11 @@ body {
     width: 100%;
 }
 
+/*
 .mobile .nowplaying .controls>div {
   padding: 5px;
 }
+*/
 
 .mobile .nowplaying .progressContainer {
   flex: 1;
