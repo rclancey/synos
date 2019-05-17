@@ -881,14 +881,18 @@ body {
     border-bottom: solid #ccc 1px;
 }
 
-.artistList {
+.artistList,
+.albumList,
+.genreList {
     width: 100vw;
     height: 100vh;
     box-sizing: border-box;
     overflow: hidden;
 }
 
-.artistList .index {
+.artistList .index,
+.albumList .index,
+.genreList .index {
     position: fixed;
     z-index: 3;
     right: 5px;
@@ -897,11 +901,13 @@ body {
 }
 
 .artistList .items,
-.albumList .items {
-    height: calc(100vh - 116px);
+.albumList .items,
+.genreList .items {
+    height: calc(100vh - 185px);
 }
 
-.artistList .item {
+.artistList .item,
+.genreList .item {
     display: flex;
     padding: 9px 9px 0px 9px;
     height: 58px;
@@ -910,7 +916,8 @@ body {
     overflow: hidden;
 }
 
-.artistList .item .artistImage {
+.artistList .item .artistImage,
+.genreList .item .genreImage {
     flex: 1;
     width: 44px;
     min-width: 44px;
@@ -919,7 +926,6 @@ body {
     margin-top: -2px;
     box-sizing: border-box;
     border: solid transparent 0px;
-    border-radius: 50%;
     background-color: #868b95;
     /*
     background: linear-gradient(#a5aab6, #868b95);
@@ -929,7 +935,16 @@ body {
     background-position: 50%;
 }
 
-.artistList .item .title {
+.artistList .item .artistImage {
+  border-radius: 50%;
+}
+
+.genreList .item .genreImage {
+  border-radius: 5px;
+}
+
+.artistList .item .title,
+.genreList .item .title {
     flex: 10;
     font-size: 18px;
     padding: 9px 9px 18px 9px;
@@ -975,7 +990,7 @@ body {
 
 .songList {
     width: 100vw;
-    height: 100vh;
+    height: calc(100vh - 69px);
     box-sizing: border-box;
     overflow: hidden;
 }
@@ -1052,7 +1067,7 @@ body {
 }
 
 .songList .items {
-    height: calc(100vh - 204px);
+    height: calc(100vh - 273px);
 }
 
 .songList .item {
