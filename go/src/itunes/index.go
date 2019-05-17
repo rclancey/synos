@@ -205,6 +205,9 @@ var spaces = regexp.MustCompile(`\s+`)
 var nums = regexp.MustCompile(`(\D*)(\d*)`)
 
 func MakeKey(v string) string {
+	if v == "" {
+		return ""
+	}
 	s := strings.ToLower(v)
 	if strings.Contains(s, " feat ") {
 		s = strings.Split(s, " feat ")[0]
@@ -312,12 +315,13 @@ func IndexAlbums(lib *Library) map[AlbumKey][][2]string {
 }
 
 type SongKey struct {
+	Genre string
 	Artist string
 	Album string
 }
 
 func (sk SongKey) MarshalText() ([]byte, error) {
-	return []byte(fmt.Sprintf("<%s,%s>", sk.Artist, sk.Album)), nil
+	return []byte(fmt.Sprintf("<%s,%s,%s>", sk.Genre, sk.Artist, sk.Album)), nil
 }
 
 type sortableAlbum []*Track
@@ -359,37 +363,55 @@ func (sa sortableAlbum) Less(i, j int) bool {
 	return strings.Compare(an, bn) < 0
 }
 
+type keyCache map[string]string
+
+func (c keyCache) Get(v string) string {
+	k, ok := c[v]
+	if !ok {
+		k = MakeKey(v)
+		c[v] = k
+	}
+	return k
+}
+
 func IndexSongs(lib *Library) map[SongKey][]*Track {
 	songIdx := map[SongKey][]*Track{}
-	var art, alb string
-	var artp, albp *string
+	var gen, art, alb string
+	var genp, artp, albp *string
 	var k SongKey
 	var used map[SongKey]bool
 	var ts []*Track
 	var ok bool
 	es := ""
+	cache := keyCache{}
 	for _, t := range lib.Tracks {
-		used = map[SongKey]bool{SongKey{"", ""}: true}
+		used = map[SongKey]bool{SongKey{"", "", ""}: true}
 		for _, albp = range []*string{t.Album, t.SortAlbum, &es} {
 			if albp == nil {
 				continue
 			}
-			alb = MakeKey(*albp)
+			alb = cache.Get(*albp)
 			for _, artp = range []*string{t.Artist, t.SortArtist, t.AlbumArtist, t.SortAlbumArtist, &es} {
 				if artp == nil {
 					continue
 				}
-				art = MakeKey(*artp)
-				k = SongKey{art, alb}
-				if _, ok = used[k]; ok {
-					continue
+				art = cache.Get(*artp)
+				for _, genp = range []*string{t.Genre, &es} {
+					if genp == nil {
+						continue
+					}
+					gen = cache.Get(*genp)
+					k = SongKey{gen, art, alb}
+					if _, ok = used[k]; ok {
+						continue
+					}
+					used[k] = true
+					ts, ok = songIdx[k]
+					if !ok {
+						ts = []*Track{}
+					}
+					songIdx[k] = append(ts, t)
 				}
-				used[k] = true
-				ts, ok = songIdx[k]
-				if !ok {
-					ts = []*Track{}
-				}
-				songIdx[k] = append(ts, t)
 			}
 		}
 	}

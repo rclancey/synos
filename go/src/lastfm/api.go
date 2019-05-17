@@ -56,6 +56,9 @@ func (c *LastFM) cacheGet(url string) (*http.Response, error) {
 	if st, err := os.Stat(fn); err == nil {
 		if time.Now().Sub(st.ModTime()) < c.maxCacheTime {
 			f, err := os.Open(fn)
+			if f != nil {
+				defer f.Close()
+			}
 			if err == nil {
 				rd := bufio.NewReader(f)
 				log.Printf("using cached response from %s for %s\n", fn, url)

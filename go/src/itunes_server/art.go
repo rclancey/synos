@@ -13,9 +13,6 @@ import (
 	"itunes"
 )
 
-func GenreArt(q http.ResponseWriter, req *http.Request) {
-}
-
 var genreImages = map[string]string{
 	"alternative": "electric-guitar.jpg",
 	"ambient": "roland-303.jpg",
@@ -38,7 +35,7 @@ var genreImages = map[string]string{
 	"disco": "disco-ball.jpg",
 	"easylistening": "crooner.jpg",
 	"electronic": "roland-303.jpg",
-	"emo": "buitar.jpg",
+	"emo": "guitar.jpg",
 	"folk": "folk.jpg",
 	"funk": "",
 	"generalalternative": "electric-guitar.jpg",
@@ -112,9 +109,10 @@ func GetGenreImageURL(tr *itunes.Track) (string, error) {
 
 func ArtistArt(w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
+	genre := itunes.MakeKey(q.Get("genre"))
 	artist := itunes.MakeKey(q.Get("artist"))
 	album := itunes.MakeKey("")
-	key := itunes.SongKey{artist, album}
+	key := itunes.SongKey{genre, artist, album}
 	tracks := lib.SongIndex[key]
 	if tracks == nil || len(tracks) == 0 {
 		log.Printf("no tracks (%s) for %#v\n", tracks, key)
@@ -185,6 +183,7 @@ func GetArtistImageFilename(tr *itunes.Track) (string, error) {
 }
 
 func GetGenericCoverFilename() (string, error) {
+	return "", nil
 	finder := cfg.FileFinder()
 	fn := filepath.Join(os.Getenv("HOME"), "Music", "iTunes", "nocover.jpg")
 	return finder.FindFile(fn)
@@ -255,9 +254,10 @@ func GetAlbumArtFilename(tr *itunes.Track) (string, error) {
 
 func AlbumArt(w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
+	genre := itunes.MakeKey(q.Get("genre"))
 	artist := itunes.MakeKey(q.Get("artist"))
 	album := itunes.MakeKey(q.Get("album"))
-	tracks := lib.SongIndex[itunes.SongKey{artist, album}]
+	tracks := lib.SongIndex[itunes.SongKey{genre, artist, album}]
 	if tracks == nil || len(tracks) == 0 {
 		NotFound.Raise(nil, "No such album").Respond(w)
 		return
@@ -266,9 +266,11 @@ func AlbumArt(w http.ResponseWriter, req *http.Request) {
 	for _, tr := range tracks {
 		fn, err := GetAlbumArtFilename(tr)
 		if err == nil {
+			log.Println("serving album art image", fn)
 			http.ServeFile(w, req, fn)
 			return
 		}
+		log.Println("error getting album art:", err)
 		/*
 		if fn != "" && nofn == "" {
 			nofn = fn
@@ -284,4 +286,19 @@ func AlbumArt(w http.ResponseWriter, req *http.Request) {
 	}
 	NotFound.Raise(nil, "no cover art found").Respond(w)
 	*/
+}
+
+func GenreArt(w http.ResponseWriter, req *http.Request) {
+	q := req.URL.Query()
+	genre := itunes.MakeKey(q.Get("genre"))
+	re := regexp.MustCompile(`[^A-Za-z0-9_]`)
+	bn := re.ReplaceAllString(genre, "")
+	img, ok := genreImages[bn]
+	if ok {
+		if img != "" {
+			http.Redirect(w, req, "/" + img, http.StatusFound)
+			return
+		}
+	}
+	http.Redirect(w, req, "/piano.jpg", http.StatusFound)
 }

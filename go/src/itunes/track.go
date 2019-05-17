@@ -245,10 +245,12 @@ func (t *Track) Path() string {
 func (t *Track) getTag() (tag.Metadata, error) {
 	fn := t.Path()
 	f, err := os.Open(fn)
+	if f != nil {
+		defer f.Close()
+	}
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 	m, err := tag.ReadFrom(f)
 	if err != nil {
 		return nil, err

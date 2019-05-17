@@ -65,6 +65,9 @@ func NewLibrary(finder *FileFinder) *Library {
 
 func (lib *Library) Load(fn string) error {
 	f, err := os.Open(fn)
+	if f != nil {
+		defer f.Close()
+	}
 	if err != nil {
 		log.Println("error opening file", err.Error())
 		return err

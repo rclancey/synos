@@ -93,6 +93,7 @@ func main() {
 	//mux.HandleFunc("/api/art/genre", GenreArt)
 	mux.HandleFunc("/api/art/artist", ArtistArt)
 	mux.HandleFunc("/api/art/album", AlbumArt)
+	mux.HandleFunc("/api/art/genre", GenreArt)
 	mux.HandleFunc("/api/trackCount", TrackCount)
 	mux.HandleFunc("/api/tracks", ListTracks)
 	mux.HandleFunc("/api/track/", GetTrack)

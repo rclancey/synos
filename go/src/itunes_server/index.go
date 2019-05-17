@@ -217,7 +217,8 @@ func ListAlbumsWithArtist(w http.ResponseWriter, req *http.Request) {
 		}
 		k := [2]string{
 			itunes.MakeKey(*tr.Album),
-			itunes.MakeKey(*tr.Artist),
+			itunes.MakeKey(art),
+			//itunes.MakeKey(*tr.Artist),
 		}
 		if _, ok := seen[k]; ok {
 			continue
@@ -272,9 +273,10 @@ func (sa sortableAlbum) Less(i, j int) bool {
 
 func ListSongs(w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
+	genre := itunes.MakeKey(q.Get("genre"))
 	artist := itunes.MakeKey(q.Get("artist"))
 	album := itunes.MakeKey(q.Get("album"))
-	log.Println("artist:", artist, "album:", album)
+	log.Println("genre:", genre, "artist:", artist, "album:", album)
 	/*
 	tracks := []*itunes.Track{}
 	for _, t := range lib.Tracks {
@@ -285,5 +287,5 @@ func ListSongs(w http.ResponseWriter, req *http.Request) {
 	sort.Sort(sortableAlbum(tracks))
 	SendJSON(w, tracks)
 	*/
-	SendJSON(w, lib.SongIndex[itunes.SongKey{artist, album}])
+	SendJSON(w, lib.SongIndex[itunes.SongKey{genre, artist, album}])
 }

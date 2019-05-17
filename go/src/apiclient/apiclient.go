@@ -147,6 +147,9 @@ func (c *APIClient) loadFromCache(req *http.Request) (*http.Response, error) {
 		return nil, nil
 	}
 	f, err := os.Open(fn)
+	if f != nil {
+		defer f.Close()
+	}
 	if err != nil {
 		log.Println("error opening cache file:", err)
 		return nil, err
