@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var pidType = reflect.TypeOf(PersistentID(0))
+
 func SetField(s interface{}, key[]byte, kind string, val []byte) bool {
 	k := strings.Replace(string(key), " ", "", -1)
 	v := string(val)
@@ -33,6 +35,18 @@ func SetField(s interface{}, key[]byte, kind string, val []byte) bool {
 					pval.Elem().SetInt(int64(iv))
 				}
 			}
+		case reflect.Uint64:
+			var base int
+			if f.Type().Elem() == pidType {
+				base = 16
+			} else {
+				base = 10
+			}
+			uv, err := strconv.ParseUint(v, base, 64)
+			if err != nil {
+				return false
+			}
+			pval.Elem().SetUint(uv)
 		case reflect.String:
 			if kind == "string" {
 				pval.Elem().SetString(v)
@@ -41,14 +55,14 @@ func SetField(s interface{}, key[]byte, kind string, val []byte) bool {
 			vi := f.Interface()
 			//fmt.Printf("default for %s (%s) %T\n", string(key), kind, vi)
 			switch vi.(type) {
-			case *TrackTime:
+			case *Time:
 				//fmt.Println("field is time")
 				t, err := time.Parse("2006-01-02T15:04:05Z", v)
 				if err != nil {
 					//fmt.Printf("can't parse '%s' as a time: %s\n", v, err)
 					return false
 				}
-				pval.Elem().Set(reflect.ValueOf(TrackTime(t)))
+				pval.Elem().Set(reflect.ValueOf(Time{t}))
 			default:
 				//fmt.Println("field is not a time")
 				return false
@@ -69,9 +83,26 @@ func SetField(s interface{}, key[]byte, kind string, val []byte) bool {
 		*/
 		f.Set(pval)
 		return true
+	case reflect.Uint64:
+		var base int
+		if f.Type() == pidType {
+			base = 16
+		} else {
+			base = 10
+		}
+		uv, err := strconv.ParseUint(v, base, 64)
+		if err != nil {
+			return false
+		}
+		f.SetUint(uv)
 	case reflect.Slice:
 		if kind == "data" {
-			f.SetBytes(val)
+			bval, err := decodeb64(val)
+			if err != nil {
+				f.SetBytes(val)
+			} else {
+				f.SetBytes(bval)
+			}
 		}
 		return true
 	}

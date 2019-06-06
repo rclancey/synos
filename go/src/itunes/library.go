@@ -6,60 +6,35 @@ import (
 	"io"
 	//"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
-	"sort"
+	//"sort"
 	"strings"
-	"time"
+	//"time"
 )
 
-type SortableTrackList []*Track
-
-func (stl SortableTrackList) Len() int { return len(stl) }
-func (stl SortableTrackList) Swap(i, j int) { stl[i], stl[j] = stl[j], stl[i] }
-func (stl SortableTrackList) Less(i, j int) bool {
-	a := stl[i]
-	b := stl[j]
-	at := a.ModDate()
-	bt := b.ModDate()
-	return at.Before(bt)
-}
-
 type Library struct {
-	FileName string
+	FileName *string
 	MajorVersion *int
 	MinorVersion *int
 	ApplicationVersion *string
-	Date *time.Time
+	Date *Time
 	Features *int
 	ShowContentRatings *bool
-	LibraryPersistentID *string
+	PersistentID PersistentID
 	MusicFolder *string
-	Tracks map[string]*Track
-	TrackList []*Track
-	Playlists []*Playlist
-	TrackIDIndex *TrackIDIndex
-	TrackLocIndex map[string]*Track
-	TrackIndex *TrackIndex
-	PlaylistIDIndex map[string]*Playlist
-	LastTrackSearch []*Track
-	LastPlaylistSearch []*Playlist
-	CurrentPlaylist *Playlist
-	GenreIndex [][2]string
-	ArtistIndex map[string][][2]string
-	AlbumIndex map[AlbumKey][][2]string
-	SongIndex map[SongKey][]*Track
-	finder *FileFinder
+	Tracks map[PersistentID]*Track
+	Playlists map[PersistentID]*Playlist
+	PlaylistTree []*Playlist
+	trackIDIndex map[int]PersistentID
 }
 
 func NewLibrary(finder *FileFinder) *Library {
 	lib := &Library{}
-	lib.Tracks = make(map[string]*Track)
-	lib.TrackList = []*Track{}
-	lib.Playlists = make([]*Playlist, 0)
-	lib.TrackIDIndex = NewTrackIDIndex()
-	lib.TrackLocIndex = make(map[string]*Track)
-	lib.PlaylistIDIndex = make(map[string]*Playlist)
-	lib.finder = finder
+	lib.Tracks = map[PersistentID]*Track{}
+	lib.Playlists = map[PersistentID]*Playlist{}
+	lib.trackIDIndex = map[int]PersistentID{}
+	lib.PlaylistTree = []*Playlist{}
 	return lib
 }
 
@@ -73,53 +48,22 @@ func (lib *Library) Load(fn string) error {
 		return err
 	}
 	dec := xml.NewDecoder(f)
-	lib.FileName = fn
+	lib.FileName = &fn
 	err = lib.Parse(dec)
+	lib.trackIDIndex = nil
 	if err != nil {
 		log.Println("error parsing file", err.Error())
 		return err
 	}
-	//lib.Index()
-	lib.TrackList = make([]*Track, 0, len(lib.Tracks))
-	for _, t := range lib.Tracks {
-		t.SetFinder(lib.finder)
-		if t.Location != nil && *t.Location != "" {
-			lib.TrackList = append(lib.TrackList, t)
+	if lib.Date == nil {
+		st, err := os.Stat(fn)
+		if err != nil {
+			return err
 		}
+		lib.Date = &Time{}
+		lib.Date.Set(st.ModTime())
 	}
-	sort.Sort(SortableTrackList(lib.TrackList))
 	return nil
-}
-
-func (lib *Library) Index() {
-	log.Println("indexing tracks")
-	lib.TrackIndex = NewTrackIndex()
-	for _, t := range lib.Tracks {
-		lib.TrackIndex.Add(t)
-		/*
-		if t.Location != nil {
-			lib.TrackLocIndex[t.Path()] = t
-		}
-		*/
-	}
-	lib.GenreIndex = IndexGenres(lib)
-	lib.ArtistIndex = IndexArtists(lib)
-	lib.AlbumIndex = IndexAlbums(lib)
-	lib.SongIndex = IndexSongs(lib)
-	/*
-	log.Printf("index: %d / %d\n", lib.TrackIndex.Values(), lib.TrackIndex.Keys())
-	data, err := json.MarshalIndent(map[string]interface{}{
-		"genreIndex": lib.GenreIndex,
-		"artistIndex": lib.ArtistIndex,
-		"albumIndex": lib.AlbumIndex,
-		"songIndex": lib.SongIndex,
-	}, "", "  ")
-	if err != nil {
-		log.Println("error dumping index:", err)
-	} else {
-		ioutil.WriteFile("libIndex.json", data, os.FileMode(0644))
-	}
-	*/
 }
 
 func (lib *Library) Set(key []byte, kind string, val []byte) {
@@ -178,21 +122,10 @@ func (lib *Library) Parse(dec *xml.Decoder) error {
 					if err != nil {
 						return err
 					}
-					/*
-					if track.Protected != nil && *track.Protected {
-						if track.Location != nil {
-							log.Println("skipping protected", *track.Location)
-						}
-					} else {
-					*/
-						if track.PersistentID != nil {
-							lib.Tracks[*track.PersistentID] = track
-							//lib.Tracks = append(lib.Tracks, track)
-							lib.TrackIDIndex.Add(track)
-						}
-					/*
+					lib.Tracks[track.PersistentID] = track
+					if track.TrackID != nil {
+						lib.trackIDIndex[*track.TrackID] = track.PersistentID
 					}
-					*/
 					keyStackSize--
 					tagStackSize--
 				}
@@ -202,6 +135,9 @@ func (lib *Library) Parse(dec *xml.Decoder) error {
 					if err != nil {
 						return err
 					}
+					lib.Playlists[playlist.PlaylistPersistentID] = playlist
+					playlist.Nest(lib)
+					/*
 					if playlist.ParentPersistentID != nil {
 						parent, ok := lib.PlaylistIDIndex[*playlist.ParentPersistentID]
 						if ok {
@@ -216,6 +152,7 @@ func (lib *Library) Parse(dec *xml.Decoder) error {
 					if playlist.PlaylistPersistentID != nil {
 						lib.PlaylistIDIndex[*playlist.PlaylistPersistentID] = playlist
 					}
+					*/
 					keyStackSize--
 					tagStackSize--
 				}
@@ -262,13 +199,14 @@ func (lib *Library) ParseTrack(dec *xml.Decoder, id []byte) (*Track, error) {
 
 func (lib *Library) ParsePlaylist(dec *xml.Decoder) (*Playlist, error) {
 	playlist := &Playlist{}
-	err := playlist.Parse(dec, lib.TrackIDIndex)
+	err := playlist.Parse(dec, lib)
 	if err != nil {
 		return nil, err
 	}
 	if playlist.Folder != nil && *playlist.Folder {
-		playlist.PlaylistItems = []*Track{}
+		playlist.TrackIDs = nil
 	}
+	playlist.MakeSmart()
 	return playlist, nil
 }
 
@@ -278,14 +216,13 @@ func (lib *Library) FindPlaylists(name string) []*Playlist {
 		if p.Name != nil && *p.Name == name {
 			playlists = append(playlists, p)
 		}
-		playlists = append(playlists, p.FindByName(name)...)
 	}
 	return playlists
 }
 
 func (lib *Library) GetPlaylistByPath(path string) *Playlist {
 	parts := strings.Split(path, "/")
-	for _, p := range lib.Playlists {
+	for _, p := range lib.PlaylistTree {
 		if p.Name != nil {
 			if *p.Name == path {
 				return p
@@ -301,11 +238,28 @@ func (lib *Library) GetPlaylistByPath(path string) *Playlist {
 	return nil
 }
 
-func (lib *Library) FindTracks(query []string) []*Track {
-	return lib.TrackIndex.Search(strings.Join(query, " "))
+func (lib *Library) CreatePlaylist(name string, parentId *PersistentID) *Playlist {
+	tru := true
+	p := &Playlist{
+		PlaylistPersistentID: PersistentID(rand.Uint64()),
+		ParentPersistentID: parentId,
+		Name: &name,
+		AllItems: &tru,
+		TrackIDs: []PersistentID{},
+	}
+	lib.Playlists[p.PlaylistPersistentID] = p
+	p.Nest(lib)
+	return nil
 }
 
-func (lib *Library) CreatePlaylist(name string) *Playlist {
-	return nil
+func (lib *Library) TrackList() *TrackList {
+	tracks := make([]*Track, len(lib.Tracks))
+	i := 0
+	for _, tr := range lib.Tracks {
+		tracks[i] = tr
+		i += 1
+	}
+	tl := TrackList(tracks)
+	return &tl
 }
 

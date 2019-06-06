@@ -8,6 +8,8 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"runtime"
+	"runtime/debug"
 	"time"
 
 	"itunes"
@@ -22,6 +24,21 @@ var hub *Hub
 var cfg *SynosConfig
 var lastFm *lastfm.LastFM
 var spot *spotify.SpotifyClient
+
+func debugMem(id string) {
+	runtime.GC()
+	ms := &runtime.MemStats{}
+	runtime.ReadMemStats(ms)
+	log.Println("memstats:", id)
+	log.Println("  HeapAlloc:", ms.HeapAlloc)
+	log.Println("  HeapSys:", ms.HeapSys)
+	log.Println("  HeapIdle:", ms.HeapIdle)
+	log.Println("  HeapInuse:", ms.HeapInuse)
+	log.Println("  HeapReleased:", ms.HeapReleased)
+	log.Println("  HeapObjects:", ms.HeapObjects)
+	log.Println("  StackInuse:", ms.StackInuse)
+	log.Println("  StackSys:", ms.StackSys)
+}
 
 func main() {
 	var err error
@@ -50,26 +67,22 @@ func main() {
 
 	go func() {
 		log.Println("loading library", fn)
+		time.Sleep(time.Duration(5) * time.Second)
+		debugMem("before")
 		err = lib.Load(fn)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		log.Println("library loaded")
-		lib.Index()
-		log.Printf("%d tracks in library\n", len(lib.TrackList))
-		for _, pl := range lib.PlaylistIDIndex {
-			if (pl.Folder == nil || *pl.Folder == false) && pl.SmartInfo != nil && len(pl.SmartInfo) > 0 && pl.SmartCriteria != nil && len(pl.SmartCriteria) > 0 {
-				s, err := itunes.ParseSmartPlaylist(pl.SmartInfo, pl.SmartCriteria)
-				if err != nil {
-					log.Println("bad playlist", *pl.PlaylistPersistentID, err)
-					log.Println("info:", string(pl.SmartInfo))
-					log.Println("criteria:", string(pl.SmartCriteria))
-				} else {
-					pl.Smart = s
-				}
-			}
-		}
+		debugMem("after")
+		lib.Playlists = nil
+		lib.PlaylistTree = nil
+		debugMem("no playlists")
+		lib.Tracks = nil
+		debugMem("no tracks")
+		debug.FreeOSMemory()
+		debugMem("os mem freed")
+		log.Printf("%d tracks in library\n", len(lib.Tracks))
 	}()
 
 	go func() {

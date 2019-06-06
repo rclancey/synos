@@ -5,8 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	//"encoding/json"
+	"errors"
 	"fmt"
 	//"io"
+	"log"
+	"reflect"
 	"strings"
 	"time"
 	"unicode/utf16"
@@ -68,7 +71,6 @@ var fieldTypes = map[Field]FieldType{
 
 	Field(0x23): IntField,
 	Field(0x05): IntField,
-	Field(0x1f): IntField,
 	Field(0x18): IntField,
 	Field(0x16): IntField,
 	Field(0x19): IntField,
@@ -80,7 +82,9 @@ var fieldTypes = map[Field]FieldType{
 	Field(0x0d): IntField,
 	Field(0x0b): IntField,
 	Field(0x07): IntField,
+	Field(0x5a): IntField,
 
+	Field(0x1f): BooleanField,
 	Field(0x25): BooleanField,
 	Field(0x29): BooleanField,
 	Field(0x1d): BooleanField,
@@ -128,6 +132,7 @@ type smartInfo struct {
 	LimitSize uint32
 	CheckedOnly uint8
 	Ascending uint8
+	Padding [98]byte
 }
 
 func (inf *SmartPlaylistInfo) Parse(raw []byte) error {
@@ -150,38 +155,46 @@ func (inf *SmartPlaylistInfo) Parse(raw []byte) error {
 		inf.LimitSize = nil
 		inf.SortField = nil
 	}
-	/*
-	inf.LiveUpdating = (info.LiveUpdating > 0)
-	inf.
-	buf.Seek(1, io.SeekCurrent)
-	binary.Read(buf, binary.BigEndian, &hasLimit)
-	binary.Read(buf, binary.BigEndian, &unitId)
-	binary.Read(buf, binary.BigEndian, &fieldId)
-	binary.Read(buf, binary.BigEndian, &size)
-	binary.Read(buf, binary.BigEndian, &checked)
-	binary.Read(buf, binary.BigEndian, &order)
-	inf.CheckedOnly = (checked == 1)
-	inf.Descending = (order == 1)
-	inf.HasLimit = (hasLimit == 1)
-	inf.LiveUpdating = (liveUpd == 1)
-	if hasLimit == 1 {
-		lm := LimitMethod(unitId)
-		lf := Field(fieldId)
-		sz := int(size)
-		inf.LimitMethod = &lm
-		inf.LimitSize = &sz
-		inf.SortField = &lf
-	} else {
-		inf.LimitMethod = nil
-		inf.LimitSize = nil
-		inf.SortField = nil
-	}
-	*/
 	return nil
 }
 
+func (inf *SmartPlaylistInfo) Encode() ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+	info := &smartInfo{}
+	if inf.LiveUpdating {
+		info.LiveUpdating = 1
+	}
+	if inf.HasLimit {
+		info.HasLimit = 1
+	}
+	if !inf.Descending {
+		info.Ascending = 1
+	}
+	if inf.CheckedOnly {
+		info.CheckedOnly = 1
+	}
+	if inf.HasLimit {
+		if inf.LimitUnit != nil {
+			info.LimitUnit = uint8(*inf.LimitUnit)
+		}
+		if inf.LimitSize != nil {
+			info.LimitSize = uint32(*inf.LimitSize)
+		}
+		if inf.SortField != nil {
+			info.SortField = uint32(*inf.SortField)
+		}
+	}
+	err := binary.Write(buf, binary.BigEndian, info)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 type SmartRule interface {
-	Match(track *Track) bool
+	EncodeHeader([]byte) ([]byte, error)
+	Encode() ([]byte, error)
+	Match(track *Track, lib *Library) bool
 }
 
 type SmartPlaylistCriteria struct {
@@ -189,17 +202,17 @@ type SmartPlaylistCriteria struct {
 	Rules []SmartRule `json:"rules"`
 }
 
-func (r *SmartPlaylistCriteria) Match(track *Track) bool {
+func (r *SmartPlaylistCriteria) Match(track *Track, lib *Library) bool {
 	if r.Conjunction == Conjunction_OR {
 		for _, rule := range r.Rules {
-			if rule != nil && rule.Match(track) {
+			if rule != nil && rule.Match(track, lib) {
 				return true
 			}
 		}
 		return false
 	}
 	for _, rule := range r.Rules {
-		if rule != nil && !rule.Match(track) {
+		if rule != nil && !rule.Match(track, lib) {
 			return false
 		}
 	}
@@ -237,7 +250,8 @@ func (rh RuleHeader) LogicRule() LogicRule {
 type IntRuleData struct {
 	Junk1 [4]byte
 	IntA uint32
-	Junk2 [12]byte
+	RelA int64
+	Junk2 [4]byte
 	BoolB uint32
 	Junk3 [4]byte
 	IntB uint32
@@ -259,18 +273,31 @@ func (ird IntRuleData) Ints() []int64 {
 	return ints
 }
 
-func (ird IntRuleData) Times() []*TrackTime {
+func (ird IntRuleData) Times() []*Time {
 	ints := ird.Ints()
 	if ints[len(ints)-1] == 0 {
 		ints = ints[:len(ints)-1]
 	}
-	times := make([]*TrackTime, len(ints))
+	times := make([]*Time, len(ints))
 	for i, v := range ints {
 		t := time.Unix(v+DateStartFromUnix, 0)
-		tt := TrackTime(t)
-		times[i] = &tt
+		times[i] = &Time{t}
 	}
 	return times
+}
+
+func (ird *IntRuleData) Encode() ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+	err := binary.Write(buf, binary.BigEndian, ird)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (ird *IntRuleData) Decode(data []byte) error {
+	buf := bytes.NewReader(data)
+	return binary.Read(buf, binary.BigEndian, ird)
 }
 
 func (c *SmartPlaylistCriteria) Parse(raw []byte) error {
@@ -317,6 +344,8 @@ func (c *SmartPlaylistCriteria) Parse(raw []byte) error {
 			rule = NewSmartPlaylistCloudRule(ruleHeader, data)
 		case LocationField:
 			rule = NewSmartPlaylistLocationRule(ruleHeader, data)
+		default:
+			return fmt.Errorf("unknown rule type: %d / %s / %s", ruleHeader.FieldId, ruleHeader.Field(), ruleHeader.Field().Type())
 		}
 		//rhd, _ := json.Marshal(ruleHeader)
 		//rd, _ := json.Marshal(rule)
@@ -326,10 +355,153 @@ func (c *SmartPlaylistCriteria) Parse(raw []byte) error {
 	return nil
 }
 
-type SmartPlaylistStringRule struct {
+func (c *SmartPlaylistCriteria) EncodeHeader(value []byte) ([]byte, error) {
+	rh := &RuleHeader{}
+	rh.FieldId = 0
+	rh.LogicSignId = 0
+	rh.LogicRuleId = 1
+	rh.Junk2[0] = 1
+	rh.Length = uint32(len(value))
+	buf := bytes.NewBuffer([]byte{})
+	err := binary.Write(buf, binary.BigEndian, rh)
+	if err != nil {
+		return nil, err
+	}
+	buf.Write(value)
+	return buf.Bytes(), nil
+}
+
+func (c *SmartPlaylistCriteria) Encode() ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+	rsh := &RuleSetHeader{}
+	rsh.Junk1 = [8]byte{83, 76, 115, 116, 0, 1, 0, 1}
+	rsh.RuleCount = uint32(len(c.Rules))
+	rsh.ConjunctionId = uint32(c.Conjunction)
+	err := binary.Write(buf, binary.BigEndian, rsh)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range c.Rules {
+		if r == nil {
+			return nil, errors.New("nil rule")
+		}
+		data, err := r.Encode()
+		if err != nil {
+			return nil, err
+		}
+		data, err = r.EncodeHeader(data)
+		if err != nil {
+			return nil, err
+		}
+		_, err = buf.Write(data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return buf.Bytes(), nil
+}
+
+type SmartPlaylistCommonRule struct {
 	Field Field `json:"field"`
 	Sign LogicSign `json:"sign"`
 	Operator LogicRule `json:"operator"`
+	idx []int
+}
+
+func NewSmartPlaylistCommonRule(ruleHeader *RuleHeader, value []byte) SmartPlaylistCommonRule {
+	return SmartPlaylistCommonRule{
+		Field: ruleHeader.Field(),
+		Sign: ruleHeader.LogicSign(),
+		Operator: ruleHeader.LogicRule(),
+		idx: nil,
+	}
+}
+
+func (r SmartPlaylistCommonRule) EncodeHeader(value []byte) ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+	rh := &RuleHeader{}
+	rh.FieldId = uint32(r.Field)
+	rh.LogicSignId = uint8(r.Sign)
+	rh.LogicRuleId = uint16(r.Operator)
+	rh.Length = uint32(len(value))
+	err := binary.Write(buf, binary.BigEndian, rh)
+	if err != nil {
+		return nil, err
+	}
+	_, err = buf.Write(value)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (r SmartPlaylistCommonRule) GetField(track *Track, kind reflect.Kind, typ reflect.Type) (reflect.Value, error) {
+	if r.idx == nil {
+		r.idx = []int{-1}
+		fn := r.Field.String()
+		rt := reflect.TypeOf(Track{})
+		n := rt.NumField()
+		for i := 0; i < n; i++ {
+			f := rt.Field(i)
+			ft := f.Type
+			if f.Name == fn || strings.Split(f.Tag.Get("json"), ",")[0] == fn {
+				if typ != nil {
+					if typ.Kind() != reflect.Ptr && ft.Kind() == reflect.Ptr {
+						ft = ft.Elem()
+					}
+					if ft == typ {
+						r.idx = f.Index
+					} else {
+						return reflect.Value{}, fmt.Errorf("field %s (%s) is not of type %s", fn, f.Name, typ.Name())
+					}
+				} else {
+					if ft.Kind() == reflect.Ptr {
+						ft = ft.Elem()
+					}
+					if ft.Kind() == kind {
+						r.idx = f.Index
+					} else {
+						return reflect.Value{}, fmt.Errorf("field %s (%s) is not of kind %s", fn, f.Name, kind)
+					}
+				}
+				break
+			}
+		}
+	}
+	if len(r.idx) == 0 || r.idx[0] == -1 {
+		return reflect.Value{}, fmt.Errorf("field %s not found", r.Field)
+	}
+	rv := reflect.ValueOf(*track).FieldByIndex(r.idx)
+	if typ != nil {
+		if rv.Kind() == reflect.Ptr {
+			if typ.Kind() != reflect.Ptr {
+				if rv.IsNil() {
+					rv = reflect.Zero(rv.Type().Elem())
+				} else {
+					rv = rv.Elem()
+				}
+			}
+		}
+		if rv.Type() != typ {
+			return reflect.Value{}, fmt.Errorf("field %s is not of type %s", r.Field, typ.Name())
+		}
+		return rv, nil
+	}
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			rv = reflect.Zero(rv.Type().Elem())
+		} else {
+			rv = rv.Elem()
+		}
+	}
+	if rv.Kind() != kind {
+		return reflect.Value{}, fmt.Errorf("field %s is not of kind %s", r.Field, kind)
+	}
+	return rv, nil
+}
+
+type SmartPlaylistStringRule struct {
+	SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value string `json:"value"`
 }
@@ -347,25 +519,58 @@ func UTF16BytesToString(b []byte, o binary.ByteOrder) string {
     return string(utf16.Decode(utf))
 }
 
+func StringToUTF16Bytes(s string, o binary.ByteOrder) []byte {
+	utf := utf16.Encode([]rune(s))
+	b := make([]byte, len(utf) * 2)
+	for i, u := range utf {
+		o.PutUint16(b[i*2:], u)
+	}
+	return b
+}
+
 func NewSmartPlaylistStringRule(ruleHeader *RuleHeader, value []byte) *SmartPlaylistStringRule {
 	return &SmartPlaylistStringRule{
-		Field: ruleHeader.Field(),
-		Sign: ruleHeader.LogicSign(),
-		Operator: ruleHeader.LogicRule(),
+		SmartPlaylistCommonRule: NewSmartPlaylistCommonRule(ruleHeader, value),
 		RuleType: "string",
 		Value: UTF16BytesToString(value, binary.BigEndian),
 	}
 }
 
-func (r *SmartPlaylistStringRule) Match(track *Track) bool {
-	// TODO
+func (r *SmartPlaylistStringRule) Encode() ([]byte, error) {
+	return StringToUTF16Bytes(r.Value, binary.BigEndian), nil
+}
+
+func (r *SmartPlaylistStringRule) Match(track *Track, lib *Library) bool {
+	rv, err := r.GetField(track, reflect.String, nil)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	switch r.Sign {
+	case LogicSign_INT_POS, LogicSign_STR_POS:
+		return r.basicMatch(rv.String())
+	case LogicSign_INT_NEG, LogicSign_STR_NEG:
+		return !r.basicMatch(rv.String())
+	}
+	return false
+}
+
+func (r *SmartPlaylistStringRule) basicMatch(s string) bool {
+	switch r.Operator {
+	case LogicRule_IS:
+		return strings.ToLower(r.Value) == strings.ToLower(s)
+	case LogicRule_CONTAINS:
+		return strings.Contains(strings.ToLower(s), strings.ToLower(r.Value))
+	case LogicRule_STARTSWITH:
+		return strings.HasPrefix(strings.ToLower(s), strings.ToLower(r.Value))
+	case LogicRule_ENDSWITH:
+		return strings.HasSuffix(strings.ToLower(s), strings.ToLower(r.Value))
+	}
 	return false
 }
 
 type SmartPlaylistIntegerRule struct {
-	Field Field `json:"field"`
-	Sign LogicSign `json:"sign"`
-	Operator LogicRule `json:"operator"`
+	SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Values []int64 `json:"values"`
 }
@@ -375,46 +580,116 @@ func NewSmartPlaylistIntegerRule(ruleHeader *RuleHeader, value []byte) *SmartPla
 	ird := &IntRuleData{}
 	binary.Read(buf, binary.BigEndian, ird)
 	return &SmartPlaylistIntegerRule{
-		Field: ruleHeader.Field(),
-		Sign: ruleHeader.LogicSign(),
-		Operator: ruleHeader.LogicRule(),
+		SmartPlaylistCommonRule: NewSmartPlaylistCommonRule(ruleHeader, value),
 		RuleType: "int",
 		Values: ird.Ints(),
 	}
 }
 
-func (r *SmartPlaylistIntegerRule) Match(track *Track) bool {
-	// TODO
+func (r *SmartPlaylistIntegerRule) Encode() ([]byte, error) {
+	ird := &IntRuleData{}
+	ird.IntA = uint32(r.Values[0])
+	ird.BoolB = 1
+	ird.BoolC = 1
+	if len(r.Values) > 1 {
+		ird.IntB = uint32(r.Values[1])
+		if len(r.Values) > 2 {
+			ird.IntC = uint32(r.Values[2])
+		}
+	} else {
+		ird.IntB = ird.IntA
+	}
+	return ird.Encode()
+}
+
+func (r *SmartPlaylistIntegerRule) Match(track *Track, lib *Library) bool {
+	if len(r.Values) == 0 {
+		return false
+	}
+	rv, err := r.GetField(track, reflect.Int, nil)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	switch r.Sign {
+	case LogicSign_INT_POS, LogicSign_STR_POS:
+		return r.basicMatch(rv.Int())
+	case LogicSign_INT_NEG, LogicSign_STR_NEG:
+		return !r.basicMatch(rv.Int())
+	}
+	return false
+}
+
+func (r *SmartPlaylistIntegerRule) basicMatch(v int64) bool {
+	switch r.Operator {
+	case LogicRule_IS:
+		return v == r.Values[0]
+	case LogicRule_GREATERTHAN:
+		return v > r.Values[0]
+	case LogicRule_LESSTHAN:
+		return v < r.Values[0]
+	case LogicRule_BETWEEN:
+		if len(r.Values) < 2 {
+			return false
+		}
+		return v >= r.Values[0] && v <= r.Values[1]
+	}
 	return false
 }
 
 type SmartPlaylistBooleanRule struct {
-	Field Field `json:"field"`
-	Sign LogicSign `json:"sign"`
-	Operator LogicRule `json:"operator"`
+	SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value bool `json:"value"`
 }
 
 func NewSmartPlaylistBooleanRule(ruleHeader *RuleHeader, value []byte) *SmartPlaylistBooleanRule {
+	buf := bytes.NewReader(value)
+	ird := &IntRuleData{}
+	binary.Read(buf, binary.BigEndian, ird)
 	return &SmartPlaylistBooleanRule{
-		Field: ruleHeader.Field(),
-		Sign: ruleHeader.LogicSign(),
-		Operator: ruleHeader.LogicRule(),
+		SmartPlaylistCommonRule: NewSmartPlaylistCommonRule(ruleHeader, value),
 		RuleType: "bool",
-		Value: true,
+		Value: ird.IntA == 1,
 	}
 }
 
-func (r *SmartPlaylistBooleanRule) Match(track *Track) bool {
-	// TODO
+func (r *SmartPlaylistBooleanRule) Encode() ([]byte, error) {
+	ird := &IntRuleData{}
+	if r.Value {
+		ird.IntA = 1
+		ird.IntB = 1
+	}
+	ird.BoolB = 1
+	ird.BoolC = 1
+	return ird.Encode()
+}
+
+func (r *SmartPlaylistBooleanRule) Match(track *Track, lib *Library) bool {
+	rv, err := r.GetField(track, reflect.Bool, nil)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	switch r.Sign {
+	case LogicSign_INT_POS, LogicSign_STR_POS:
+		return r.basicMatch(rv.Bool())
+	case LogicSign_INT_NEG, LogicSign_STR_NEG:
+		return !r.basicMatch(rv.Bool())
+	}
+	return false
+}
+
+func (r *SmartPlaylistBooleanRule) basicMatch(v bool) bool {
+	switch r.Operator {
+	case LogicRule_IS:
+		return v == r.Value
+	}
 	return false
 }
 
 type SmartPlaylistMediaKindRule struct {
-	Field Field `json:"field"`
-	Sign LogicSign `json:"sign"`
-	Operator LogicRule `json:"operator"`
+	SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value MediaKind `json:"value"`
 }
@@ -424,25 +699,37 @@ func NewSmartPlaylistMediaKindRule(ruleHeader *RuleHeader, value []byte) *SmartP
 	ird := &IntRuleData{}
 	binary.Read(buf, binary.BigEndian, ird)
 	return &SmartPlaylistMediaKindRule{
-		Field: ruleHeader.Field(),
-		Sign: ruleHeader.LogicSign(),
-		Operator: ruleHeader.LogicRule(),
+		SmartPlaylistCommonRule: NewSmartPlaylistCommonRule(ruleHeader, value),
 		RuleType: "media",
 		Value: MediaKind(ird.Ints()[0]),
 	}
 }
 
-func (r *SmartPlaylistMediaKindRule) Match(track *Track) bool {
-	// TODO
+func (r *SmartPlaylistMediaKindRule) Encode() ([]byte, error) {
+	ird := &IntRuleData{}
+	ird.IntA = uint32(r.Value)
+	ird.IntB = ird.IntA
+	ird.BoolB = 1
+	ird.BoolC = 1
+	return ird.Encode()
+}
+
+func (r *SmartPlaylistMediaKindRule) Match(track *Track, lib *Library) bool {
+	mk := track.MediaKind()
+	switch r.Sign {
+	case LogicSign_INT_POS, LogicSign_STR_POS:
+		return mk == r.Value
+	case LogicSign_INT_NEG, LogicSign_STR_NEG:
+		return mk != r.Value
+	}
 	return false
 }
 
 type SmartPlaylistDateRule struct {
-	Field Field `json:"field"`
-	Sign LogicSign `json:"sign"`
-	Operator LogicRule `json:"operator"`
+	SmartPlaylistCommonRule
 	RuleType string `json:"type"`
-	Values []*TrackTime `json:"values"`
+	Values []*Time `json:"values"`
+	Relative int64 `json:"relative"`
 }
 
 func NewSmartPlaylistDateRule(ruleHeader *RuleHeader, value []byte) *SmartPlaylistDateRule {
@@ -450,50 +737,149 @@ func NewSmartPlaylistDateRule(ruleHeader *RuleHeader, value []byte) *SmartPlayli
 	ird := &IntRuleData{}
 	binary.Read(buf, binary.BigEndian, ird)
 	return &SmartPlaylistDateRule{
-		Field: ruleHeader.Field(),
-		Sign: ruleHeader.LogicSign(),
-		Operator: ruleHeader.LogicRule(),
+		SmartPlaylistCommonRule: NewSmartPlaylistCommonRule(ruleHeader, value),
 		RuleType: "date",
 		Values: ird.Times(),
+		Relative: ird.RelA * int64(ird.BoolB) * 1000,
 	}
 }
 
-func (r *SmartPlaylistDateRule) Match(track *Track) bool {
-	// TODO
+func (r *SmartPlaylistDateRule) Encode() ([]byte, error) {
+	ird := &IntRuleData{}
+	if r.Relative != 0 {
+		rel := r.Relative / 1000
+		if rel % (365 * 86400) == 0 {
+			ird.BoolB = 365 * 86400
+			ird.RelA = rel / (365 * 86400)
+		} else if rel % (30 * 86400) == 0 {
+			ird.BoolB = 30 * 86400
+			ird.RelA = rel / (30 * 86400)
+		} else if rel % (7 * 86400) == 0 {
+			ird.BoolB = 7 * 86400
+			ird.RelA = rel / (7 * 86400)
+		} else if rel % 86400 == 0 {
+			ird.BoolB = 86400
+			ird.RelA = rel / 86400
+		} else if rel % 3600 == 0 {
+			ird.BoolB = 3600
+			ird.RelA = rel / 3600
+		} else if rel % 60 == 0 {
+			ird.BoolB = 60
+			ird.RelA = rel / 60
+		} else {
+			ird.BoolB = 1
+			ird.RelA = rel
+		}
+		ird.Junk1 = [4]byte{45, 174, 45, 174}
+		ird.IntA = 766389678
+		ird.Junk3 = [4]byte{45, 174, 45, 174}
+		ird.IntB = 766389678
+	} else {
+		ird.IntA = timeToRuleInt(r.Values[0])
+		ird.BoolB = 1
+		ird.BoolC = 1
+		if len(r.Values) > 1 {
+			ird.IntB = timeToRuleInt(r.Values[1])
+		} else {
+			ird.IntB = timeToRuleInt(r.Values[0])
+		}
+	}
+	return ird.Encode()
+}
+
+func timeToRuleInt(t *Time) uint32 {
+	return uint32(t.Unix() - DateStartFromUnix)
+}
+
+var timeType = reflect.TypeOf(Time{})
+
+func (r *SmartPlaylistDateRule) Match(track *Track, lib *Library) bool {
+	rv, err := r.GetField(track, reflect.Struct, timeType)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	t, ok := rv.Interface().(Time)
+	if !ok {
+		return false
+	}
+	switch r.Sign {
+	case LogicSign_INT_POS, LogicSign_STR_POS:
+		return r.basicMatch(t.Get())
+	case LogicSign_INT_NEG, LogicSign_STR_NEG:
+		return !r.basicMatch(t.Get())
+	}
+	return false
+}
+
+func (r *SmartPlaylistDateRule) basicMatch(v time.Time) bool {
+	switch r.Operator {
+	case LogicRule_IS:
+		return r.Values[0].Equal(v)
+	case LogicRule_GREATERTHAN:
+		return r.Values[0].Before(v)
+	case LogicRule_LESSTHAN:
+		return r.Values[0].After(v)
+	case LogicRule_BETWEEN:
+		if len(r.Values) < 2 {
+			return false
+		}
+		return (r.Values[0].Equal(v) || r.Values[0].Before(v)) && (r.Values[1].Equal(v) || r.Values[0].After(v))
+	case LogicRule_WITHIN:
+		return r.Values[0].Add(time.Duration(r.Relative) * 1e6).Before(v)
+	}
 	return false
 }
 
 type SmartPlaylistPlaylistRule struct {
-	Field Field `json:"field"`
-	Sign LogicSign `json:"sign"`
-	Operator LogicRule `json:"operator"`
+	SmartPlaylistCommonRule
 	RuleType string `json:"type"`
-	Value string `json:"value"`
+	Value PersistentID `json:"value"`
+	tracks map[PersistentID]bool
 }
 
 func NewSmartPlaylistPlaylistRule(ruleHeader *RuleHeader, value []byte) *SmartPlaylistPlaylistRule {
 	buf := bytes.NewReader(value)
 	var id uint64
 	binary.Read(buf, binary.BigEndian, &id)
-	ids := fmt.Sprintf("%016X", id)
 	return &SmartPlaylistPlaylistRule{
-		Field: ruleHeader.Field(),
-		Sign: ruleHeader.LogicSign(),
-		Operator: ruleHeader.LogicRule(),
+		SmartPlaylistCommonRule: NewSmartPlaylistCommonRule(ruleHeader, value),
 		RuleType: "playlist",
-		Value: ids,
+		Value: PersistentID(id),
+		tracks: nil,
 	}
 }
 
-func (r *SmartPlaylistPlaylistRule) Match(track *Track) bool {
-	// TODO
+func (r *SmartPlaylistPlaylistRule) Encode() ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+	err := binary.Write(buf, binary.BigEndian, uint64(r.Value))
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (r *SmartPlaylistPlaylistRule) Match(track *Track, lib *Library) bool {
+	if r.tracks == nil {
+		pl := lib.Playlists[r.Value]
+		r.tracks = map[PersistentID]bool{}
+		if pl != nil {
+			for _, tr := range pl.Populate(lib).PlaylistItems {
+				r.tracks[tr.PersistentID] = true
+			}
+		}
+	}
+	switch r.Sign {
+	case LogicSign_INT_POS, LogicSign_STR_POS:
+		return r.tracks[track.PersistentID]
+	case LogicSign_INT_NEG, LogicSign_STR_NEG:
+		return !r.tracks[track.PersistentID]
+	}
 	return false
 }
 
 type SmartPlaylistLoveRule struct {
-	Field Field `json:"field"`
-	Sign LogicSign `json:"sign"`
-	Operator LogicRule `json:"operator"`
+	SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value LoveStatus `json:"value"`
 }
@@ -503,23 +889,41 @@ func NewSmartPlaylistLoveRule(ruleHeader *RuleHeader, value []byte) *SmartPlayli
 	ird := &IntRuleData{}
 	binary.Read(buf, binary.BigEndian, ird)
 	return &SmartPlaylistLoveRule{
-		Field: ruleHeader.Field(),
-		Sign: ruleHeader.LogicSign(),
-		Operator: ruleHeader.LogicRule(),
-		RuleType: "playlist",
+		SmartPlaylistCommonRule: NewSmartPlaylistCommonRule(ruleHeader, value),
+		RuleType: "love",
 		Value: LoveStatus(ird.IntA),
 	}
 }
 
-func (r *SmartPlaylistLoveRule) Match(track *Track) bool {
-	// TODO
+func (r *SmartPlaylistLoveRule) Encode() ([]byte, error) {
+	ird := &IntRuleData{}
+	ird.IntA = uint32(r.Value)
+	ird.IntB = ird.IntA
+	ird.BoolB = 1
+	ird.BoolC = 1
+	return ird.Encode()
+}
+
+func (r *SmartPlaylistLoveRule) Match(track *Track, lib *Library) bool {
+	var ls LoveStatus
+	if track.Loved == nil {
+		ls = LoveStatus_NONE
+	} else if *track.Loved {
+		ls = LoveStatus_LOVED
+	} else {
+		ls = LoveStatus_DISLIKED
+	}
+	switch r.Sign {
+	case LogicSign_INT_POS, LogicSign_STR_POS:
+		return ls == r.Value
+	case LogicSign_INT_NEG, LogicSign_STR_NEG:
+		return ls != r.Value
+	}
 	return false
 }
 
 type SmartPlaylistCloudRule struct {
-	Field Field `json:"field"`
-	Sign LogicSign `json:"sign"`
-	Operator LogicRule `json:"operator"`
+	SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value ICloudStatus `json:"value"`
 }
@@ -529,23 +933,28 @@ func NewSmartPlaylistCloudRule(ruleHeader *RuleHeader, value []byte) *SmartPlayl
 	ird := &IntRuleData{}
 	binary.Read(buf, binary.BigEndian, ird)
 	return &SmartPlaylistCloudRule{
-		Field: ruleHeader.Field(),
-		Sign: ruleHeader.LogicSign(),
-		Operator: ruleHeader.LogicRule(),
-		RuleType: "playlist",
+		SmartPlaylistCommonRule: NewSmartPlaylistCommonRule(ruleHeader, value),
+		RuleType: "cloud",
 		Value: ICloudStatus(ird.IntA),
 	}
 }
 
-func (r *SmartPlaylistCloudRule) Match(track *Track) bool {
+func (r *SmartPlaylistCloudRule) Encode() ([]byte, error) {
+	ird := &IntRuleData{}
+	ird.IntA = uint32(r.Value)
+	ird.IntB = ird.IntA
+	ird.BoolB = 1
+	ird.BoolC = 1
+	return ird.Encode()
+}
+
+func (r *SmartPlaylistCloudRule) Match(track *Track, lib *Library) bool {
 	// TODO
 	return false
 }
 
 type SmartPlaylistLocationRule struct {
-	Field Field `json:"field"`
-	Sign LogicSign `json:"sign"`
-	Operator LogicRule `json:"operator"`
+	SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value LocationStatus `json:"value"`
 }
@@ -555,16 +964,41 @@ func NewSmartPlaylistLocationRule(ruleHeader *RuleHeader, value []byte) *SmartPl
 	ird := &IntRuleData{}
 	binary.Read(buf, binary.BigEndian, ird)
 	return &SmartPlaylistLocationRule{
-		Field: ruleHeader.Field(),
-		Sign: ruleHeader.LogicSign(),
-		Operator: ruleHeader.LogicRule(),
+		SmartPlaylistCommonRule: NewSmartPlaylistCommonRule(ruleHeader, value),
 		RuleType: "playlist",
 		Value: LocationStatus(ird.IntA),
 	}
 }
 
-func (r *SmartPlaylistLocationRule) Match(track *Track) bool {
-	// TODO
+func (r *SmartPlaylistLocationRule) Encode() ([]byte, error) {
+	ird := &IntRuleData{}
+	ird.IntA = uint32(r.Value)
+	ird.IntB = ird.IntA
+	ird.BoolB = 1
+	ird.BoolC = 1
+	return ird.Encode()
+}
+
+func (r *SmartPlaylistLocationRule) Match(track *Track, lib *Library) bool {
+	switch r.Sign {
+	case LogicSign_INT_POS, LogicSign_STR_POS:
+		switch r.Value {
+		case LocationStatus_COMPUTER:
+			return track.Location != nil
+		case LocationStatus_ICLOUD:
+			return track.Location == nil || (track.Purchased != nil && *track.Purchased)
+		default:
+			return false
+		}
+	case LogicSign_INT_NEG, LogicSign_STR_NEG:
+		switch r.Value {
+		case LocationStatus_COMPUTER:
+			return track.Location == nil
+		case LocationStatus_ICLOUD:
+			// TODO
+			return (track.Purchased != nil && *track.Purchased) && track.Location != nil
+		}
+	}
 	return false
 }
 
@@ -581,8 +1015,15 @@ func decodeb64(data []byte) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(s)
 }
 
+func encodeb64(data []byte) []byte {
+	dst := make([]byte, base64.StdEncoding.EncodedLen(len(data)))
+	base64.StdEncoding.Encode(dst, data)
+	return data
+}
+
 func ParseSmartPlaylist(info, criteria []byte) (*SmartPlaylist, error) {
 	//fmt.Println("parse smart playlist", string(info), string(criteria))
+	/*
 	dinfo, err := decodeb64(info)
 	if err != nil {
 		return nil, err
@@ -591,21 +1032,34 @@ func ParseSmartPlaylist(info, criteria []byte) (*SmartPlaylist, error) {
 	if err != nil {
 		return nil, err
 	}
+	*/
 	//fmt.Println("parse smart playlist", dinfo, dcrit)
 	p := &SmartPlaylist{
-		rawInfo: dinfo,
-		rawCriteria: dcrit,
+		rawInfo: info, //dinfo,
+		rawCriteria: criteria, //dcrit,
 		Info: &SmartPlaylistInfo{},
 		Criteria: &SmartPlaylistCriteria{},
 	}
-	err = p.Info.Parse(dinfo)
+	err := p.Info.Parse(info) //dinfo)
 	if err != nil {
 		return nil, err
 	}
-	err = p.Criteria.Parse(dcrit)
+	err = p.Criteria.Parse(criteria) //dcrit)
 	if err != nil {
 		return nil, err
 	}
 	return p, nil
 }
 
+func (s *SmartPlaylist) Encode() (info []byte, criteria []byte, err error) {
+	info, err = s.Info.Encode()
+	if err != nil {
+		return nil, nil, err
+	}
+	criteria, err = s.Criteria.Encode()
+	if err != nil {
+		return nil, nil, err
+	}
+	return info, criteria, nil
+	//return encodeb64(info), encodeb64(criteria), nil
+}

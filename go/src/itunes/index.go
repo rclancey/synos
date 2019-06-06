@@ -1,148 +1,308 @@
 package itunes
 
 import (
+	"errors"
 	"fmt"
+	"math/rand"
+	"log"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 )
 
-type TrackIDIndex struct {
-	ix map[int]*Track
+type TrackList []*Track
+
+type SortableTrackList struct {
+	tl TrackList
+	less func(a, b *Track) bool
 }
 
-func NewTrackIDIndex() *TrackIDIndex {
-	ti := &TrackIDIndex{}
-	ti.ix = make(map[int]*Track)
-	return ti
+func (stl *SortableTrackList) Len() int { return len(stl.tl) }
+func (stl *SortableTrackList) Swap(i, j int) { stl.tl[i], stl.tl[j] = stl.tl[j], stl.tl[i] }
+func (stl *SortableTrackList) Less(i, j int) bool {
+	return stl.less(stl.tl[i], stl.tl[j])
 }
 
-func (ti *TrackIDIndex) Add(t *Track) {
-	ti.ix[t.ID] = t
-}
-
-func (ti *TrackIDIndex) Get(id int) *Track {
-	t, ok := ti.ix[id]
+func (tl *TrackList) SortBy(key string) error {
+	rt := reflect.TypeOf(Track{})
+	meth, ok := rt.MethodByName(key)
+	stl := &SortableTrackList{tl: *tl}
 	if ok {
-		return t
+		f := meth.Func
+		if f.Type().NumIn() != 1 {
+			return fmt.Errorf("can't sort by %s: method requires arguments", key)
+		}
+		if f.Type().NumOut() < 1 {
+			return fmt.Errorf("can't sort by %s: method has no output", key)
+		}
+		if f.Type().Out(0).Kind() == reflect.String {
+			stl.less = func(a, b *Track) bool {
+				av := f.Call([]reflect.Value{reflect.ValueOf(a)})[0]
+				bv := f.Call([]reflect.Value{reflect.ValueOf(b)})[0]
+				return av.String() < bv.String()
+			}
+		} else if f.Type().Out(0) == reflect.TypeOf(time.Time{}) {
+			stl.less = func(a, b *Track) bool {
+				av := f.Call([]reflect.Value{reflect.ValueOf(a)})[0].Interface().(time.Time)
+				bv := f.Call([]reflect.Value{reflect.ValueOf(b)})[0].Interface().(time.Time)
+				return av.Before(bv)
+			}
+		} else if f.Type().Out(0) == reflect.TypeOf(&Time{}) {
+			stl.less = func(a, b *Track) bool {
+				av := f.Call([]reflect.Value{reflect.ValueOf(a)})[0].Interface().(*Time)
+				bv := f.Call([]reflect.Value{reflect.ValueOf(b)})[0].Interface().(*Time)
+				return av.Before(bv.Get())
+			}
+		} else {
+			return fmt.Errorf("can't sort by %s: don't know how to compare %s", key, f.Type().Out(0).Name())
+		}
+	} else {
+		f, ok := rt.FieldByName(key)
+		if !ok {
+			n := rt.NumField()
+			for i := 0; i < n; i++ {
+				f = rt.Field(i)
+				tag := strings.Split(f.Tag.Get("json"), ",")[0]
+				if tag == key {
+					ok = true
+					break
+				}
+			}
+			if !ok {
+				return fmt.Errorf("can't sort by %s: no such field or method", key)
+			}
+		}
+		if f.Type == reflect.TypeOf(PersistentID(0)) {
+			stl.less = func(a, b *Track) bool {
+				av := reflect.ValueOf(a).FieldByIndex(f.Index).Interface().(PersistentID)
+				bv := reflect.ValueOf(b).FieldByIndex(f.Index).Interface().(PersistentID)
+				return uint64(av) < uint64(bv)
+			}
+		} else if f.Type == reflect.TypeOf(&Time{}) {
+			stl.less = func(a, b *Track) bool {
+				av := reflect.ValueOf(a).FieldByIndex(f.Index).Interface().(*Time)
+				bv := reflect.ValueOf(b).FieldByIndex(f.Index).Interface().(*Time)
+				return av.Before(bv.Get())
+			}
+		} else if f.Type.Kind() == reflect.Ptr {
+			if f.Type.Elem().Kind() == reflect.Int {
+				stl.less = func(a, b *Track) bool {
+					av := reflect.ValueOf(a).FieldByIndex(f.Index)
+					bv := reflect.ValueOf(b).FieldByIndex(f.Index)
+					if av.IsNil() {
+						return false
+					}
+					if bv.IsNil() {
+						return true
+					}
+					return av.Elem().Int() < bv.Elem().Int()
+				}
+			} else if f.Type.Elem().Kind() == reflect.String {
+				stl.less = func(a, b *Track) bool {
+					av := reflect.ValueOf(a).FieldByIndex(f.Index)
+					bv := reflect.ValueOf(b).FieldByIndex(f.Index)
+					if av.IsNil() {
+						return false
+					}
+					if bv.IsNil() {
+						return true
+					}
+					return av.Elem().String() > bv.Elem().String()
+				}
+			} else if f.Type.Elem().Kind() == reflect.Bool {
+				stl.less = func(a, b *Track) bool {
+					av := reflect.ValueOf(a).FieldByIndex(f.Index)
+					bv := reflect.ValueOf(b).FieldByIndex(f.Index)
+					if av.IsNil() {
+						return false
+					}
+					if bv.IsNil() {
+						return true
+					}
+					return av.Elem().Bool() && !bv.Elem().Bool()
+				}
+			} else {
+				return fmt.Errorf("can't sort by %s: don't know how to compare %s", key, f.Type.Elem().Name())
+			}
+		} else {
+			return fmt.Errorf("can't sort by %s: don't know how to compare %s", key, f.Type.Name())
+		}
 	}
+	sort.Sort(stl)
 	return nil
 }
 
-type TrackIndex struct {
-	ix map[string][]*Track
-	values int
+func (tl *TrackList) Randomize() {
+	rand.Shuffle(len(*tl), func(i, j int) { (*tl)[i], (*tl)[j] = (*tl)[j], (*tl)[i] })
 }
 
-func NewTrackIndex() *TrackIndex {
-	ti := &TrackIndex{}
-	ti.values = 0
-	ti.ix = make(map[string][]*Track)
-	return ti
+func (tl *TrackList) Add(tr *Track) {
+	*tl = append(*tl, tr)
 }
 
-func (ti *TrackIndex) Add(t *Track) {
-	words := make(map[string]bool)
-	ti.addWords(words, t.Name)
-	ti.addWords(words, t.Artist)
-	ti.addWords(words, t.AlbumArtist)
-	ti.addWords(words, t.Album)
-	ti.addWords(words, t.Comments)
-	ti.addWords(words, t.Composer)
-	ti.addWords(words, t.Episode)
-	ti.addWords(words, t.Genre)
-	ti.addWords(words, t.Grouping)
-	ti.addWords(words, t.Kind)
-	ti.addWords(words, t.Series)
-	for word := range words {
-		_, ok := ti.ix[word]
-		if !ok {
-			ti.ix[word] = make([]*Track, 0, 1)
-		}
-		ti.ix[word] = append(ti.ix[word], t)
-	}
-	ti.values++
-}
-
-func (ti *TrackIndex) Keys() int {
-	return len(ti.ix)
-}
-
-func (ti *TrackIndex) Values() int {
-	return ti.values
-}
-
-func (ti *TrackIndex) addWords(words map[string]bool, s *string) {
-	if s == nil {
-		return
-	}
-	parts := strings.Split(strings.ToLower(*s), " ")
-	for _, word := range parts {
-		if word != "" {
-			words[word] = true
-		}
-	}
-}
-
-func (ti *TrackIndex) Search(query string) []*Track {
-	fmt.Printf("search for '%s'\n", query)
-	words := strings.Split(strings.ToLower(query), " ")
-	startIndex := 0
-	for i, word := range words {
-		if word == "" {
-			continue
-		}
-		startIndex = i
-		break
-	}
-	retval := make([]*Track, 0)
-	//fmt.Printf("search for '%s'\n", words[startIndex])
-	matches, ok := ti.ix[words[startIndex]]
-	if !ok {
-		fmt.Printf("term '%s' not in index (%d; %d)", words[startIndex], ti.Values(), ti.Keys())
-		return retval
-	}
-	ids := make([]int, 0)
-	byId := make(map[int]*Track)
-	for _, t := range matches {
-		byId[t.ID] = t
-		ids = append(ids, t.ID)
-	}
-	//fmt.Printf("%d matches; %d byId; %d ids\n", len(matches), len(byId), len(ids))
-	for _, word := range words[startIndex+1:] {
-		if word == "" {
-			continue
-		}
-		//fmt.Printf("filter by '%s'\n", word)
-		matches, ok = ti.ix[word]
-		if !ok {
-			return retval
-		}
-		xById := make(map[int]*Track)
-		for _, t := range matches {
-			xById[t.ID] = t
-		}
-		for _, id := range ids {
-			_, ok = xById[id]
-			if !ok {
-				delete(byId, id)
+func (tl *TrackList) SmartFilter(s *SmartPlaylist, lib *Library) (*TrackList, error) {
+	out := &TrackList{}
+	for _, tr := range *tl {
+		if s.Info.CheckedOnly {
+			if tr.Disabled != nil && *tr.Disabled {
+				continue
 			}
 		}
-		ids = make([]int, 0, len(byId))
-		for id := range byId {
-			ids = append(ids, id)
+		if s.Criteria.Match(tr, lib) {
+			out.Add(tr)
 		}
 	}
-	retval = make([]*Track, 0, len(ids))
-	for _, t := range byId {
-		retval = append(retval, t)
-	}
-	return retval
+	return out.SmartLimit(s)
 }
 
-type SortableTable map[string]map[string]int
+func (tl *TrackList) SmartLimit(s *SmartPlaylist) (*TrackList, error) {
+	if !s.Info.HasLimit {
+		return tl, nil
+	}
+	if s.Info.SortField == nil || *s.Info.SortField == SelectionMethod_RANDOM {
+		tl.Randomize()
+	} else {
+		err := tl.SortBy(s.Info.SortField.String())
+		if err != nil {
+			return nil, err
+		}
+	}
+	if s.Info.LimitUnit != nil && s.Info.LimitSize != nil {
+		switch *s.Info.LimitUnit {
+		case LimitMethod_MINUTES:
+			return tl.limitTime(int64(*s.Info.LimitSize) * 60 * 1000), nil
+		case LimitMethod_MB:
+			return tl.limitSize(int64(*s.Info.LimitSize) * 1024 * 1024), nil
+		case LimitMethod_ITEMS:
+			n := *s.Info.LimitSize
+			if n >= len(*tl) {
+				return tl, nil
+			}
+			xtl := (*tl)[:n]
+			return &xtl, nil
+		case LimitMethod_GB:
+			return tl.limitSize(int64(*s.Info.LimitSize) * 1024 * 1024 * 1024), nil
+		case LimitMethod_HOURS:
+			return tl.limitTime(int64(*s.Info.LimitSize) * 60 * 60 * 1000), nil
+		}
+		return nil, fmt.Errorf("Unknown limit unit: %s", *s.Info.LimitUnit)
+	}
+	return nil, errors.New("missing limits")
+}
 
-func (st SortableTable) Add(name, sname *string) {
+func (tl *TrackList) limitTime(ms int64) *TrackList {
+	if tl.TotalTime() <= ms {
+		return tl
+	}
+	out := TrackList{}
+	var t int64 = 0
+	for _, tr := range *tl {
+		if tr.TotalTime != nil {
+			t += int64(*tr.TotalTime)
+			if t <= ms {
+				out = append(out, tr)
+			} else {
+				break
+			}
+		}
+	}
+	return &out
+}
+
+func (tl *TrackList) limitSize(bs int64) *TrackList {
+	if tl.TotalSize() <= bs {
+		return tl
+	}
+	out := TrackList{}
+	var s int64 = 0
+	for _, tr := range *tl {
+		if tr.Size != nil {
+			s += int64(*tr.Size)
+			if s <= bs {
+				out = append(out, tr)
+			} else {
+				break
+			}
+		}
+	}
+	return &out
+}
+
+func (tl *TrackList) TotalSize() int64 {
+	var bs int64 = 0
+	for _, tr := range (*tl) {
+		if tr.Size != nil {
+			bs += int64(*tr.Size)
+		}
+	}
+	return bs
+}
+
+func (tl *TrackList) TotalTime() int64 {
+	var ms int64 = 0
+	for _, tr := range (*tl) {
+		if tr.TotalTime != nil {
+			ms += int64(*tr.TotalTime)
+		}
+	}
+	return ms
+}
+
+func (tl *TrackList) compare(key string, opts ...*string) bool {
+	if key == "" {
+		return true
+	}
+	for _, opt := range opts {
+		if opt != nil {
+			cmp := MakeKey(*opt)
+			return cmp == key
+		}
+	}
+	return false
+}
+
+func (tl *TrackList) Filter(genre, artist, album *string) *TrackList {
+	out := &TrackList{}
+	if album != nil && *album != "" {
+		key := MakeKey(*album)
+		log.Printf("filtering %d tracks by album %s (%s)", len(*tl), *album, key)
+		for _, tr := range *tl {
+			if tl.compare(key, tr.SortAlbum, tr.Album) {
+				out.Add(tr)
+			}
+		}
+		return out.Filter(genre, artist, nil)
+	}
+	if artist != nil && *artist != "" {
+		key := MakeKey(*artist)
+		log.Printf("filtering %d tracks by artist %s (%s)", len(*tl), *artist, key)
+		for _, tr := range *tl {
+			if tl.compare(key, tr.SortAlbumArtist, tr.AlbumArtist) {
+				out.Add(tr)
+			} else if tl.compare(key, tr.SortArtist, tr.Artist) {
+				out.Add(tr)
+			}
+		}
+		return out.Filter(genre, nil, nil)
+	}
+	if genre != nil && *genre != "" {
+		key := MakeKey(*genre)
+		log.Printf("filtering %d tracks by genre %s (%s)", len(*tl), *genre, key)
+		for _, tr := range *tl {
+			if tl.compare(key, tr.Genre) {
+				out.Add(tr)
+			}
+		}
+		return out
+	}
+	return tl
+}
+
+type FilterTable map[string]map[string]int
+
+func (ft FilterTable) Add(name, sname *string) {
 	if name == nil {
 		return
 	}
@@ -156,47 +316,95 @@ func (st SortableTable) Add(name, sname *string) {
 	if k == "" {
 		return
 	}
-	m, ok := st[k]
-	if !ok {
-		m = map[string]int{v: 1}
-		st[k] = m
+	_, ok := ft[k]
+	if ok {
+		ft[k][v] = ft[k][v] + 1
 	} else {
-		st[k][v] = st[k][v] + 1
+		ft[k] = map[string]int{v: 1}
 	}
 }
 
-type ValFreq struct {
-	Val string
-	Freq int
-}
-
-type SortableValFreq []ValFreq
-
-func (svf SortableValFreq) Len() int { return len(svf) }
-func (svf SortableValFreq) Swap(i, j int) { svf[i], svf[j] = svf[j], svf[i] }
-func (svf SortableValFreq) Less(i, j int) bool { return svf[i].Freq > svf[j].Freq }
-
-func (st SortableTable) Values() [][2]string {
-	keys := make([]string, len(st))
+func (ft FilterTable) Values() [][2]string {
+	keys := make([]string, len(ft))
 	i := 0
-	for k := range st {
+	for k := range ft {
 		keys[i] = k
 		i += 1
 	}
 	sort.Strings(keys)
-	values := make([][2]string, len(keys))
+	filts := make([][2]string, len(keys))
+	var n = 0
+	var canon string
 	for i, k := range keys {
-		m := st[k]
-		vals := make([]ValFreq, len(m))
-		j := 0
-		for v, f := range m {
-			vals[j] = ValFreq{Val: v, Freq: f}
-			j += 1
+		n = 0
+		canon = ""
+		for v, c := range ft[k] {
+			if c > n {
+				canon = v
+				n = c
+			}
 		}
-		sort.Sort(SortableValFreq(vals))
-		values[i] = [2]string{vals[0].Val, k}
+		filts[i] = [2]string{canon, k}
 	}
-	return values
+	return filts
+}
+
+func (tl *TrackList) Genres() [][2]string {
+	ft := FilterTable{}
+	for _, tr := range *tl {
+		ft.Add(tr.Genre, nil)
+	}
+	return ft.Values()
+}
+
+func (tl *TrackList) Artists() [][2]string {
+	ft := FilterTable{}
+	for _, tr := range *tl {
+		ft.Add(tr.Artist, tr.SortArtist)
+		ft.Add(tr.AlbumArtist, tr.SortAlbumArtist)
+	}
+	return ft.Values()
+}
+
+func (tl *TrackList) Albums() [][3]string {
+	ft := FilterTable{}
+	var key string
+	var val string
+	for _, tr := range *tl {
+		if tr.Album == nil {
+			continue
+		}
+		if tr.SortAlbum != nil {
+			key = *tr.SortAlbum
+		} else {
+			key = *tr.Album
+		}
+		val = *tr.Album
+		if tr.SortAlbumArtist != nil {
+			key += " " + *tr.SortAlbumArtist
+		} else if tr.AlbumArtist != nil {
+			key += " " + *tr.AlbumArtist
+		} else if tr.SortArtist != nil {
+			key += " " + *tr.SortArtist
+		} else if tr.Artist != nil {
+			key += " " + *tr.Artist
+		}
+		if tr.AlbumArtist != nil {
+			val += "|@@@|" + *tr.AlbumArtist
+		} else if tr.Artist != nil {
+			val += "|@@@|" + *tr.Artist
+		} else {
+			val += "|@@@|"
+		}
+		ft.Add(&val, &key)
+	}
+	vals := ft.Values()
+	xvals := make([][3]string, len(vals))
+	for i, v := range vals {
+		parts := strings.Split(v[0], "|@@@|")
+		xvals[i] = [3]string{parts[1], parts[0], v[1]}
+	}
+	return xvals
 }
 
 var aAnThe = regexp.MustCompile(`^(a|an|the) `)
@@ -221,204 +429,10 @@ func MakeKey(v string) string {
 	s = aAnThe.ReplaceAllString(s, "")
 	s = nonAlpha.ReplaceAllString(s, "")
 	s = nums.ReplaceAllString(s, " $1 ~$2 ")
+	s = strings.TrimSuffix(s, " ~ ")
 	s = strings.TrimSpace(s)
 	//s = spaces.ReplaceAllString(s, " ")
 	//s = aAnThe.ReplaceAllString(s, "")
 	//s = strings.TrimSpace(s)
 	return s
-}
-
-func IndexGenres(lib *Library) [][2]string {
-	genreMap := SortableTable{}
-	for _, t := range lib.Tracks {
-		genreMap.Add(t.Genre, nil)
-	}
-	return genreMap.Values()
-}
-
-func IndexArtists(lib *Library) map[string][][2]string {
-	artistIdx := map[string]SortableTable{
-		"": SortableTable{},
-	}
-	var g *string
-	var k string
-	var st SortableTable
-	var ok bool
-	es := ""
-	for _, t := range lib.Tracks {
-		for _, g = range []*string{t.Genre, &es} {
-			if g == nil {
-				continue
-			}
-			k = MakeKey(*g)
-			st, ok = artistIdx[k]
-			if !ok {
-				st = SortableTable{}
-				artistIdx[k] = st
-			}
-			st.Add(t.Artist, t.SortArtist)
-			st.Add(t.AlbumArtist, t.SortAlbumArtist)
-		}
-	}
-	idx := map[string][][2]string{}
-	for k, st = range artistIdx {
-		idx[k] = st.Values()
-	}
-	return idx
-}
-
-type AlbumKey struct {
-	Genre string
-	Artist string
-}
-
-func (ak AlbumKey) MarshalText() ([]byte, error) {
-	return []byte(fmt.Sprintf("<%s,%s>", ak.Genre, ak.Artist)), nil
-}
-
-func IndexAlbums(lib *Library) map[AlbumKey][][2]string {
-	albumIdx := map[AlbumKey]SortableTable{
-		AlbumKey{"", ""}: SortableTable{},
-	}
-	var ap, gp *string
-	var a, g string
-	var k AlbumKey
-	var st SortableTable
-	var ok bool
-	es := ""
-	for _, t := range lib.Tracks {
-		for _, gp = range []*string{t.Genre, &es} {
-			if gp == nil {
-				continue
-			}
-			g = MakeKey(*gp)
-			for _, ap = range []*string{t.Artist, t.SortArtist, t.AlbumArtist, t.SortAlbumArtist, &es} {
-				if ap == nil {
-					continue
-				}
-				a = MakeKey(*ap)
-				k = AlbumKey{g, a}
-				st, ok = albumIdx[k]
-				if !ok {
-					st = SortableTable{}
-					albumIdx[k] = st
-				}
-				st.Add(t.Album, t.SortAlbum)
-			}
-		}
-	}
-	idx := map[AlbumKey][][2]string{}
-	for k, st = range albumIdx {
-		idx[k] = st.Values()
-	}
-	return idx
-}
-
-type SongKey struct {
-	Genre string
-	Artist string
-	Album string
-}
-
-func (sk SongKey) MarshalText() ([]byte, error) {
-	return []byte(fmt.Sprintf("<%s,%s,%s>", sk.Genre, sk.Artist, sk.Album)), nil
-}
-
-type sortableAlbum []*Track
-func (sa sortableAlbum) Len() int { return len(sa) }
-func (sa sortableAlbum) Swap(i, j int) { sa[i], sa[j] = sa[j], sa[i] }
-func (sa sortableAlbum) Less(i, j int) bool {
-	var ad, at, bd, bt int
-	var an, bn string
-	if sa[i].DiscNumber != nil {
-		ad = *sa[i].DiscNumber
-	}
-	if sa[j].DiscNumber != nil {
-		bd = *sa[j].DiscNumber
-	}
-	if ad < bd {
-		return true
-	}
-	if ad > bd {
-		return false
-	}
-	if sa[i].TrackNumber != nil {
-		at = *sa[i].TrackNumber
-	}
-	if sa[j].TrackNumber != nil {
-		bt = *sa[j].TrackNumber
-	}
-	if at < bt {
-		return true
-	}
-	if at > bt {
-		return false
-	}
-	if sa[i].Name != nil {
-		an = MakeKey(*sa[i].Name)
-	}
-	if sa[j].Name != nil {
-		bn = MakeKey(*sa[j].Name)
-	}
-	return strings.Compare(an, bn) < 0
-}
-
-type keyCache map[string]string
-
-func (c keyCache) Get(v string) string {
-	k, ok := c[v]
-	if !ok {
-		k = MakeKey(v)
-		c[v] = k
-	}
-	return k
-}
-
-func IndexSongs(lib *Library) map[SongKey][]*Track {
-	songIdx := map[SongKey][]*Track{}
-	var gen, art, alb string
-	var genp, artp, albp *string
-	var k SongKey
-	var used map[SongKey]bool
-	var ts []*Track
-	var ok bool
-	es := ""
-	cache := keyCache{}
-	for _, t := range lib.Tracks {
-		used = map[SongKey]bool{SongKey{"", "", ""}: true}
-		for _, albp = range []*string{t.Album, t.SortAlbum, &es} {
-			if albp == nil {
-				continue
-			}
-			alb = cache.Get(*albp)
-			for _, artp = range []*string{t.Artist, t.SortArtist, t.AlbumArtist, t.SortAlbumArtist, &es} {
-				if artp == nil {
-					continue
-				}
-				art = cache.Get(*artp)
-				for _, genp = range []*string{t.Genre, &es} {
-					if genp == nil {
-						continue
-					}
-					gen = cache.Get(*genp)
-					k = SongKey{gen, art, alb}
-					if _, ok = used[k]; ok {
-						continue
-					}
-					used[k] = true
-					ts, ok = songIdx[k]
-					if !ok {
-						ts = []*Track{}
-					}
-					songIdx[k] = append(ts, t)
-				}
-			}
-		}
-	}
-	idx := map[SongKey][]*Track{}
-	for k, ts = range songIdx {
-		sort.Sort(sortableAlbum(ts))
-		idx[k] = ts
-	}
-	return idx
 }

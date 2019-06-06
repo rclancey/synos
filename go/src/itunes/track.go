@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"time"
-	"strconv"
 	"strings"
 	"net/url"
 	"path"
@@ -16,86 +15,77 @@ import (
 	"github.com/dhowden/tag"
 )
 
-type TrackTime time.Time;
-
-func (t TrackTime) MarshalJSON() ([]byte, error) {
-	// Mon Jan 2 15:04:05 -0700 MST 2006
-	ms := time.Time(t).Unix() * 1000
-	return []byte(strconv.FormatInt(ms, 10)), nil
-	//stamp := fmt.Sprintf("\"%s\"", time.Time(t).Format("1/2/06, 3:04 PM"))
-	//return []byte(stamp), nil;
-}
-
 type Track struct {
-	ID                   int        `json:"id,omitempty"`
-	Album                *string    `json:"album,omitempty"`
-	AlbumArtist          *string    `json:"album_artist,omitempty"`
-	AlbumRating          *int       `json:"album_rating,omitempty"`
-	AlbumRatingComputed  *bool      `json:"album_rating_computed,omitempty"`
-	Artist               *string    `json:"artist,omitempty"`
-	ArtworkCount         *int       `json:"artwork_count,omitempty"`
-	BPM                  *int       `json:"bpm,omitempty"`
-	BitRate              *int       `json:"bit_rate,omitempty"`
-	Clean                *bool      `json:"clean,omitempty"`
-	Comments             *string    `json:"comments,omitempty"`
-	Compilation          *bool      `json:"compilation,omitempty"`
-	Composer             *string    `json:"composer,omitempty"`
-	ContentRating        *string    `json:"content_rating,omitempty"`
-	Date                 *TrackTime `json:"date,omitempty"`
-	DateAdded            *TrackTime `json:"date_added,omitempty"`
-	DateModified         *TrackTime `json:"date_modified,omitempty"`
-	Disabled             *bool      `json:"disabled,omitempty"`
-	DiscCount            *int       `json:"disc_count,omitempty"`
-	DiscNumber           *int       `json:"disc_number,omitempty"`
-	Episode              *string    `json:"episode,omitempty"`
-	EpisodeOrder         *int       `json:"episode_order,omitempty"`
-	Explicit             *bool      `json:"explicit,omitempty"`
-	FileFolderCount      *int       `json:"file_folder_count,omitempty"`
-	FileType             *int       `json:"file_type,omitempty"`
-	Genre                *string    `json:"genre,omitempty"`
-	Grouping             *string    `json:"grouping,omitempty"`
-	HasVideo             *bool      `json:"has_video,omitempty"`
-	Kind                 *string    `json:"kind,omitempty"`
-	LibraryFolderCount   *int       `json:"library_folder_count,omitempty"`
-	Location             *string    `json:"location"`
-	Master               *bool      `json:"master,omitempty"`
-	Movie                *bool      `json:"movie,omitempty"`
-	MusicVideo           *bool      `json:"music_video,omitempty"`
-	Name                 *string    `json:"name,omitempty"`
-	PartOfGaplessAlbum   *bool      `json:"part_of_gapless_album,omitempty"`
-	PersistentID         *string    `json:"persistent_id,omitempty"`
-	PlayCount            *int       `json:"play_count,omitempty"`
-	PlayDate             *int       `json:"play_date,omitempty"`
-	PlayDateUTC          *TrackTime `json:"play_date_utc,omitempty"`
-	Podcast              *bool      `json:"podcast,omitempty"`
-	Protected            *bool      `json:"protected,omitempty"`
-	Purchased            *bool      `json:"purchased,omitempty"`
-	PurchaseDate         *TrackTime `json:"purchase_date,omitempty"`
-	Rating               *int       `json:"rating,omitempty"`
-	RatingComputed       *bool      `json:"rating_computed,omitempty"`
-	ReleaseDate          *TrackTime `json:"release_date,omitempty"`
-	SampleRate           *int       `json:"sample_rate,omitempty"`
-	Season               *int       `json:"season,omitempty"`
-	Series               *string    `json:"series,omitempty"`
-	Size                 *int       `json:"size,omitempty"`
-	SkipCount            *int       `json:"skip_count,omitempty"`
-	SkipDate             *TrackTime `json:"skip_date,omitempty"`
-	SortAlbum            *string    `json:"sort_album,omitempty"`
-	SortAlbumArtist      *string    `json:"sort_album_artist,omitempty"`
-	SortArtist           *string    `json:"sort_artist,omitempty"`
-	SortComposer         *string    `json:"sort_composer,omitempty"`
-	SortName             *string    `json:"sort_name,omitempty"`
-	SortSeries           *string    `json:"sort_series,omitempty"`
-	StopTime             *int       `json:"stop_time,omitempty"`
-	TVShow               *bool      `json:"tv_show,omitempty"`
-	TotalTime            *int       `json:"total_time,omitempty"`
-	TrackCount           *int       `json:"track_count,omitempty"`
-	TrackID              *int       `json:"track_id,omitempty"`
-	TrackNumber          *int       `json:"track_number,omitempty"`
-	TrackType            *string    `json:"track_type,omitempty"`
-	Unplayed             *bool      `json:"unplayed,omitempty"`
-	VolumeAdjustment     *int       `json:"volume_adjustment,omitempty"`
-	Year                 *int       `json:"year,omitempty"`
+	PersistentID         PersistentID `json:"persistent_id"`
+	Album                *string      `json:"album,omitempty"`
+	AlbumArtist          *string      `json:"album_artist,omitempty"`
+	AlbumRating          *int         `json:"album_rating,omitempty"`
+	AlbumRatingComputed  *bool        `json:"album_rating_computed,omitempty"`
+	Artist               *string      `json:"artist,omitempty"`
+	ArtworkCount         *int         `json:"artwork_count,omitempty"`
+	BPM                  *int         `json:"bpm,omitempty"`
+	BitRate              *int         `json:"bit_rate,omitempty"`
+	Clean                *bool        `json:"clean,omitempty"`
+	Comments             *string      `json:"comments,omitempty"`
+	Compilation          *bool        `json:"compilation,omitempty"`
+	Composer             *string      `json:"composer,omitempty"`
+	ContentRating        *string      `json:"content_rating,omitempty"`
+	Date                 *Time        `json:"date,omitempty"`
+	DateAdded            *Time        `json:"date_added,omitempty"`
+	DateModified         *Time        `json:"date_modified,omitempty"`
+	Disabled             *bool        `json:"disabled,omitempty"`
+	DiscCount            *int         `json:"disc_count,omitempty"`
+	DiscNumber           *int         `json:"disc_number,omitempty"`
+	Episode              *string      `json:"episode,omitempty"`
+	EpisodeOrder         *int         `json:"episode_order,omitempty"`
+	Explicit             *bool        `json:"explicit,omitempty"`
+	FileFolderCount      *int         `json:"file_folder_count,omitempty"`
+	FileType             *int         `json:"file_type,omitempty"`
+	Genre                *string      `json:"genre,omitempty"`
+	Grouping             *string      `json:"grouping,omitempty"`
+	HasVideo             *bool        `json:"has_video,omitempty"`
+	Kind                 *string      `json:"kind,omitempty"`
+	LibraryFolderCount   *int         `json:"library_folder_count,omitempty"`
+	Location             *string      `json:"location"`
+	Loved                *bool        `json:"loved"`
+	Master               *bool        `json:"master,omitempty"`
+	Movie                *bool        `json:"movie,omitempty"`
+	MusicVideo           *bool        `json:"music_video,omitempty"`
+	Name                 *string      `json:"name,omitempty"`
+	PartOfGaplessAlbum   *bool        `json:"part_of_gapless_album,omitempty"`
+	PlayCount            *int         `json:"play_count,omitempty"`
+	PlayDate             *int         `json:"play_date,omitempty"`
+	PlayDateUTC          *Time        `json:"play_date_utc,omitempty"`
+	Podcast              *bool        `json:"podcast,omitempty"`
+	Protected            *bool        `json:"protected,omitempty"`
+	Purchased            *bool        `json:"purchased,omitempty"`
+	PurchaseDate         *Time        `json:"purchase_date,omitempty"`
+	Rating               *int         `json:"rating,omitempty"`
+	RatingComputed       *bool        `json:"rating_computed,omitempty"`
+	ReleaseDate          *Time        `json:"release_date,omitempty"`
+	SampleRate           *int         `json:"sample_rate,omitempty"`
+	Season               *int         `json:"season,omitempty"`
+	Series               *string      `json:"series,omitempty"`
+	Size                 *int         `json:"size,omitempty"`
+	SkipCount            *int         `json:"skip_count,omitempty"`
+	SkipDate             *Time        `json:"skip_date,omitempty"`
+	SortAlbum            *string      `json:"sort_album,omitempty"`
+	SortAlbumArtist      *string      `json:"sort_album_artist,omitempty"`
+	SortArtist           *string      `json:"sort_artist,omitempty"`
+	SortComposer         *string      `json:"sort_composer,omitempty"`
+	SortName             *string      `json:"sort_name,omitempty"`
+	SortSeries           *string      `json:"sort_series,omitempty"`
+	StopTime             *int         `json:"stop_time,omitempty"`
+	TVShow               *bool        `json:"tv_show,omitempty"`
+	TotalTime            *int         `json:"total_time,omitempty"`
+	TrackCount           *int         `json:"track_count,omitempty"`
+	TrackID              *int         `json:"track_id,omitempty"`
+	TrackNumber          *int         `json:"track_number,omitempty"`
+	TrackType            *string      `json:"track_type,omitempty"`
+	Unplayed             *bool        `json:"unplayed,omitempty"`
+	VolumeAdjustment     *int         `json:"volume_adjustment,omitempty"`
+	Work                 *string      `json:"work,omitempty"`
+	Year                 *int         `json:"year,omitempty"`
 	finder               *FileFinder
 }
 
@@ -131,11 +121,40 @@ func (t *Track) String() string {
 	return s
 }
 
-func (t *Track) Parse(dec *xml.Decoder, id []byte) error {
-	iid, err := strconv.Atoi(strings.TrimSpace(string(id)))
-	if err == nil {
-		t.ID = int(iid)
+func (t *Track) MediaKind() MediaKind {
+	if t.MusicVideo != nil && *t.MusicVideo {
+		return MediaKind_MUSICVIDEO
 	}
+	if t.Podcast != nil && *t.Podcast {
+		return MediaKind_PODCAST
+	}
+	if t.Movie != nil && *t.Movie {
+		return MediaKind_MOVIE
+	}
+	if t.TVShow != nil && *t.TVShow {
+		return MediaKind_TVSHOW
+	}
+	if t.HasVideo != nil && *t.HasVideo {
+		return MediaKind_HOMEVIDEO
+	}
+	if t.GetExt() == ".m4b" {
+		return MediaKind_AUDIOBOOK
+	}
+	return MediaKind_MUSIC
+	// TODO:
+	/*
+		"ITunesExtras": 65536,
+		"VoiceMemo": 1048576,
+		"ITunesU": 2097152,
+		"Book": 12582912,
+		"BookOrAudiobook": 12582920,
+		"OtherMusic": 1057201,
+		"UndesiredMusic": 2129924,
+		"UndesiredOther": 2138116
+	*/
+}
+
+func (t *Track) Parse(dec *xml.Decoder, id []byte) error {
 	var key, val []byte
 	isKey := false
 	isVal := false
@@ -179,13 +198,13 @@ func (t *Track) ModDate() time.Time {
 		if t.DateAdded == nil {
 			return time.Date(2999, time.December, 31, 23, 59, 59, 999999999, time.UTC)
 		}
-		return time.Time(*t.DateAdded)
+		return t.DateAdded.Get()
 	}
 	if t.DateAdded == nil {
-		return time.Time(*t.DateModified)
+		return t.DateModified.Get()
 	}
-	at := time.Time(*t.DateAdded)
-	mt := time.Time(*t.DateModified)
+	at := t.DateAdded.Get()
+	mt := t.DateModified.Get()
 	if at.After(mt) {
 		return at
 	}
@@ -258,7 +277,7 @@ func (t *Track) getTag() (tag.Metadata, error) {
 	return m, nil
 }
 
-func (t *Track) GetPurchaseDate() (*TrackTime, error) {
+func (t *Track) GetPurchaseDate() (*Time, error) {
 	if t.PurchaseDate != nil {
 		return t.PurchaseDate, nil
 	}
@@ -278,8 +297,7 @@ func (t *Track) GetPurchaseDate() (*TrackTime, error) {
 	if err != nil {
 		return nil, err
 	}
-	tt := TrackTime(tm)
-	t.PurchaseDate = &tt
+	t.PurchaseDate = &Time{tm}
 	return t.PurchaseDate, nil
 }
 
@@ -362,16 +380,16 @@ var kindExt = map[string]string{
 }
 
 func (t *Track) GetExt() string {
-	if t.Kind != nil {
-		ext, ok := kindExt[*t.Kind]
-		if ok {
-			return ext
-		}
-	}
 	if t.Location != nil {
 		u, err := url.Parse(*t.Location)
 		if err == nil {
 			return path.Ext(u.Path)
+		}
+	}
+	if t.Kind != nil {
+		ext, ok := kindExt[*t.Kind]
+		if ok {
+			return ext
 		}
 	}
 	return ""

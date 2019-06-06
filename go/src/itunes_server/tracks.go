@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"itunes"
 )
 
 var mimeTypes = map[string]string{
@@ -36,14 +38,17 @@ func TrackCount(w http.ResponseWriter, req *http.Request) {
 		}
 		since = time.Unix(since_i / 1000, (since_i % 1000) * 1000000)
 	}
+	tl := lib.TrackList()
+	tl.SortBy("ModDate")
+	tracks := *tl
 	sf := func(i int) bool {
-		tr := lib.TrackList[i]
+		tr := tracks[i]
 		return !tr.ModDate().Before(since)
 	}
-	startIndex := sort.Search(len(lib.TrackList), sf)
+	startIndex := sort.Search(len(tracks), sf)
 	n := 0
 	if startIndex >= 0 {
-		n = len(lib.TrackList) - startIndex
+		n = len(tracks) - startIndex
 	}
 	SendJSON(w, n)
 }
@@ -51,6 +56,9 @@ func TrackCount(w http.ResponseWriter, req *http.Request) {
 func ListTracks(w http.ResponseWriter, req *http.Request) {
 	log.Println("getting tracks")
 	qs := req.URL.Query()
+	tl := lib.TrackList()
+	tl.SortBy("ModDate")
+	tracks := *tl
 	count_s := qs.Get("count")
 	page_s := qs.Get("page")
 	since_s := qs.Get("since")
@@ -88,33 +96,34 @@ func ListTracks(w http.ResponseWriter, req *http.Request) {
 	}
 	log.Printf("get tracks page = %d, count = %d, since = %s\n", page, count, since)
 	sf := func(i int) bool {
-		tr := lib.TrackList[i]
+		tr := tracks[i]
 		return !tr.ModDate().Before(since)
 	}
-	startIndex := sort.Search(len(lib.TrackList), sf)
+	startIndex := sort.Search(len(tracks), sf)
 	if startIndex < 0 {
 		log.Println("no tracks")
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	idx := startIndex + ((page - 1) * count)
-	if idx >= len(lib.TrackList) {
+	if idx >= len(tracks) {
 		log.Println("already got all tracks")
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	end := idx + count
-	if end > len(lib.TrackList) {
-		end = len(lib.TrackList)
+	if end > len(tracks) {
+		end = len(tracks)
 	}
 	log.Printf("get tracks %d-%d\n", idx, end-1)
-	tracks := lib.TrackList[idx:end]
-	SendJSON(w, tracks)
+	SendJSON(w, tracks[idx:end])
 }
 
 func TrackHasCover(w http.ResponseWriter, req *http.Request) {
 	_, id := path.Split(req.URL.Path)
-	tr, ok := lib.Tracks[id]
+	pid := new(itunes.PersistentID)
+	pid.DecodeString(id)
+	tr, ok := lib.Tracks[*pid]
 	if !ok {
 		NotFound.Raise(nil, "Track %s does not exist", id).Respond(w)
 		return
@@ -136,7 +145,9 @@ func GetTrackCover(w http.ResponseWriter, req *http.Request) {
 		parts := strings.Split(id, ".")
 		id = strings.Join(parts[:len(parts)-1], ".")
 	}
-	tr, ok := lib.Tracks[id]
+	pid := new(itunes.PersistentID)
+	pid.DecodeString(id)
+	tr, ok := lib.Tracks[*pid]
 	if !ok {
 		NotFound.Raise(nil, "Track %s does not exist", id).Respond(w)
 		return
@@ -160,7 +171,9 @@ func GetTrack(w http.ResponseWriter, req *http.Request) {
 		parts := strings.Split(id, ".")
 		id = strings.Join(parts[:len(parts)-1], ".")
 	}
-	tr, ok := lib.Tracks[id]
+	pid := new(itunes.PersistentID)
+	pid.DecodeString(id)
+	tr, ok := lib.Tracks[*pid]
 	if !ok {
 		NotFound.Raise(nil, "Track %s does not exist", id).Respond(w)
 		return

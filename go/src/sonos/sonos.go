@@ -155,8 +155,9 @@ func (s *Sonos) GetQueue() (*Queue, error) {
 			continue
 		}
 		_, fn := path.Split(uri.Path)
-		id := strings.Split(fn, ".")[0]
-		tr, ok := s.lib.Tracks[id]
+		id := new(itunes.PersistentID)
+		id.DecodeString(strings.Split(fn, ".")[0])
+		tr, ok := s.lib.Tracks[*id]
 		if ok {
 			tracks[i] = tr
 		} else {
@@ -185,14 +186,14 @@ func (s *Sonos) GetQueue() (*Queue, error) {
 
 func (s *Sonos) trackUri(track *itunes.Track) string {
 	ext := filepath.Ext(track.Path())
-	path := "/api/track/" + *track.PersistentID + ext
+	path := "/api/track/" + track.PersistentID.EncodeToString() + ext
 	u, _ := url.Parse(path)
 	ref := s.rootUrl.ResolveReference(u)
 	return ref.String()
 }
 
 func (s *Sonos) playlistUri(pl *itunes.Playlist) string {
-	path := "/api/playlist/" + *pl.PlaylistPersistentID + ".m3u"
+	path := "/api/playlist/" + pl.PlaylistPersistentID.EncodeToString() + ".m3u"
 	u, _ := url.Parse(path)
 	ref := s.rootUrl.ResolveReference(u)
 	return ref.String()
@@ -200,17 +201,14 @@ func (s *Sonos) playlistUri(pl *itunes.Playlist) string {
 
 func (s *Sonos) coverUri(track *itunes.Track) string {
 	ext := ".jpg"
-	path := "/api/cover/" + *track.PersistentID + ext
+	path := "/api/cover/" + track.PersistentID.EncodeToString() + ext
 	u, _ := url.Parse(path)
 	ref := s.rootUrl.ResolveReference(u)
 	return ref.String()
 }
 
 func (s *Sonos) didlLite(track *itunes.Track) string {
-	if track.PersistentID == nil {
-		return ""
-	}
-	trackId := *track.PersistentID
+	trackId := track.PersistentID.EncodeToString()
 	mediaUri := s.trackUri(track)
 	duration := "0:00"
 	if track.TotalTime != nil {
@@ -237,10 +235,7 @@ func (s *Sonos) didlLite(track *itunes.Track) string {
 }
 
 func (s *Sonos) didlLitePl(pl *itunes.Playlist) string {
-	if pl.PlaylistPersistentID == nil {
-		return ""
-	}
-	plId := *pl.PlaylistPersistentID
+	plId := pl.PlaylistPersistentID.EncodeToString()
 	//mediaUri := s.playlistUri(pl)
 	var name string
 	if pl.Name != nil {
@@ -429,7 +424,8 @@ func parseDidl(data string) ([]*itunes.Track, error) {
 	xml.Unmarshal([]byte(data), doc)
 	tracks := make([]*itunes.Track, len(doc.Item))
 	for i, item := range doc.Item {
-		var title, artist, id string
+		var title, artist string
+		id := new(itunes.PersistentID)
 		var dur int
 		if len(item.Title) > 0 {
 			title = item.Title[0].Value
@@ -437,7 +433,7 @@ func parseDidl(data string) ([]*itunes.Track, error) {
 		if len(item.Creator) > 0 {
 			artist = item.Creator[0].Value
 		}
-		id = item.ID
+		id.DecodeString(item.ID)
 		if len(item.Res) > 0 {
 			/*
 			uri, err := url.Parse(item.Res[0].Value)
@@ -458,7 +454,7 @@ func parseDidl(data string) ([]*itunes.Track, error) {
 			}
 		}
 		tracks[i] = &itunes.Track{
-			PersistentID: &id,
+			PersistentID: *id,
 			Name: &title,
 			Artist: &artist,
 			TotalTime: &dur,
@@ -533,36 +529,24 @@ func (s *Sonos) prettyEvent(event upnp.Event) (interface{}, error) {
 						tracks[0].TotalTime = &dur
 					}
 				}
-				if tracks[0].PersistentID != nil {
-					pretty.CurrentTrack, ok = s.lib.Tracks[*tracks[0].PersistentID]
-					if !ok {
-						pretty.CurrentTrack = tracks[0]
-					}
-				} else {
+				pretty.CurrentTrack, ok = s.lib.Tracks[tracks[0].PersistentID]
+				if !ok {
 					pretty.CurrentTrack = tracks[0]
 				}
 			}
 			pretty.NextTrackURI, _ = ParseJSONURL(change.NextTrackURI.Val)
 			tracks, err = parseDidl(change.CurrentTrackMetaData.Val)
 			if err == nil && len(tracks) > 0 {
-				if tracks[0].PersistentID != nil {
-					pretty.NextTrack, ok = s.lib.Tracks[*tracks[0].PersistentID]
-					if !ok {
-						pretty.NextTrack = tracks[0]
-					}
-				} else {
+				pretty.NextTrack, ok = s.lib.Tracks[tracks[0].PersistentID]
+				if !ok {
 					pretty.NextTrack = tracks[0]
 				}
 			}
 			pretty.EnqueuedTrackURI, _ = ParseJSONURL(change.EnqueuedTransportURI.Val)
 			tracks, err = parseDidl(change.EnqueuedTransportURIMetaData.Val)
 			if err == nil && len(tracks) > 0 {
-				if tracks[0].PersistentID != nil {
-					pretty.EnqueuedTrack, ok = s.lib.Tracks[*tracks[0].PersistentID]
-					if !ok {
-						pretty.EnqueuedTrack = tracks[0]
-					}
-				} else {
+				pretty.EnqueuedTrack, ok = s.lib.Tracks[tracks[0].PersistentID]
+				if !ok {
 					pretty.EnqueuedTrack = tracks[0]
 				}
 			}

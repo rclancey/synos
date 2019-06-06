@@ -109,13 +109,12 @@ func GetGenreImageURL(tr *itunes.Track) (string, error) {
 
 func ArtistArt(w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
-	genre := itunes.MakeKey(q.Get("genre"))
-	artist := itunes.MakeKey(q.Get("artist"))
-	album := itunes.MakeKey("")
-	key := itunes.SongKey{genre, artist, album}
-	tracks := lib.SongIndex[key]
+	genre  := q.Get("genre")
+	artist := q.Get("artist")
+	tl := lib.TrackList().Filter(&genre, &artist, nil)
+	tracks := *tl
 	if tracks == nil || len(tracks) == 0 {
-		log.Printf("no tracks (%s) for %#v\n", tracks, key)
+		log.Printf("no tracks (%s) for %s / %s\n", tracks, genre, artist)
 		NotFound.Raise(nil, "No such artist").Respond(w)
 		return
 	}
@@ -127,11 +126,13 @@ func ArtistArt(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, img, http.StatusFound)
 		return
 	}
+	artist = itunes.MakeKey(artist)
 	for _, tr := range tracks {
 		if tr.Artist == nil {
 			continue
 		}
 		if itunes.MakeKey(*tr.Artist) != artist {
+			log.Printf("skipping track %s != %s", *tr.Artist, artist)
 			continue
 		}
 		fn, err := GetArtistImageFilename(tr)
@@ -139,6 +140,7 @@ func ArtistArt(w http.ResponseWriter, req *http.Request) {
 			http.ServeFile(w, req, fn)
 			return
 		}
+		log.Println("error getting artist image from track:", err)
 	}
 	NotFound.Raise(nil, "no artist image found").Respond(w)
 }
@@ -254,11 +256,13 @@ func GetAlbumArtFilename(tr *itunes.Track) (string, error) {
 
 func AlbumArt(w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
-	genre := itunes.MakeKey(q.Get("genre"))
-	artist := itunes.MakeKey(q.Get("artist"))
-	album := itunes.MakeKey(q.Get("album"))
-	tracks := lib.SongIndex[itunes.SongKey{genre, artist, album}]
+	genre  := q.Get("genre")
+	artist := q.Get("artist")
+	album  := q.Get("album")
+	tl := lib.TrackList().Filter(&genre, &artist, &album)
+	tracks := *tl
 	if tracks == nil || len(tracks) == 0 {
+		log.Printf("no tracks for genre='%s', artist='%s', album='%s'", genre, artist, album)
 		NotFound.Raise(nil, "No such album").Respond(w)
 		return
 	}

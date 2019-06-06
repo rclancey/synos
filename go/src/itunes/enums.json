@@ -68,37 +68,38 @@
 		"grouping": 39,
 		"kind": 9,
 		"name": 2,
-		"show": 62,
+		"series": 62,
 		"sort_album": 79,
-		"sort_albumartist": 81,
+		"sort_album_artist": 81,
 		"sort_composer": 82,
 		"sort_name": 78,
-		"sort_show": 83,
+		"sort_series": 83,
 		"video_rating": 89,
 
-		"b_p_m": 35,
+		"bpm": 35,
 		"bit_rate": 5,
 		"compilation": 31,
 		"disk_number": 24,
-		"plays": 22,
+		"play_count": 22,
 		"rating": 25,
+        "album_rating": 90,
 		"podcast": 57,
 		"sample_rate": 6,
 		"season": 63,
 		"size": 12,
-		"skips": 68,
-		"duration": 13,
+		"skip_count": 68,
+		"total_time": 13,
 		"track_number": 11,
 		"year": 7,
 
 		"has_artwork": 37,
 		"purchased": 41,
-		"checked": 29,
+		"disabled": 29,
 
 		"date_added": 16,
 		"date_modified": 10,
-		"last_played": 23,
-		"last_skipped": 69,
+		"play_date_utc": 23,
+		"skip_date": 69,
 
 		"media_kind": 60,
 
@@ -124,7 +125,8 @@
 		"endswith": 8,
 		"greaterthan": 16,
 		"lessthan": 64,
-		"between": 256
+		"between": 256,
+        "within": 512
 	}
 }
 
