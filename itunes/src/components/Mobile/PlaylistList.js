@@ -1,5 +1,6 @@
 import React from 'react';
 import _ from 'lodash';
+import { List, AutoSizer } from "react-virtualized";
 import { DISTINGUISHED_KINDS, PLAYLIST_ORDER } from '../../lib/distinguished_kinds';
 import { Playlist } from './SongList';
 
@@ -7,11 +8,13 @@ export class PlaylistList extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      top: [0],
+      scrollTop: [0],
       path: [],
       playlists: [],
     };
     this.onClose = this.onClose.bind(this);
+    this.onScroll = this.onScroll.bind(this);
+    this.rowRenderer = this.rowRenderer.bind(this);
   }
 
   componentDidMount() {
@@ -48,10 +51,8 @@ export class PlaylistList extends React.Component {
   }
 
   onOpen(pl) {
-    const t = document.body.parentNode.scrollTop;
-    document.body.parentNode.scrollTo(0, 0);
     this.setState({
-      top: this.state.top.concat([t]),
+      scrollTop: this.state.scrollTop.concat([0]),
       path: this.state.path.concat([pl]),
     });
   }
@@ -60,16 +61,39 @@ export class PlaylistList extends React.Component {
     if (this.state.path.length == 0) {
       this.props.onClose();
     } else {
-      const t = this.state.top[this.state.top.length - 1];
+      const t = this.state.scrollTop[this.state.scrollTop.length - 1];
       this.setState({
-        top: this.state.top.slice(0, this.state.top.length - 1),
+        scrollTop: this.state.scrollTop.slice(0, this.state.scrollTop.length - 1),
         path: this.state.path.slice(0, this.state.path.length - 1),
-      }, () => document.body.parentNode.scrollTo(0, t));
+      });//, () => document.body.parentNode.scrollTo(0, t));
     }
   }
 
+  onScroll({ scrollTop }) {
+    const tops = this.state.scrollTop.slice(0);
+    tops.pop();
+    tops.push(scrollTop);
+    this.setState({ scrollTop: tops });
+  }
+
+  folder() {
+    if (this.state.path.length == 0) {
+      return this.state.playlists;
+    }
+    return this.state.path[this.state.path.length - 1].children || [];
+  }
+
+  rowRenderer({ key, index, style }) {
+    const pl = this.folder()[index];
+    return (
+      <div key={pl.persistent_id} className="item" style={style} onClick={() => this.onOpen(pl)}>
+        <div className={`icon ${pl.kind}`} />
+        <div className="title">{pl.name}</div>
+      </div>
+    );
+  }
+
   render() {
-    let pls = this.state.playlists;
     let title = 'Playlists';
     let prevTitle = this.props.prev;
     if (this.state.path.length > 0) {
@@ -79,7 +103,6 @@ export class PlaylistList extends React.Component {
       }
       const pl = this.state.path[this.state.path.length-1];
       if (pl.folder) {
-        pls = pl.children || [];
         title = pl.name;
       } else {
         return (
@@ -101,12 +124,21 @@ export class PlaylistList extends React.Component {
           {/*<div className="icon folder" />*/}
           <div className="title">{title}</div>
         </div>
-        { pls.map(pl => (
-          <div key={pl.persistent_id} className="item" onClick={() => this.onOpen(pl)}>
-            <div className={`icon ${pl.kind}`} />
-            <div className="title">{pl.name}</div>
-          </div>
-        )) }
+        <div className="items">
+          <AutoSizer>
+            {({width, height}) => (
+              <List
+                width={width}
+                height={height}
+                rowCount={this.folder().length}
+                rowHeight={58}
+                rowRenderer={this.rowRenderer}
+                scrollTop={this.state.scrollTop[this.state.scrollTop.length - 1]}
+                onScroll={this.onScroll}
+              />
+            )}
+          </AutoSizer>
+        </div>
       </div>
     );
   }

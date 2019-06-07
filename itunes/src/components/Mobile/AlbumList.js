@@ -51,12 +51,12 @@ export class AlbumList extends React.Component {
 
   coverArtUrl(album) {
     let url = '/api/art/album?';
-    if (this.props.artist) {
+    if (album[0]) {
+      url += `artist=${escape(album[0])}`;
+    } else if (this.props.artist) {
       url += `artist=${escape(this.props.artist)}`;
-    } else {
-      url += `artist=${escape(album[1])}`;
     }
-    url += `&album=${escape(album[0])}`;
+    url += `&album=${escape(album[1])}`;
     return `url(${url})`;
     //return `url(/api/art/album?artist=${escape(this.props.artist)}&album=${escape(album)})`;
   }
@@ -73,13 +73,13 @@ export class AlbumList extends React.Component {
         <div className="padding" />
         <div className="item" onClick={() => this.onOpen(album1)}>
           <div className="coverArt" style={{backgroundImage: this.coverArtUrl(album1)}} />
-          <div className="title">{album1[0]}</div>
+          <div className="title">{album1[1]}</div>
         </div>
         <div className="padding" />
         { album2 ? (
           <div className="item" onClick={() => this.onOpen(album2)}>
             <div className="coverArt" style={{backgroundImage: this.coverArtUrl(album2)}} />
-            <div className="title">{album2[0]}</div>
+            <div className="title">{album2[1]}</div>
           </div>
         ) : (
           <div className="item" />
@@ -94,8 +94,8 @@ export class AlbumList extends React.Component {
       return (
         <Album
           prev={this.props.artist || "Albums"}
-          artist={this.props.artist || this.state.album[1]}
-          album={this.state.album[0]}
+          artist={this.props.artist || this.state.album[0]}
+          album={this.state.album[1]}
           onClose={this.onClose}
           onTrackMenu={this.props.onTrackMenu}
           onPlaylistMenu={this.props.onPlaylistMenu}

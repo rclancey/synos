@@ -881,6 +881,7 @@ body {
     border-bottom: solid #ccc 1px;
 }
 
+.playlistList,
 .artistList,
 .albumList,
 .genreList {
@@ -900,6 +901,7 @@ body {
     color: #ff2d55;
 }
 
+.playlistList .items,
 .artistList .items,
 .albumList .items,
 .genreList .items {
