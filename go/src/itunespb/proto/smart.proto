@@ -1,0 +1,191 @@
+syntax = "proto2";
+package itunespb;
+
+import "time.proto";
+
+enum MediaKind {
+    Music = 1;
+    Movie = 2;
+    Podcast = 4;
+    Audiobook = 8;
+    MusicVideo = 32;
+    TVShow = 64;
+    HomeVideo = 1024;
+    ITunesExtras = 65536;
+    VoiceMemo = 1048576;
+    ITunesU = 2097152;
+    Book = 12582912;
+    BookOrAudiobook = 12582920;
+    OtherMusic = 1057201;
+    UndesiredMusic = 2129924;
+    UndesiredOther = 2138116;
+}
+
+enum ICloudStatus {
+    Purchased = 1;
+    Matched = 2;
+    Uploaded = 3;
+    Ineligible = 4;
+    LocalOnly = 5;
+    Duplicate = 6;
+}
+
+enum LoveStatus {
+    None = 0;
+    Loved = 2;
+    Disliked = 3;
+}
+
+enum LocationStatus {
+    Computer = 1;
+    iCloud = 16;
+}
+
+enum Conjunction {
+    AND = 0;
+    OR = 1;
+}
+
+enum LimitMethod {
+    minutes = 1;
+    MB = 2;
+    items = 3;
+    hours = 4;
+    GB = 5;
+}
+
+enum SelectionMethod {
+    limit_lowest_rating = 1;
+    limit_random = 2;
+    limit_name = 5;
+    limit_album = 6;
+    limit_artist = 7;
+    limit_genre = 9;
+    limit_date_added = 21;
+    limit_play_count = 25;
+    limit_play_date_utc = 26;
+    limit_rating = 28;
+}
+
+enum Field {
+    album = 3;
+    album_artist = 71;
+    artist = 4;
+    category = 55;
+    comments = 14;
+    composer = 18;
+    description = 54;
+    genre = 8;
+    grouping = 39;
+    kind = 9;
+    title = 2;
+    show = 62;
+    sort_album = 79;
+    sort_albumartist = 81;
+    sort_composer = 82;
+    sort_name = 78;
+    sort_show = 83;
+    video_rating = 89;
+
+    b_p_m = 35;
+    bit_rate = 5;
+    compilation = 31;
+    disk_number = 24;
+    plays = 22;
+    rating = 25;
+    podcast = 57;
+    sample_rate = 6;
+    season = 63;
+    size = 12;
+    skips = 68;
+    duration = 13;
+    track_number = 11;
+    year = 7;
+
+    has_artwork = 37;
+    purchased = 41;
+    checked = 29;
+
+    date_added = 16;
+    date_modified = 10;
+    last_played = 23;
+    last_skipped = 69;
+
+    media_kind = 60;
+
+    playlist_persistent_id = 40;
+
+    love = 154;
+
+    icloud_status = 134;
+
+    location = 133;
+}
+
+enum LogicSign {
+    int_pos = 0;
+    str_pos = 1;
+    int_neg = 2;
+    str_neg = 3;
+}
+
+enum LogicRule {
+    other = 0;
+    is = 1;
+    contains = 2;
+    startswith = 4;
+    endswith = 8;
+    greaterthan = 16;
+    lessthan = 64;
+    between = 256;
+}
+
+enum RuleType {
+    RuleType_ruleset_rule = 1;
+    RuleType_string_rule = 2;
+    RuleType_int_rule = 3;
+    RuleType_boolean_rule = 4;
+    RuleType_date_rule = 5;
+    RuleType_media_kind_rule = 6;
+    RuleType_playlist_rule = 7;
+    RuleType_love_rule = 8;
+    RuleType_cloud_rule = 9;
+    RuleType_location_rule = 10;
+}
+
+message SmartPlaylistInfo {
+	optional bool            checked_only  = 1;
+	optional bool            descending    = 2;
+	optional bool            has_limit     = 3;
+	optional bool            live_updating = 4;
+	optional LimitMethod     limit_method  = 5;
+	optional int32           limit_size    = 6;
+	optional SelectionMethod sort_field    = 7;
+}
+
+message SmartPlaylistRule {
+    optional RuleType              type             = 1;
+    optional Field                 field            = 2;
+    optional LogicSign             sign             = 3;
+    optional LogicRule             operator         = 4;
+    optional string                string_value     = 5;
+    repeated int64                 int_values       = 6;
+    optional bool                  bool_value       = 7;
+    optional MediaKind             media_kind_value = 8;
+    repeated Time                  date_values      = 9;
+    optional string                playlist_value   = 10;
+    optional LoveStatus            love_value       = 11;
+    optional ICloudStatus          icloud_value     = 12;
+    optional LocationStatus        location_value   = 13;
+    repeated SmartPlaylistCriteria sub_rules        = 14;
+}
+
+message SmartPlaylistCriteria {
+    optional Conjunction       conjunction = 1;
+    repeated SmartPlaylistRule rules       = 2;
+}
+
+message SmartPlaylist {
+    optional SmartPlaylistInfo      info     = 1;
+    optional SmartPlaylistCriteria  criteria = 2;
+}

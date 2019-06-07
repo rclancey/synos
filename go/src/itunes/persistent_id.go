@@ -37,7 +37,7 @@ func (pid PersistentID) MarshalJSON() ([]byte, error) {
 func (pid *PersistentID) UnmarshalJSON(data []byte) error {
 	n := len(data)
 	if data[0] == '"' && data[n-1] == '"' {
-		return pid.DecodeString(string(data[1:n]))
+		return pid.DecodeString(string(data[1:n-1]))
 	}
 	return pid.DecodeString(string(data))
 }

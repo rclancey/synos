@@ -1,6 +1,8 @@
 package itunes
 
 import (
+	"sort"
+
 	"github.com/golang/protobuf/proto"
 	"itunespb"
 )
@@ -27,75 +29,75 @@ func fromTime(v *itunespb.Time) *Time {
 
 func (tr *Track) LoadProto(m *itunespb.Track) {
 	*tr = Track{
-		Album:                m.Album,
-		AlbumArtist:          m.AlbumArtist,
-		AlbumRating:          fromInt32(m.AlbumRating),
-		AlbumRatingComputed:  m.AlbumRatingComputed,
-		Artist:               m.Artist,
-		ArtworkCount:         fromInt32(m.ArtworkCount),
-		BPM:                  fromInt32(m.Bpm),
-		BitRate:              fromInt32(m.BitRate),
-		Clean:                m.Clean,
-		Comments:             m.Comments,
-		Compilation:          m.Compilation,
-		Composer:             m.Composer,
-		ContentRating:        m.ContentRating,
-		Date:                 fromTime(m.Date),
+		Album:                m.GetAlbum(),
+		AlbumArtist:          m.GetAlbumArtist(),
+		AlbumRating:          uint8(m.GetAlbumRating()),
+		//AlbumRatingComputed:  m.GetAlbumRatingComputed(),
+		Artist:               m.GetArtist(),
+		//ArtworkCount:         int(m.GetArtworkCount()),
+		//BPM:                  int(m.GetBpm()),
+		//BitRate:              int(m.GetBitRate()),
+		//Clean:                m.GetClean(),
+		Comments:             m.GetComments(),
+		Compilation:          m.GetCompilation(),
+		Composer:             m.GetComposer(),
+		//ContentRating:        m.GetContentRating(),
+		//Date:                 fromTime(m.Date),
 		DateAdded:            fromTime(m.DateAdded),
 		DateModified:         fromTime(m.DateModified),
-		Disabled:             m.Disabled,
-		DiscCount:            fromInt32(m.DiscCount),
-		DiscNumber:           fromInt32(m.DiscNumber),
-		Episode:              m.Episode,
-		EpisodeOrder:         fromInt32(m.EpisodeOrder),
-		Explicit:             m.Explicit,
-		FileFolderCount:      fromInt32(m.FileFolderCount),
-		FileType:             fromInt32(m.FileType),
-		Genre:                m.Genre,
-		Grouping:             m.Grouping,
-		HasVideo:             m.HasVideo,
-		Kind:                 m.Kind,
-		LibraryFolderCount:   fromInt32(m.LibraryFolderCount),
-		Location:             m.Location,
-		Master:               m.Master,
-		Movie:                m.Movie,
-		MusicVideo:           m.MusicVideo,
-		Name:                 m.Name,
-		PartOfGaplessAlbum:   m.PartOfGaplessAlbum,
+		//Disabled:             m.GetDisabled(),
+		DiscCount:            uint8(m.GetDiscCount()),
+		DiscNumber:           uint8(m.GetDiscNumber()),
+		//Episode:              m.GetEpisode(),
+		//EpisodeOrder:         int(m.GetEpisodeOrder()),
+		//Explicit:             m.GetExplicit(),
+		//FileFolderCount:      int(m.GetFileFolderCount()),
+		//FileType:             int(m.GetFileType()),
+		Genre:                m.GetGenre(),
+		Grouping:             m.GetGrouping(),
+		//HasVideo:             m.GetHasVideo(),
+		Kind:                 m.GetKind(),
+		//LibraryFolderCount:   int(m.GetLibraryFolderCount()),
+		Location:             m.GetLocation(),
+		//Master:               m.GetMaster(),
+		//Movie:                m.GetMovie(),
+		//MusicVideo:           m.GetMusicVideo(),
+		Name:                 m.GetName(),
+		PartOfGaplessAlbum:   m.GetPartOfGaplessAlbum(),
 		PersistentID:         PersistentID(m.GetPersistentId()),
-		PlayCount:            fromInt32(m.PlayCount),
-		PlayDate:             fromInt32(m.PlayDate),
+		PlayCount:            uint(m.GetPlayCount()),
+		//PlayDate:             int(m.GetPlayDate()),
 		PlayDateUTC:          fromTime(m.PlayDateUtc),
-		Podcast:              m.Podcast,
-		Protected:            m.Protected,
-		Purchased:            m.Purchased,
+		//Podcast:              m.GetPodcast(),
+		//Protected:            m.GetProtected(),
+		Purchased:            m.GetPurchased(),
 		PurchaseDate:         fromTime(m.PurchaseDate),
-		Rating:               fromInt32(m.Rating),
-		RatingComputed:       m.RatingComputed,
+		Rating:               uint8(m.GetRating()),
+		//RatingComputed:       m.GetRatingComputed(),
 		ReleaseDate:          fromTime(m.ReleaseDate),
-		SampleRate:           fromInt32(m.SampleRate),
-		Season:               fromInt32(m.Season),
-		Series:               m.Series,
-		Size:                 fromInt32(m.Size),
-		SkipCount:            fromInt32(m.SkipCount),
+		//SampleRate:           int(m.GetSampleRate()),
+		//Season:               int(m.GetSeason()),
+		//Series:               m.GetSeries(),
+		Size:                 uint(m.GetSize()),
+		SkipCount:            uint(m.GetSkipCount()),
 		SkipDate:             fromTime(m.SkipDate),
-		SortAlbum:            m.SortAlbum,
-		SortAlbumArtist:      m.SortAlbumArtist,
-		SortArtist:           m.SortArtist,
-		SortComposer:         m.SortComposer,
-		SortName:             m.SortName,
-		SortSeries:           m.SortSeries,
-		StopTime:             fromInt32(m.StopTime),
-		TVShow:               m.TvShow,
-		TotalTime:            fromInt32(m.TotalTime),
-		TrackCount:           fromInt32(m.TrackCount),
-		TrackID:              fromInt32(m.TrackId),
-		TrackNumber:          fromInt32(m.TrackNumber),
-		TrackType:            m.TrackType,
-		Unplayed:             m.Unplayed,
-		VolumeAdjustment:     fromInt32(m.VolumeAdjustment),
-		Work:                 m.Work,
-		Year:                 fromInt32(m.Year),
+		SortAlbum:            m.GetSortAlbum(),
+		SortAlbumArtist:      m.GetSortAlbumArtist(),
+		SortArtist:           m.GetSortArtist(),
+		SortComposer:         m.GetSortComposer(),
+		SortName:             m.GetSortName(),
+		//SortSeries:           m.GetSortSeries(),
+		//StopTime:             int(m.GetStopTime()),
+		//TVShow:               m.GetTvShow(),
+		TotalTime:            uint(m.GetTotalTime()),
+		TrackCount:           uint8(m.GetTrackCount()),
+		//TrackID:              int(m.GetTrackId()),
+		TrackNumber:          uint8(m.GetTrackNumber()),
+		//TrackType:            m.GetTrackType(),
+		Unplayed:             m.GetUnplayed(),
+		VolumeAdjustment:     uint8(m.GetVolumeAdjustment()),
+		Work:                 m.GetWork(),
+		//Year:                 int(m.GetYear()),
 	}
 }
 
@@ -126,22 +128,22 @@ func DeserializeTrack(data []byte) (*Track, error) {
 
 func (pl *Playlist) LoadProto(m *itunespb.Playlist) {
 	*pl = Playlist{
-		Master:               m.Master,
-		PlaylistID:           fromInt32(m.PlaylistId),
+		//Master:               m.Master,
+		//PlaylistID:           fromInt32(m.PlaylistId),
 		PlaylistPersistentID: PersistentID(m.GetPersistentId()),
-		AllItems:             m.AllItems,
-		Visible:              m.Visible,
-		Name:                 m.Name,
-		DistinguishedKind:    fromInt32(m.DistinguishedKind),
-		Music:                m.Music,
-		SmartInfo:            m.SmartInfo,
-		SmartCriteria:        m.SmartCriteria,
-		Movies:               m.Movies,
-		TVShows:              m.TvShows,
-		Podcasts:             m.Podcasts,
-		Audiobooks:           m.Audiobooks,
-		PurchasedMusic:       m.PurchasedMusic,
-		Folder:               m.Folder,
+		//AllItems:             m.AllItems,
+		//Visible:              m.Visible,
+		Name:                 m.GetName(),
+		//DistinguishedKind:    fromInt32(m.DistinguishedKind),
+		//Music:                m.Music,
+		//SmartInfo:            m.SmartInfo,
+		//SmartCriteria:        m.SmartCriteria,
+		//Movies:               m.Movies,
+		//TVShows:              m.TvShows,
+		//Podcasts:             m.Podcasts,
+		//Audiobooks:           m.Audiobooks,
+		//PurchasedMusic:       m.PurchasedMusic,
+		Folder:               m.GetFolder(),
 	}
 	if m.ParentPersistentId != nil {
 		pid := PersistentID(*m.ParentPersistentId)
@@ -151,13 +153,18 @@ func (pl *Playlist) LoadProto(m *itunespb.Playlist) {
 		pid := PersistentID(*m.GeniusTrackId)
 		pl.GeniusTrackID = &pid
 	}
-	pl.Children = make([]*Playlist, len(m.Children))
-	for i, c := range m.Children {
-		pl.Children[i] = FromProtoPlaylist(c)
-	}
-	pl.TrackIDs = make([]PersistentID, len(m.Items))
-	for i, pid := range m.Items {
-		pl.TrackIDs[i] = PersistentID(pid)
+	if pl.Folder {
+		pl.Children = make([]*Playlist, len(m.Children))
+		for i, c := range m.Children {
+			pl.Children[i] = FromProtoPlaylist(c)
+		}
+	} else if m.SmartInfo != nil && len(m.SmartInfo) > 0 && m.SmartCriteria != nil && len(m.SmartCriteria) > 0 {
+		pl.Smart, _ = ParseSmartPlaylist(m.SmartInfo, m.SmartCriteria)
+	} else {
+		pl.TrackIDs = make([]PersistentID, len(m.Items))
+		for i, pid := range m.Items {
+			pl.TrackIDs[i] = PersistentID(pid)
+		}
 	}
 }
 
@@ -198,16 +205,16 @@ func (lib *Library) LoadProto(m *itunespb.Library) {
 		PersistentID:         PersistentID(m.GetPersistentId()),
 		MusicFolder:          m.MusicFolder,
 	}
-	lib.Tracks = map[PersistentID]*Track{}
-	for _, tr := range m.Tracks {
-		lib.Tracks[PersistentID(tr.GetPersistentId())] = FromProtoTrack(tr)
+	lib.Tracks = make([]*Track, len(m.Tracks))
+	for i, tr := range m.Tracks {
+		lib.Tracks[i] = FromProtoTrack(tr)
 	}
+	sort.Sort(sts(lib.Tracks))
 	lib.Playlists = map[PersistentID]*Playlist{}
 	for _, pl := range m.Playlists {
 		lib.Playlists[PersistentID(pl.GetPersistentId())] = FromProtoPlaylist(pl)
 	}
 	for _, pl := range lib.Playlists {
-		pl.MakeSmart()
 		pl.Nest(lib)
 	}
 }

@@ -55,7 +55,7 @@ func PlaylistTracks(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if ext == ".m3u" {
-		lines, err := M3U(pl)
+		lines, err := M3U(pl.Populate(lib))
 		if err != nil {
 			InternalServerError.Raise(err, "").Respond(w)
 			return
@@ -74,8 +74,24 @@ func PlaylistTracks(w http.ResponseWriter, req *http.Request) {
 	} else if req.URL.Query().Get("raw") == "true" {
 		pl = pl.Populate(lib)
 		SendJSON(w, pl)
+	} else if req.URL.Query().Get("struct") == "true" {
+		SendJSON(w, pl)
 	} else {
-		SendJSON(w, pl.TrackIDs)
+		var trackIds []itunes.PersistentID
+		if pl.Smart != nil {
+			tl, err := lib.TrackList().SmartFilter(pl.Smart, lib)
+			if err != nil {
+				InternalServerError.Raise(err, "").Respond(w)
+				return
+			}
+			trackIds = make([]itunes.PersistentID, len(*tl))
+			for i, tr := range *tl {
+				trackIds[i] = tr.PersistentID
+			}
+		} else {
+			trackIds = pl.TrackIDs
+		}
+		SendJSON(w, trackIds)
 	}
 }
 
@@ -88,28 +104,25 @@ func m3uEscape(s string) string {
 }
 
 func M3U(pl *itunes.Playlist) ([]string, error) {
-	lines := make([]string, len(pl.TrackIDs) * 2 + 2)
+	lines := make([]string, len(pl.PlaylistItems) * 2 + 2)
 	lines[0] = "#EXTM3U"
-	var track *itunes.Track
-	var ok bool
-	for i, pid := range pl.TrackIDs {
-		track, ok = lib.Tracks[pid]
-		if !ok {
+	for i, track := range pl.PlaylistItems {
+		if track == nil {
 			continue
 		}
-		var t int
+		var t uint
 		var album, artist, song string
-		if track.TotalTime != nil {
-			t = *track.TotalTime / 1000
+		if track.TotalTime != 0 {
+			t = track.TotalTime / 1000
 		}
-		if track.Album != nil {
-			album = *track.Album
+		if track.Album != "" {
+			album = track.Album
 		}
-		if track.Artist != nil {
-			artist = *track.Artist
+		if track.Artist != "" {
+			artist = track.Artist
 		}
-		if track.Name != nil {
-			song = *track.Name
+		if track.Name != "" {
+			song = track.Name
 		}
 		u := cfg.GetRootURL()
 		u.Path = fmt.Sprintf("/api/track/%s%s", track.PersistentID.EncodeToString(), track.GetExt())
@@ -130,16 +143,11 @@ func CreatePlaylist(w http.ResponseWriter, req *http.Request) {
 		herr.RespondJSON(w)
 		return
 	}
-	pl.Master = nil
 	pl.PlaylistPersistentID = itunes.NewPersistentID()
-	pl.AllItems = boolptr(true)
-	pl.Visible = boolptr(true)
-	if pl.Folder != nil && *pl.Folder {
+	if pl.Folder {
 		pl.PlaylistItems = nil
 		pl.TrackIDs = nil
 		pl.Children = []*itunes.Playlist{}
-		pl.SmartInfo = nil
-		pl.SmartCriteria = nil
 		pl.Smart = nil
 	} else {
 		if pl.PlaylistItems != nil {
@@ -152,13 +160,6 @@ func CreatePlaylist(w http.ResponseWriter, req *http.Request) {
 			pl.TrackIDs = []itunes.PersistentID{}
 		}
 	}
-	pl.DistinguishedKind = nil
-	pl.Music = nil
-	pl.Movies = nil
-	pl.TVShows = nil
-	pl.Podcasts = nil
-	pl.Audiobooks = nil
-	pl.PurchasedMusic = nil
 	pl.GeniusTrackID = nil
 }
 

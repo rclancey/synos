@@ -137,7 +137,7 @@ func ListArtists(w http.ResponseWriter, req *http.Request) {
 	}
 	SendJSON(w, artistMap.Values())
 	*/
-	SendJSON(w, lib.TrackList().Filter(&genre, nil, nil).Artists())
+	SendJSON(w, lib.TrackList().Filter(genre, "", "").Artists())
 }
 
 /*
@@ -192,7 +192,7 @@ func ListAlbums(w http.ResponseWriter, req *http.Request) {
 	}
 	SendJSON(w, albumMap.Values())
 	*/
-	SendJSON(w, lib.TrackList().Filter(&genre, &artist, nil).Albums())
+	SendJSON(w, lib.TrackList().Filter(genre, artist, "").Albums())
 }
 
 type SortableAlbumList [][3]string
@@ -290,5 +290,5 @@ func ListSongs(w http.ResponseWriter, req *http.Request) {
 	sort.Sort(sortableAlbum(tracks))
 	SendJSON(w, tracks)
 	*/
-	SendJSON(w, lib.TrackList().Filter(&genre, &artist, &album))
+	SendJSON(w, lib.TrackList().Filter(genre, artist, album).DefaultSort())
 }

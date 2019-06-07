@@ -89,12 +89,12 @@ var genreImages = map[string]string{
 }
 
 func GetGenreImageURL(tr *itunes.Track) (string, error) {
-	if tr.Genre == nil {
+	if tr.Genre == "" {
 		return "/piano.jpg", nil
 		//return "", errors.New("track has no genre")
 	}
 	re := regexp.MustCompile(`[^A-Za-z0-9_]`)
-	bn := re.ReplaceAllString(itunes.MakeKey(*tr.Genre), "")
+	bn := re.ReplaceAllString(itunes.MakeKey(tr.Genre), "")
 	img, ok := genreImages[bn]
 	if ok {
 		if img != "" {
@@ -111,7 +111,7 @@ func ArtistArt(w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
 	genre  := q.Get("genre")
 	artist := q.Get("artist")
-	tl := lib.TrackList().Filter(&genre, &artist, nil)
+	tl := lib.TrackList().Filter(genre, artist, "")
 	tracks := *tl
 	if tracks == nil || len(tracks) == 0 {
 		log.Printf("no tracks (%s) for %s / %s\n", tracks, genre, artist)
@@ -128,11 +128,11 @@ func ArtistArt(w http.ResponseWriter, req *http.Request) {
 	}
 	artist = itunes.MakeKey(artist)
 	for _, tr := range tracks {
-		if tr.Artist == nil {
+		if tr.Artist == "" {
 			continue
 		}
-		if itunes.MakeKey(*tr.Artist) != artist {
-			log.Printf("skipping track %s != %s", *tr.Artist, artist)
+		if itunes.MakeKey(tr.Artist) != artist {
+			log.Printf("skipping track %s != %s", tr.Artist, artist)
 			continue
 		}
 		fn, err := GetArtistImageFilename(tr)
@@ -147,7 +147,7 @@ func ArtistArt(w http.ResponseWriter, req *http.Request) {
 
 func GetArtistImageFilename(tr *itunes.Track) (string, error) {
 	re := regexp.MustCompile(`[^A-Za-z0-9_]`)
-	bn := re.ReplaceAllString(itunes.MakeKey(*tr.Artist), "")
+	bn := re.ReplaceAllString(itunes.MakeKey(tr.Artist), "")
 	for _, ext := range []string{".jpg", ".png", ".gif"} {
 		fn := filepath.Join(cfg.CacheDirectory, "artists", bn + ext)
 		_, err := os.Stat(fn)
@@ -155,7 +155,7 @@ func GetArtistImageFilename(tr *itunes.Track) (string, error) {
 			return fn, nil
 		}
 	}
-	img, ct, err := spot.GetArtistImage(*tr.Artist)
+	img, ct, err := spot.GetArtistImage(tr.Artist)
 	if err != nil {
 		return "", err
 	}
@@ -202,8 +202,8 @@ func GetAlbumArtFilename(tr *itunes.Track) (string, error) {
 		}
 	}
 	var art, alb string
-	if tr.Album != nil {
-		alb = *tr.Album
+	if tr.Album != "" {
+		alb = tr.Album
 	} else {
 		fn, err := GetGenericCoverFilename()
 		if err == nil {
@@ -211,10 +211,10 @@ func GetAlbumArtFilename(tr *itunes.Track) (string, error) {
 		}
 		return fn, err
 	}
-	if tr.AlbumArtist != nil {
-		art = *tr.AlbumArtist
-	} else if tr.Artist != nil {
-		art = *tr.Artist
+	if tr.AlbumArtist != "" {
+		art = tr.AlbumArtist
+	} else if tr.Artist != "" {
+		art = tr.Artist
 	} else {
 		fn, err := GetGenericCoverFilename()
 		if err == nil {
@@ -259,7 +259,7 @@ func AlbumArt(w http.ResponseWriter, req *http.Request) {
 	genre  := q.Get("genre")
 	artist := q.Get("artist")
 	album  := q.Get("album")
-	tl := lib.TrackList().Filter(&genre, &artist, &album)
+	tl := lib.TrackList().Filter(genre, artist, album)
 	tracks := *tl
 	if tracks == nil || len(tracks) == 0 {
 		log.Printf("no tracks for genre='%s', artist='%s', album='%s'", genre, artist, album)

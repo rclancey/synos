@@ -1,196 +1,88 @@
 package itunes
 
 import (
-	"encoding/xml"
+	//"encoding/xml"
 	//"fmt"
+	//"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
-	"time"
 	"strings"
-	"net/url"
-	"path"
+	"time"
 
-	"golang.org/x/text/unicode/norm"
+	//"golang.org/x/text/unicode/norm"
 	"github.com/dhowden/tag"
 )
 
 type Track struct {
 	PersistentID         PersistentID `json:"persistent_id"`
-	Album                *string      `json:"album,omitempty"`
-	AlbumArtist          *string      `json:"album_artist,omitempty"`
-	AlbumRating          *int         `json:"album_rating,omitempty"`
-	AlbumRatingComputed  *bool        `json:"album_rating_computed,omitempty"`
-	Artist               *string      `json:"artist,omitempty"`
-	ArtworkCount         *int         `json:"artwork_count,omitempty"`
-	BPM                  *int         `json:"bpm,omitempty"`
-	BitRate              *int         `json:"bit_rate,omitempty"`
-	Clean                *bool        `json:"clean,omitempty"`
-	Comments             *string      `json:"comments,omitempty"`
-	Compilation          *bool        `json:"compilation,omitempty"`
-	Composer             *string      `json:"composer,omitempty"`
-	ContentRating        *string      `json:"content_rating,omitempty"`
-	Date                 *Time        `json:"date,omitempty"`
+	Album                string       `json:"album,omitempty"`
+	AlbumArtist          string       `json:"album_artist,omitempty"`
+	AlbumRating          uint8        `json:"album_rating,omitempty"`
+	Artist               string       `json:"artist,omitempty"`
+	Comments             string       `json:"comments,omitempty"`
+	Compilation          bool         `json:"compilation,omitempty"`
+	Composer             string       `json:"composer,omitempty"`
 	DateAdded            *Time        `json:"date_added,omitempty"`
 	DateModified         *Time        `json:"date_modified,omitempty"`
-	Disabled             *bool        `json:"disabled,omitempty"`
-	DiscCount            *int         `json:"disc_count,omitempty"`
-	DiscNumber           *int         `json:"disc_number,omitempty"`
-	Episode              *string      `json:"episode,omitempty"`
-	EpisodeOrder         *int         `json:"episode_order,omitempty"`
-	Explicit             *bool        `json:"explicit,omitempty"`
-	FileFolderCount      *int         `json:"file_folder_count,omitempty"`
-	FileType             *int         `json:"file_type,omitempty"`
-	Genre                *string      `json:"genre,omitempty"`
-	Grouping             *string      `json:"grouping,omitempty"`
-	HasVideo             *bool        `json:"has_video,omitempty"`
-	Kind                 *string      `json:"kind,omitempty"`
-	LibraryFolderCount   *int         `json:"library_folder_count,omitempty"`
-	Location             *string      `json:"location"`
+	DiscCount            uint8        `json:"disc_count,omitempty"`
+	DiscNumber           uint8        `json:"disc_number,omitempty"`
+	Genre                string       `json:"genre,omitempty"`
+	Grouping             string       `json:"grouping,omitempty"`
+	Kind                 string       `json:"kind,omitempty"`
+	Location             string       `json:"location"`
 	Loved                *bool        `json:"loved"`
-	Master               *bool        `json:"master,omitempty"`
-	Movie                *bool        `json:"movie,omitempty"`
-	MusicVideo           *bool        `json:"music_video,omitempty"`
-	Name                 *string      `json:"name,omitempty"`
-	PartOfGaplessAlbum   *bool        `json:"part_of_gapless_album,omitempty"`
-	PlayCount            *int         `json:"play_count,omitempty"`
-	PlayDate             *int         `json:"play_date,omitempty"`
+	Name                 string       `json:"name,omitempty"`
+	PartOfGaplessAlbum   bool         `json:"part_of_gapless_album,omitempty"`
+	PlayCount            uint         `json:"play_count,omitempty"`
 	PlayDateUTC          *Time        `json:"play_date_utc,omitempty"`
-	Podcast              *bool        `json:"podcast,omitempty"`
-	Protected            *bool        `json:"protected,omitempty"`
-	Purchased            *bool        `json:"purchased,omitempty"`
+	Purchased            bool         `json:"purchased,omitempty"`
 	PurchaseDate         *Time        `json:"purchase_date,omitempty"`
-	Rating               *int         `json:"rating,omitempty"`
-	RatingComputed       *bool        `json:"rating_computed,omitempty"`
+	Rating               uint8        `json:"rating,omitempty"`
 	ReleaseDate          *Time        `json:"release_date,omitempty"`
-	SampleRate           *int         `json:"sample_rate,omitempty"`
-	Season               *int         `json:"season,omitempty"`
-	Series               *string      `json:"series,omitempty"`
-	Size                 *int         `json:"size,omitempty"`
-	SkipCount            *int         `json:"skip_count,omitempty"`
+	Size                 uint         `json:"size,omitempty"`
+	SkipCount            uint         `json:"skip_count,omitempty"`
 	SkipDate             *Time        `json:"skip_date,omitempty"`
-	SortAlbum            *string      `json:"sort_album,omitempty"`
-	SortAlbumArtist      *string      `json:"sort_album_artist,omitempty"`
-	SortArtist           *string      `json:"sort_artist,omitempty"`
-	SortComposer         *string      `json:"sort_composer,omitempty"`
-	SortName             *string      `json:"sort_name,omitempty"`
-	SortSeries           *string      `json:"sort_series,omitempty"`
-	StopTime             *int         `json:"stop_time,omitempty"`
-	TVShow               *bool        `json:"tv_show,omitempty"`
-	TotalTime            *int         `json:"total_time,omitempty"`
-	TrackCount           *int         `json:"track_count,omitempty"`
-	TrackID              *int         `json:"track_id,omitempty"`
-	TrackNumber          *int         `json:"track_number,omitempty"`
-	TrackType            *string      `json:"track_type,omitempty"`
-	Unplayed             *bool        `json:"unplayed,omitempty"`
-	VolumeAdjustment     *int         `json:"volume_adjustment,omitempty"`
-	Work                 *string      `json:"work,omitempty"`
-	Year                 *int         `json:"year,omitempty"`
-	finder               *FileFinder
-}
-
-func (t *Track) SetFinder(finder *FileFinder) {
-	t.finder = finder
-}
-
-func (t *Track) Set(key []byte, kind string, val []byte) {
-	SetField(t, key, kind, val)
+	SortAlbum            string       `json:"sort_album,omitempty"`
+	SortAlbumArtist      string       `json:"sort_album_artist,omitempty"`
+	SortArtist           string       `json:"sort_artist,omitempty"`
+	SortComposer         string       `json:"sort_composer,omitempty"`
+	SortName             string       `json:"sort_name,omitempty"`
+	TotalTime            uint         `json:"total_time,omitempty"`
+	TrackCount           uint8        `json:"track_count,omitempty"`
+	TrackNumber          uint8        `json:"track_number,omitempty"`
+	Unplayed             bool         `json:"unplayed,omitempty"`
+	VolumeAdjustment     uint8        `json:"volume_adjustment,omitempty"`
+	Work                 string       `json:"work,omitempty"`
 }
 
 func (t *Track) String() string {
 	s := ""
 	delim := ""
-	if t.AlbumArtist != nil {
-		s += delim + *t.AlbumArtist
+	if t.AlbumArtist != "" {
+		s += delim + t.AlbumArtist
 		delim = " / "
-	} else if t.Artist != nil {
-		s += delim + *t.Artist
-		delim = " / "
-	}
-	if t.Album != nil {
-		s += delim + *t.Album
+	} else if t.Artist != "" {
+		s += delim + t.Artist
 		delim = " / "
 	}
-	if t.AlbumArtist != nil && t.Artist != nil && *t.AlbumArtist != *t.Artist {
-		s += delim + *t.Artist
+	if t.Album != "" {
+		s += delim + t.Album
 		delim = " / "
 	}
-	if t.Name != nil {
-		s += delim + *t.Name
+	if t.AlbumArtist != "" && t.Artist != "" && t.AlbumArtist != t.Artist {
+		s += delim + t.Artist
+		delim = " / "
+	}
+	if t.Name != "" {
+		s += delim + t.Name
 	}
 	return s
 }
 
 func (t *Track) MediaKind() MediaKind {
-	if t.MusicVideo != nil && *t.MusicVideo {
-		return MediaKind_MUSICVIDEO
-	}
-	if t.Podcast != nil && *t.Podcast {
-		return MediaKind_PODCAST
-	}
-	if t.Movie != nil && *t.Movie {
-		return MediaKind_MOVIE
-	}
-	if t.TVShow != nil && *t.TVShow {
-		return MediaKind_TVSHOW
-	}
-	if t.HasVideo != nil && *t.HasVideo {
-		return MediaKind_HOMEVIDEO
-	}
-	if t.GetExt() == ".m4b" {
-		return MediaKind_AUDIOBOOK
-	}
 	return MediaKind_MUSIC
-	// TODO:
-	/*
-		"ITunesExtras": 65536,
-		"VoiceMemo": 1048576,
-		"ITunesU": 2097152,
-		"Book": 12582912,
-		"BookOrAudiobook": 12582920,
-		"OtherMusic": 1057201,
-		"UndesiredMusic": 2129924,
-		"UndesiredOther": 2138116
-	*/
-}
-
-func (t *Track) Parse(dec *xml.Decoder, id []byte) error {
-	var key, val []byte
-	isKey := false
-	isVal := false
-	for {
-		tk, err := dec.Token()
-		if err != nil {
-			return err
-		}
-		switch se := tk.(type) {
-		case xml.StartElement:
-			if se.Name.Local == "key" {
-				isKey = true
-				key = []byte{}
-			} else {
-				isVal = true
-				val = []byte{}
-			}
-		case xml.EndElement:
-			switch se.Name.Local {
-			case "key":
-				isKey = false
-			case "dict":
-				return nil
-			default:
-				t.Set(key, se.Name.Local, val)
-				isVal = false
-			}
-		case xml.CharData:
-			if isKey {
-				key = append(key, []byte(se)...)
-			} else if isVal {
-				val = append(val, []byte(se)...)
-			}
-		}
-	}
-	return nil
 }
 
 func (t *Track) ModDate() time.Time {
@@ -211,54 +103,18 @@ func (t *Track) ModDate() time.Time {
 	return mt
 }
 
-func exists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
-
 func (t *Track) Path() string {
-	if t.Location == nil {
+	if t.Location == "" {
 		return ""
 	}
-	u, err := url.Parse(*t.Location)
-	if err != nil {
-		return ""
-	}
-	if t.finder != nil {
-		fn, err := t.finder.FindFile(u.Path)
+	finder := GetGlobalFinder()
+	if finder != nil {
+		fn, err := finder.FindFile(t.Location)
 		if err == nil {
 			return fn
 		}
 	}
-	repls := []string{
-		u.Path,
-		strings.Replace(u.Path, "/Volumes/MultiMedia/", "/Volumes/music/", 1),
-		strings.Replace(u.Path, "/Volumes/MultiMedia/", "/volume1/music/", 1),
-		strings.Replace(u.Path, "/Volumes/Video/", "/volume1/video/", 1),
-		strings.Replace(u.Path, "/Volumes/", "/volume1/", 1),
-		strings.Replace(u.Path, "/Users/rclancey/", "/volume1/music/", 1),
-		strings.Replace(u.Path, "/Users/rclancey/", "/volume1/homes/rclancey", 1),
-		strings.Replace(u.Path, "/Users/rclancey/", "/volume1/homes/rclancey/nocode/rclancey/", 1),
-		strings.Replace(u.Path, "/Users/rclancey/", "/volume1/homes/rclancey/dogfish/rclancey/", 1),
-	}
-	norms := []norm.Form{
-		norm.NFC,
-		norm.NFD,
-		norm.NFKC,
-		norm.NFKD,
-	}
-	for _, path := range repls {
-		if exists(path) {
-			return path
-		}
-		for _, nrm := range norms {
-			npath := nrm.String(path)
-			if exists(npath) {
-				return npath
-			}
-		}
-	}
-	return u.Path
+	return t.Location
 }
 
 func (t *Track) getTag() (tag.Metadata, error) {
@@ -281,7 +137,7 @@ func (t *Track) GetPurchaseDate() (*Time, error) {
 	if t.PurchaseDate != nil {
 		return t.PurchaseDate, nil
 	}
-	if t.Purchased == nil || *t.Purchased == false {
+	if !t.Purchased {
 		return nil, nil
 	}
 	m, err := t.getTag()
@@ -302,8 +158,8 @@ func (t *Track) GetPurchaseDate() (*Time, error) {
 }
 
 func (t *Track) GetName() (string, error) {
-	if t.Name != nil && *t.Name != "" {
-		return *t.Name, nil
+	if t.Name != "" {
+		return t.Name, nil
 	}
 	m, err := t.getTag()
 	if err != nil {
@@ -311,7 +167,7 @@ func (t *Track) GetName() (string, error) {
 	}
 	v := m.Title()
 	if v != "" {
-		t.Name = &v
+		t.Name = v
 		return v, nil
 	}
 	fn := t.Path()
@@ -321,13 +177,13 @@ func (t *Track) GetName() (string, error) {
 	name = strings.Replace(name, "_", " ", -1)
 	reg := regexp.MustCompile(`^\d+(\.\d+)[ \.\-]\s*`)
 	name = reg.ReplaceAllString(name, "")
-	t.Name = &name
+	t.Name = name
 	return name, nil
 }
 
 func (t *Track) GetAlbum() (string, error) {
-	if t.Album != nil && *t.Album != "" {
-		return *t.Album, nil
+	if t.Album != "" {
+		return t.Album, nil
 	}
 	m, err := t.getTag()
 	if err != nil {
@@ -335,20 +191,20 @@ func (t *Track) GetAlbum() (string, error) {
 	}
 	v := m.Album()
 	if v != "" {
-		t.Album = &v
+		t.Album = v
 		return v, nil
 	}
 	fn := t.Path()
 	dir, _ := filepath.Split(fn)
 	_, name := filepath.Split(dir)
 	name = strings.Replace(name, "_", " ", -1)
-	t.Album = &name
+	t.Album = name
 	return name, nil
 }
 
 func (t *Track) GetArtist() (string, error) {
-	if t.Artist != nil && *t.Artist != "" {
-		return *t.Artist, nil
+	if t.Artist != "" {
+		return t.Artist, nil
 	}
 	m, err := t.getTag()
 	if err != nil {
@@ -356,7 +212,7 @@ func (t *Track) GetArtist() (string, error) {
 	}
 	v := m.Artist()
 	if v != "" {
-		t.Artist = &v
+		t.Artist = v
 		return v, nil
 	}
 	fn := t.Path()
@@ -364,7 +220,7 @@ func (t *Track) GetArtist() (string, error) {
 	dir, _ = filepath.Split(dir)
 	_, name := filepath.Split(dir)
 	name = strings.Replace(name, "_", " ", -1)
-	t.Artist = &name
+	t.Artist = name
 	return name, nil
 }
 
@@ -380,14 +236,11 @@ var kindExt = map[string]string{
 }
 
 func (t *Track) GetExt() string {
-	if t.Location != nil {
-		u, err := url.Parse(*t.Location)
-		if err == nil {
-			return path.Ext(u.Path)
-		}
+	if t.Location != "" {
+		return path.Ext(t.Location)
 	}
-	if t.Kind != nil {
-		ext, ok := kindExt[*t.Kind]
+	if t.Kind != "" {
+		ext, ok := kindExt[t.Kind]
 		if ok {
 			return ext
 		}

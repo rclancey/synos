@@ -48,8 +48,8 @@ func readTracks(req *http.Request) ([]*itunes.Track, *HTTPError) {
 	}
 	tracks := make([]*itunes.Track, len(trackIds))
 	for i, id := range trackIds {
-		track, ok := lib.Tracks[id]
-		if !ok {
+		track := lib.GetTrack(id)
+		if track == nil {
 			return nil, NotFound.Raise(nil, "Track %s does not exist", id)
 		}
 		tracks[i] = track

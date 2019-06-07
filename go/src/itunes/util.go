@@ -28,13 +28,6 @@ func SetField(s interface{}, key[]byte, kind string, val []byte) bool {
 			} else {
 				pval.Elem().SetBool(false)
 			}
-		case reflect.Int:
-			if kind == "integer" {
-				iv, err := strconv.Atoi(v)
-				if err == nil {
-					pval.Elem().SetInt(int64(iv))
-				}
-			}
 		case reflect.Uint64:
 			var base int
 			if f.Type().Elem() == pidType {
@@ -47,6 +40,20 @@ func SetField(s interface{}, key[]byte, kind string, val []byte) bool {
 				return false
 			}
 			pval.Elem().SetUint(uv)
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32:
+			if kind == "integer" {
+				iv, err := strconv.ParseUint(v, 10, 64)
+				if err == nil {
+					pval.Elem().SetUint(iv)
+				}
+			}
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			if kind == "integer" {
+				iv, err := strconv.ParseInt(v, 10, 64)
+				if err == nil {
+					pval.Elem().SetInt(iv)
+				}
+			}
 		case reflect.String:
 			if kind == "string" {
 				pval.Elem().SetString(v)
@@ -83,6 +90,12 @@ func SetField(s interface{}, key[]byte, kind string, val []byte) bool {
 		*/
 		f.Set(pval)
 		return true
+	case reflect.Bool:
+		if kind == "true" {
+			f.SetBool(true)
+		} else {
+			f.SetBool(false)
+		}
 	case reflect.Uint64:
 		var base int
 		if f.Type() == pidType {
@@ -95,6 +108,24 @@ func SetField(s interface{}, key[]byte, kind string, val []byte) bool {
 			return false
 		}
 		f.SetUint(uv)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32:
+		if kind == "integer" {
+			iv, err := strconv.ParseUint(v, 10, 64)
+			if err == nil {
+				f.SetUint(iv)
+			}
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if kind == "integer" {
+			iv, err := strconv.ParseInt(v, 10, 64)
+			if err == nil {
+				f.SetInt(iv)
+			}
+		}
+	case reflect.String:
+		if kind == "string" {
+			f.SetString(v)
+		}
 	case reflect.Slice:
 		if kind == "data" {
 			bval, err := decodeb64(val)

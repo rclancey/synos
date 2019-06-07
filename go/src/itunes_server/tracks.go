@@ -39,7 +39,7 @@ func TrackCount(w http.ResponseWriter, req *http.Request) {
 		since = time.Unix(since_i / 1000, (since_i % 1000) * 1000000)
 	}
 	tl := lib.TrackList()
-	tl.SortBy("ModDate")
+	tl.SortBy("ModDate", false)
 	tracks := *tl
 	sf := func(i int) bool {
 		tr := tracks[i]
@@ -57,7 +57,7 @@ func ListTracks(w http.ResponseWriter, req *http.Request) {
 	log.Println("getting tracks")
 	qs := req.URL.Query()
 	tl := lib.TrackList()
-	tl.SortBy("ModDate")
+	tl.SortBy("ModDate", false)
 	tracks := *tl
 	count_s := qs.Get("count")
 	page_s := qs.Get("page")
@@ -123,8 +123,8 @@ func TrackHasCover(w http.ResponseWriter, req *http.Request) {
 	_, id := path.Split(req.URL.Path)
 	pid := new(itunes.PersistentID)
 	pid.DecodeString(id)
-	tr, ok := lib.Tracks[*pid]
-	if !ok {
+	tr := lib.GetTrack(*pid)
+	if tr == nil {
 		NotFound.Raise(nil, "Track %s does not exist", id).Respond(w)
 		return
 	}
@@ -147,8 +147,8 @@ func GetTrackCover(w http.ResponseWriter, req *http.Request) {
 	}
 	pid := new(itunes.PersistentID)
 	pid.DecodeString(id)
-	tr, ok := lib.Tracks[*pid]
-	if !ok {
+	tr := lib.GetTrack(*pid)
+	if tr == nil {
 		NotFound.Raise(nil, "Track %s does not exist", id).Respond(w)
 		return
 	}
@@ -173,8 +173,8 @@ func GetTrack(w http.ResponseWriter, req *http.Request) {
 	}
 	pid := new(itunes.PersistentID)
 	pid.DecodeString(id)
-	tr, ok := lib.Tracks[*pid]
-	if !ok {
+	tr := lib.GetTrack(*pid)
+	if tr == nil {
 		NotFound.Raise(nil, "Track %s does not exist", id).Respond(w)
 		return
 	}

@@ -28,12 +28,27 @@ func ensureDir(fn string) error {
 	return nil
 }
 
-func toInt32(v *int) *int32 {
+func toInt32p(v *int) *int32 {
 	if v == nil {
 		return nil
 	}
 	i := int32(*v)
 	return &i
+}
+
+func toInt32(v int) *int32 {
+	if v == 0 {
+		return nil
+	}
+	i := int32(v)
+	return &i
+}
+
+func toBool(v bool) *bool {
+	if !v {
+		return nil
+	}
+	return &v
 }
 
 func toTime(v *Time) *itunespb.Time {
@@ -44,80 +59,87 @@ func toTime(v *Time) *itunespb.Time {
 	return &itunespb.Time{Ms: &ms}
 }
 
+func toString(v string) *string {
+	if v == "" {
+		return nil
+	}
+	return &v
+}
+
 func (tr *Track) ProtoPrepare(depth int) *itunespb.Track {
 	if depth == 0 {
 		return &itunespb.Track{PersistentId: proto.Uint64(uint64(tr.PersistentID))}
 	}
 	return &itunespb.Track{
-		Album:                tr.Album,
-		AlbumArtist:          tr.AlbumArtist,
-		AlbumRating:          toInt32(tr.AlbumRating),
-		AlbumRatingComputed:  tr.AlbumRatingComputed,
-		Artist:               tr.Artist,
-		ArtworkCount:         toInt32(tr.ArtworkCount),
-		Bpm:                  toInt32(tr.BPM),
-		BitRate:              toInt32(tr.BitRate),
-		Clean:                tr.Clean,
-		Comments:             tr.Comments,
-		Compilation:          tr.Compilation,
-		Composer:             tr.Composer,
-		ContentRating:        tr.ContentRating,
-		Date:                 toTime(tr.Date),
+		Album:                toString(tr.Album),
+		AlbumArtist:          toString(tr.AlbumArtist),
+		AlbumRating:          toInt32(int(tr.AlbumRating)),
+		//AlbumRatingComputed:  toBool(tr.AlbumRatingComputed),
+		Artist:               toString(tr.Artist),
+		//ArtworkCount:         toInt32(tr.ArtworkCount),
+		//Bpm:                  toInt32(tr.BPM),
+		//BitRate:              toInt32(tr.BitRate),
+		//Clean:                toBool(tr.Clean),
+		Comments:             toString(tr.Comments),
+		Compilation:          toBool(tr.Compilation),
+		Composer:             toString(tr.Composer),
+		//ContentRating:        toString(tr.ContentRating),
+		//Date:                 toTime(tr.Date),
 		DateAdded:            toTime(tr.DateAdded),
 		DateModified:         toTime(tr.DateModified),
-		Disabled:             tr.Disabled,
-		DiscCount:            toInt32(tr.DiscCount),
-		DiscNumber:           toInt32(tr.DiscNumber),
-		Episode:              tr.Episode,
-		EpisodeOrder:         toInt32(tr.EpisodeOrder),
-		Explicit:             tr.Explicit,
-		FileFolderCount:      toInt32(tr.FileFolderCount),
-		FileType:             toInt32(tr.FileType),
-		Genre:                tr.Genre,
-		Grouping:             tr.Grouping,
-		HasVideo:             tr.HasVideo,
-		Kind:                 tr.Kind,
-		LibraryFolderCount:   toInt32(tr.LibraryFolderCount),
-		Location:             tr.Location,
-		Master:               tr.Master,
-		Movie:                tr.Movie,
-		MusicVideo:           tr.MusicVideo,
-		Name:                 tr.Name,
-		PartOfGaplessAlbum:   tr.PartOfGaplessAlbum,
+		//Disabled:             toBool(tr.Disabled),
+		DiscCount:            toInt32(int(tr.DiscCount)),
+		DiscNumber:           toInt32(int(tr.DiscNumber)),
+		//Episode:              toString(tr.Episode),
+		//EpisodeOrder:         toInt32(tr.EpisodeOrder),
+		//Explicit:             toBool(tr.Explicit),
+		//FileFolderCount:      toInt32(tr.FileFolderCount),
+		//FileType:             toInt32(tr.FileType),
+		Genre:                toString(tr.Genre),
+		Grouping:             toString(tr.Grouping),
+		//HasVideo:             toBool(tr.HasVideo),
+		Kind:                 toString(tr.Kind),
+		//LibraryFolderCount:   toInt32(tr.LibraryFolderCount),
+		Location:             toString(tr.Location),
+		//Master:               toBool(tr.Master),
+		//Movie:                toBool(tr.Movie),
+		//MusicVideo:           toBool(tr.MusicVideo),
+		Name:                 toString(tr.Name),
+		PartOfGaplessAlbum:   toBool(tr.PartOfGaplessAlbum),
 		PersistentId:         proto.Uint64(uint64(tr.PersistentID)),
-		PlayCount:            toInt32(tr.PlayCount),
-		PlayDate:             toInt32(tr.PlayDate),
+		PlayCount:            toInt32(int(tr.PlayCount)),
+		//PlayDate:             toInt32(tr.PlayDate),
 		PlayDateUtc:          toTime(tr.PlayDateUTC),
-		Podcast:              tr.Podcast,
-		Protected:            tr.Protected,
-		Purchased:            tr.Purchased,
+		//Podcast:              toBool(tr.Podcast),
+		//Protected:            toBool(tr.Protected),
+		Purchased:            toBool(tr.Purchased),
 		PurchaseDate:         toTime(tr.PurchaseDate),
-		Rating:               toInt32(tr.Rating),
-		RatingComputed:       tr.RatingComputed,
+		Rating:               toInt32(int(tr.Rating)),
+		//RatingComputed:       toBool(tr.RatingComputed),
 		ReleaseDate:          toTime(tr.ReleaseDate),
-		SampleRate:           toInt32(tr.SampleRate),
-		Season:               toInt32(tr.Season),
-		Series:               tr.Series,
-		Size:                 toInt32(tr.Size),
-		SkipCount:            toInt32(tr.SkipCount),
+		//SampleRate:           toInt32(tr.SampleRate),
+		//Season:               toInt32(tr.Season),
+		//Series:               toString(tr.Series),
+		Size:                 toInt32(int(tr.Size)),
+		SkipCount:            toInt32(int(tr.SkipCount)),
 		SkipDate:             toTime(tr.SkipDate),
-		SortAlbum:            tr.SortAlbum,
-		SortAlbumArtist:      tr.SortAlbumArtist,
-		SortArtist:           tr.SortArtist,
-		SortComposer:         tr.SortComposer,
-		SortName:             tr.SortName,
-		SortSeries:           tr.SortSeries,
-		StopTime:             toInt32(tr.StopTime),
-		TvShow:               tr.TVShow,
-		TotalTime:            toInt32(tr.TotalTime),
-		TrackCount:           toInt32(tr.TrackCount),
-		TrackId:              toInt32(tr.TrackID),
-		TrackNumber:          toInt32(tr.TrackNumber),
-		TrackType:            tr.TrackType,
-		Unplayed:             tr.Unplayed,
-		VolumeAdjustment:     toInt32(tr.VolumeAdjustment),
-		Work:                 tr.Work,
-		Year:                 toInt32(tr.Year),
+		SortAlbum:            toString(tr.SortAlbum),
+		SortAlbumArtist:      toString(tr.SortAlbumArtist),
+		SortArtist:           toString(tr.SortArtist),
+		SortComposer:         toString(tr.SortComposer),
+		SortName:             toString(tr.SortName),
+		//SortSeries:           toString(tr.SortSeries),
+		//StopTime:             toInt32(tr.StopTime),
+		//TvShow:               toBool(tr.TVShow),
+		TotalTime:            toInt32(int(tr.TotalTime)),
+		TrackCount:           toInt32(int(tr.TrackCount)),
+		//TrackId:              toInt32(tr.TrackID),
+		TrackNumber:          toInt32(int(tr.TrackNumber)),
+		//TrackType:            toString(tr.TrackType),
+		Unplayed:             toBool(tr.Unplayed),
+		VolumeAdjustment:     toInt32(int(tr.VolumeAdjustment)),
+		Work:                 toString(tr.Work),
+		//Year:                 toInt32(int(tr.Year)),
 	}
 }
 
@@ -148,23 +170,27 @@ func (pl *Playlist) ProtoPrepare(depth int) *itunespb.Playlist {
 		}
 		return m
 	}
+	var info, criteria []byte
+	if pl.Smart != nil {
+		info, criteria, _ = pl.Smart.Encode()
+	}
 	m := &itunespb.Playlist{
-		Master:               pl.Master,
-		PlaylistId:           toInt32(pl.PlaylistID),
+		//Master:               pl.Master,
+		//PlaylistId:           toInt32p(pl.PlaylistID),
 		PersistentId:         proto.Uint64(uint64(pl.PlaylistPersistentID)),
-		AllItems:             pl.AllItems,
-		Visible:              pl.Visible,
-		Name:                 pl.Name,
-		DistinguishedKind:    toInt32(pl.DistinguishedKind),
-		Music:                pl.Music,
-		SmartInfo:            pl.SmartInfo,
-		SmartCriteria:        pl.SmartCriteria,
-		Movies:               pl.Movies,
-		TvShows:              pl.TVShows,
-		Podcasts:             pl.Podcasts,
-		Audiobooks:           pl.Audiobooks,
-		PurchasedMusic:       pl.PurchasedMusic,
-		Folder:               pl.Folder,
+		//AllItems:             pl.AllItems,
+		//Visible:              pl.Visible,
+		Name:                 proto.String(pl.Name),
+		//DistinguishedKind:    toInt32p(pl.DistinguishedKind),
+		//Music:                pl.Music,
+		SmartInfo:            info,
+		SmartCriteria:        criteria,
+		//Movies:               pl.Movies,
+		//TvShows:              pl.TVShows,
+		//Podcasts:             pl.Podcasts,
+		//Audiobooks:           pl.Audiobooks,
+		//PurchasedMusic:       pl.PurchasedMusic,
+		Folder:               toBool(pl.Folder),
 	}
 	if pl.ParentPersistentID != nil {
 		m.ParentPersistentId = proto.Uint64(uint64(*pl.ParentPersistentID))
@@ -222,11 +248,11 @@ func (pl *Playlist) SerializeToDirectory(dn string) error {
 func (lib *Library) ProtoPrepare(depth int) *itunespb.Library {
 	m := &itunespb.Library{
 		FileName:             lib.FileName,
-		MajorVersion:         toInt32(lib.MajorVersion),
-		MinorVersion:         toInt32(lib.MinorVersion),
+		MajorVersion:         toInt32p(lib.MajorVersion),
+		MinorVersion:         toInt32p(lib.MinorVersion),
 		ApplicationVersion:   lib.ApplicationVersion,
 		Date:                 toTime(lib.Date),
-		Features:             toInt32(lib.Features),
+		Features:             toInt32p(lib.Features),
 		ShowContentRatings:   lib.ShowContentRatings,
 		PersistentId:         proto.Uint64(uint64(lib.PersistentID)),
 		MusicFolder:          lib.MusicFolder,
@@ -235,10 +261,8 @@ func (lib *Library) ProtoPrepare(depth int) *itunespb.Library {
 		return m
 	}
 	m.Tracks = make([]*itunespb.Track, len(lib.Tracks))
-	i := 0
-	for _, tr := range lib.Tracks {
+	for i, tr := range lib.Tracks {
 		m.Tracks[i] = tr.ProtoPrepare(depth - 1)
-		i++
 	}
 	m.Playlists = make([]*itunespb.Playlist, len(lib.Playlists))
 	for i, pl := range lib.Playlists {

@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	"time"
+	"unsafe"
 
 	"itunes"
 	"lastfm"
@@ -46,7 +47,8 @@ func main() {
 	if err != nil {
 		log.Fatal("error configuring server:", err)
 	}
-	lib = itunes.NewLibrary(cfg.FileFinder())
+	itunes.SetGlobalFinder(cfg.FileFinder())
+	lib = itunes.NewLibrary()
 
 	go func() {
 		s, err := sonos.NewSonos(cfg.NetworkInterface(), cfg.GetRootURL(), lib)
@@ -67,7 +69,7 @@ func main() {
 
 	go func() {
 		log.Println("loading library", fn)
-		time.Sleep(time.Duration(5) * time.Second)
+		//time.Sleep(time.Duration(5) * time.Second)
 		debugMem("before")
 		err = lib.Load(fn)
 		if err != nil {
@@ -75,14 +77,17 @@ func main() {
 			return
 		}
 		debugMem("after")
+		/*
 		lib.Playlists = nil
 		lib.PlaylistTree = nil
 		debugMem("no playlists")
 		lib.Tracks = nil
 		debugMem("no tracks")
+		*/
 		debug.FreeOSMemory()
 		debugMem("os mem freed")
 		log.Printf("%d tracks in library\n", len(lib.Tracks))
+		log.Println("track size is", unsafe.Sizeof(itunes.Track{}))
 	}()
 
 	go func() {

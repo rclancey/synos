@@ -408,8 +408,8 @@ type SmartPlaylistCommonRule struct {
 	idx []int
 }
 
-func NewSmartPlaylistCommonRule(ruleHeader *RuleHeader, value []byte) SmartPlaylistCommonRule {
-	return SmartPlaylistCommonRule{
+func NewSmartPlaylistCommonRule(ruleHeader *RuleHeader, value []byte) *SmartPlaylistCommonRule {
+	return &SmartPlaylistCommonRule{
 		Field: ruleHeader.Field(),
 		Sign: ruleHeader.LogicSign(),
 		Operator: ruleHeader.LogicRule(),
@@ -417,7 +417,7 @@ func NewSmartPlaylistCommonRule(ruleHeader *RuleHeader, value []byte) SmartPlayl
 	}
 }
 
-func (r SmartPlaylistCommonRule) EncodeHeader(value []byte) ([]byte, error) {
+func (r *SmartPlaylistCommonRule) EncodeHeader(value []byte) ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
 	rh := &RuleHeader{}
 	rh.FieldId = uint32(r.Field)
@@ -435,7 +435,9 @@ func (r SmartPlaylistCommonRule) EncodeHeader(value []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (r SmartPlaylistCommonRule) GetField(track *Track, kind reflect.Kind, typ reflect.Type) (reflect.Value, error) {
+var BadFieldError = errors.New("bad rule field")
+
+func (r *SmartPlaylistCommonRule) GetField(track *Track, kind reflect.Kind, typ reflect.Type) (reflect.Value, error) {
 	if r.idx == nil {
 		r.idx = []int{-1}
 		fn := r.Field.String()
@@ -452,8 +454,12 @@ func (r SmartPlaylistCommonRule) GetField(track *Track, kind reflect.Kind, typ r
 					if ft == typ {
 						r.idx = f.Index
 					} else {
-						return reflect.Value{}, fmt.Errorf("field %s (%s) is not of type %s", fn, f.Name, typ.Name())
+						err := fmt.Errorf("field %s (%s) is not of type %s", fn, f.Name, typ.Name())
+						log.Println(err)
+						return reflect.Value{}, err
 					}
+				} else if kind == reflect.Invalid {
+					r.idx = f.Index
 				} else {
 					if ft.Kind() == reflect.Ptr {
 						ft = ft.Elem()
@@ -461,15 +467,22 @@ func (r SmartPlaylistCommonRule) GetField(track *Track, kind reflect.Kind, typ r
 					if ft.Kind() == kind {
 						r.idx = f.Index
 					} else {
-						return reflect.Value{}, fmt.Errorf("field %s (%s) is not of kind %s", fn, f.Name, kind)
+						err := fmt.Errorf("field %s (%s) is not of kind %s", fn, f.Name, kind)
+						log.Println(err)
+						return reflect.Value{}, err
 					}
 				}
 				break
 			}
 		}
+		if len(r.idx) == 0 || r.idx[0] == -1 {
+			err := fmt.Errorf("field %s not found", r.Field)
+			log.Println(err)
+			return reflect.Value{}, err
+		}
 	}
 	if len(r.idx) == 0 || r.idx[0] == -1 {
-		return reflect.Value{}, fmt.Errorf("field %s not found", r.Field)
+		return reflect.Value{}, BadFieldError
 	}
 	rv := reflect.ValueOf(*track).FieldByIndex(r.idx)
 	if typ != nil {
@@ -494,6 +507,9 @@ func (r SmartPlaylistCommonRule) GetField(track *Track, kind reflect.Kind, typ r
 			rv = rv.Elem()
 		}
 	}
+	if kind == reflect.Invalid {
+		return rv, nil
+	}
 	if rv.Kind() != kind {
 		return reflect.Value{}, fmt.Errorf("field %s is not of kind %s", r.Field, kind)
 	}
@@ -501,7 +517,7 @@ func (r SmartPlaylistCommonRule) GetField(track *Track, kind reflect.Kind, typ r
 }
 
 type SmartPlaylistStringRule struct {
-	SmartPlaylistCommonRule
+	*SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value string `json:"value"`
 }
@@ -543,8 +559,7 @@ func (r *SmartPlaylistStringRule) Encode() ([]byte, error) {
 func (r *SmartPlaylistStringRule) Match(track *Track, lib *Library) bool {
 	rv, err := r.GetField(track, reflect.String, nil)
 	if err != nil {
-		log.Println(err)
-		return false
+		return true
 	}
 	switch r.Sign {
 	case LogicSign_INT_POS, LogicSign_STR_POS:
@@ -570,7 +585,7 @@ func (r *SmartPlaylistStringRule) basicMatch(s string) bool {
 }
 
 type SmartPlaylistIntegerRule struct {
-	SmartPlaylistCommonRule
+	*SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Values []int64 `json:"values"`
 }
@@ -606,16 +621,24 @@ func (r *SmartPlaylistIntegerRule) Match(track *Track, lib *Library) bool {
 	if len(r.Values) == 0 {
 		return false
 	}
-	rv, err := r.GetField(track, reflect.Int, nil)
+	rv, err := r.GetField(track, reflect.Invalid, nil)
 	if err != nil {
-		log.Println(err)
+		return true
+	}
+	var iv int64
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		iv = rv.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		iv = int64(rv.Uint())
+	default:
 		return false
 	}
 	switch r.Sign {
 	case LogicSign_INT_POS, LogicSign_STR_POS:
-		return r.basicMatch(rv.Int())
+		return r.basicMatch(iv)
 	case LogicSign_INT_NEG, LogicSign_STR_NEG:
-		return !r.basicMatch(rv.Int())
+		return !r.basicMatch(iv)
 	}
 	return false
 }
@@ -638,7 +661,7 @@ func (r *SmartPlaylistIntegerRule) basicMatch(v int64) bool {
 }
 
 type SmartPlaylistBooleanRule struct {
-	SmartPlaylistCommonRule
+	*SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value bool `json:"value"`
 }
@@ -668,8 +691,7 @@ func (r *SmartPlaylistBooleanRule) Encode() ([]byte, error) {
 func (r *SmartPlaylistBooleanRule) Match(track *Track, lib *Library) bool {
 	rv, err := r.GetField(track, reflect.Bool, nil)
 	if err != nil {
-		log.Println(err)
-		return false
+		return true
 	}
 	switch r.Sign {
 	case LogicSign_INT_POS, LogicSign_STR_POS:
@@ -689,7 +711,7 @@ func (r *SmartPlaylistBooleanRule) basicMatch(v bool) bool {
 }
 
 type SmartPlaylistMediaKindRule struct {
-	SmartPlaylistCommonRule
+	*SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value MediaKind `json:"value"`
 }
@@ -726,7 +748,7 @@ func (r *SmartPlaylistMediaKindRule) Match(track *Track, lib *Library) bool {
 }
 
 type SmartPlaylistDateRule struct {
-	SmartPlaylistCommonRule
+	*SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Values []*Time `json:"values"`
 	Relative int64 `json:"relative"`
@@ -796,8 +818,7 @@ var timeType = reflect.TypeOf(Time{})
 func (r *SmartPlaylistDateRule) Match(track *Track, lib *Library) bool {
 	rv, err := r.GetField(track, reflect.Struct, timeType)
 	if err != nil {
-		log.Println(err)
-		return false
+		return true
 	}
 	t, ok := rv.Interface().(Time)
 	if !ok {
@@ -826,13 +847,21 @@ func (r *SmartPlaylistDateRule) basicMatch(v time.Time) bool {
 		}
 		return (r.Values[0].Equal(v) || r.Values[0].Before(v)) && (r.Values[1].Equal(v) || r.Values[0].After(v))
 	case LogicRule_WITHIN:
-		return r.Values[0].Add(time.Duration(r.Relative) * 1e6).Before(v)
+		/*
+		limit := time.Now().Add(time.Duration(r.Relative) * 1e6)
+		if limit.Before(v) {
+			log.Printf("track time %v after cutoff time %v", v, limit)
+			return true
+		}
+		return false
+		*/
+		return time.Now().Add(time.Duration(r.Relative) * 1e6).Before(v)
 	}
 	return false
 }
 
 type SmartPlaylistPlaylistRule struct {
-	SmartPlaylistCommonRule
+	*SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value PersistentID `json:"value"`
 	tracks map[PersistentID]bool
@@ -879,7 +908,7 @@ func (r *SmartPlaylistPlaylistRule) Match(track *Track, lib *Library) bool {
 }
 
 type SmartPlaylistLoveRule struct {
-	SmartPlaylistCommonRule
+	*SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value LoveStatus `json:"value"`
 }
@@ -923,7 +952,7 @@ func (r *SmartPlaylistLoveRule) Match(track *Track, lib *Library) bool {
 }
 
 type SmartPlaylistCloudRule struct {
-	SmartPlaylistCommonRule
+	*SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value ICloudStatus `json:"value"`
 }
@@ -954,7 +983,7 @@ func (r *SmartPlaylistCloudRule) Match(track *Track, lib *Library) bool {
 }
 
 type SmartPlaylistLocationRule struct {
-	SmartPlaylistCommonRule
+	*SmartPlaylistCommonRule
 	RuleType string `json:"type"`
 	Value LocationStatus `json:"value"`
 }
@@ -984,19 +1013,19 @@ func (r *SmartPlaylistLocationRule) Match(track *Track, lib *Library) bool {
 	case LogicSign_INT_POS, LogicSign_STR_POS:
 		switch r.Value {
 		case LocationStatus_COMPUTER:
-			return track.Location != nil
+			return track.Location != ""
 		case LocationStatus_ICLOUD:
-			return track.Location == nil || (track.Purchased != nil && *track.Purchased)
+			return track.Location == "" || track.Purchased
 		default:
 			return false
 		}
 	case LogicSign_INT_NEG, LogicSign_STR_NEG:
 		switch r.Value {
 		case LocationStatus_COMPUTER:
-			return track.Location == nil
+			return track.Location == ""
 		case LocationStatus_ICLOUD:
 			// TODO
-			return (track.Purchased != nil && *track.Purchased) && track.Location != nil
+			return track.Purchased && track.Location != ""
 		}
 	}
 	return false

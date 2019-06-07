@@ -15,6 +15,16 @@ type FileFinder struct {
 	TargetPath []string
 }
 
+var globalFinder *FileFinder
+
+func SetGlobalFinder(finder *FileFinder) {
+	globalFinder = finder
+}
+
+func GetGlobalFinder() *FileFinder {
+	return globalFinder
+}
+
 var norms = []norm.Form{
 	norm.NFC,
 	norm.NFD,
@@ -114,36 +124,39 @@ func NewFileFinder(mediaFolder string, sourcePath, targetPath []string) *FileFin
 	return ff
 }
 
+func (ff *FileFinder) Clean(fn string) string {
+	var dn, after string
+	for _, mp := range ff.SourcePath {
+		for _, f := range ff.MediaFolder {
+			dn = filepath.Join(mp, f)
+			after = pathAfter(fn, dn)
+			if after != "" {
+				return after
+			}
+		}
+	}
+	return fn
+}
+
 func (ff *FileFinder) FindFile(fn string) (string, error) {
-	origfn := fn
+	var xfn string
+	var ex bool
 	if filepath.IsAbs(fn) {
-		xfn, ex := fileExists(fn)
+		xfn, ex = fileExists(fn)
 		if ex {
 			return xfn, nil
 		}
-		for _, dn := range ff.SourcePath {
-			if fileUnder(fn, dn) {
-				fn = pathAfter(fn, dn)
-				break
-			}
-		}
-		if filepath.IsAbs(fn) && ff.MediaFolder[0] != "." {
-			if pathContains(fn, ff.MediaFolder[0]) {
-				fn = pathAfter(fn, ff.MediaFolder[0])
-			}
-		}
+		return fn, fmt.Errorf("absolute path %s doesn't exist", fn)
 	}
-	if filepath.IsAbs(fn) {
-		return "", fmt.Errorf("File %s doesn't appear to reference a media folder", origfn)
-	}
-	for _, dn := range ff.TargetPath {
+	for _, mp := range ff.SourcePath {
 		for _, f := range ff.MediaFolder {
-			xfn, ex := fileExists(filepath.Join(dn, f, fn))
+			xfn = filepath.Join(mp, f, fn)
+			xfn, ex = fileExists(xfn)
 			if ex {
 				return xfn, nil
 			}
 		}
 	}
-	return origfn, fmt.Errorf("can't find file %s in any media folder", fn)
+	return fn, fmt.Errorf("can't find %s in a media folder", fn)
 }
 
