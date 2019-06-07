@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"runtime/debug"
 	"time"
-	"unsafe"
 
 	"itunes"
 	"lastfm"
@@ -25,21 +24,6 @@ var hub *Hub
 var cfg *SynosConfig
 var lastFm *lastfm.LastFM
 var spot *spotify.SpotifyClient
-
-func debugMem(id string) {
-	runtime.GC()
-	ms := &runtime.MemStats{}
-	runtime.ReadMemStats(ms)
-	log.Println("memstats:", id)
-	log.Println("  HeapAlloc:", ms.HeapAlloc)
-	log.Println("  HeapSys:", ms.HeapSys)
-	log.Println("  HeapIdle:", ms.HeapIdle)
-	log.Println("  HeapInuse:", ms.HeapInuse)
-	log.Println("  HeapReleased:", ms.HeapReleased)
-	log.Println("  HeapObjects:", ms.HeapObjects)
-	log.Println("  StackInuse:", ms.StackInuse)
-	log.Println("  StackSys:", ms.StackSys)
-}
 
 func main() {
 	var err error
@@ -70,24 +54,14 @@ func main() {
 	go func() {
 		log.Println("loading library", fn)
 		//time.Sleep(time.Duration(5) * time.Second)
-		debugMem("before")
 		err = lib.Load(fn)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		debugMem("after")
-		/*
-		lib.Playlists = nil
-		lib.PlaylistTree = nil
-		debugMem("no playlists")
-		lib.Tracks = nil
-		debugMem("no tracks")
-		*/
+		runtime.GC()
 		debug.FreeOSMemory()
-		debugMem("os mem freed")
 		log.Printf("%d tracks in library\n", len(lib.Tracks))
-		log.Println("track size is", unsafe.Sizeof(itunes.Track{}))
 	}()
 
 	go func() {

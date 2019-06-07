@@ -54,7 +54,7 @@ func (c *ClientAuth) AuthenticateRequest(req *http.Request) error {
 
 func (c *ClientAuth) AuthIfNecessary() error {
 	if c.expires.After(time.Now().Add(time.Second)) {
-		log.Println("auth still valid until", c.expires.String())
+		//log.Println("auth still valid until", c.expires.String())
 		return nil
 	}
 	q := url.Values{}
@@ -92,6 +92,6 @@ func (c *ClientAuth) AuthIfNecessary() error {
 	}
 	c.token = auth.AccessToken
 	c.expires = now.Add(time.Duration(auth.TTL - 1) * time.Second)
-	log.Println("auth token", c.token, "expires at", c.expires.String())
+	//log.Println("auth token", c.token, "expires at", c.expires.String())
 	return nil
 }

@@ -143,7 +143,7 @@ func (c *APIClient) loadFromCache(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	if time.Now().Sub(st.ModTime()) > c.MaxCacheTime {
-		log.Println("cache file expired")
+		//log.Println("cache file expired")
 		return nil, nil
 	}
 	f, err := os.Open(fn)
@@ -160,7 +160,7 @@ func (c *APIClient) loadFromCache(req *http.Request) (*http.Response, error) {
 		log.Println("error reading cached response:", err)
 		return nil, err
 	}
-	log.Printf("using cached response from %s for %s\n", fn, req.URL.String())
+	//log.Printf("using cached response from %s for %s\n", fn, req.URL.String())
 	return res, nil
 }
 

@@ -61,7 +61,7 @@ func (c *LastFM) cacheGet(url string) (*http.Response, error) {
 			}
 			if err == nil {
 				rd := bufio.NewReader(f)
-				log.Printf("using cached response from %s for %s\n", fn, url)
+				//log.Printf("using cached response from %s for %s\n", fn, url)
 				return http.ReadResponse(rd, req)
 			}
 		}
@@ -94,7 +94,7 @@ func (c *LastFM) cacheGet(url string) (*http.Response, error) {
 	if err != nil {
 		return res, err
 	}
-	log.Printf("cached %s to %s\n", url, fn)
+	//log.Printf("cached %s to %s\n", url, fn)
 	return res, nil
 }
 
@@ -112,7 +112,7 @@ func (c *LastFM) Get(method string, args map[string]string, obj interface{}) err
 		Path: lastFMRoot.Path,
 		RawQuery: vals.Encode(),
 	}
-	log.Println("GET", u.String())
+	//log.Println("GET", u.String())
 	resp, err := c.cacheGet(u.String())
 	if err != nil {
 		return err
@@ -229,7 +229,7 @@ func (c *LastFM) GetAlbumImage(artist, title string) ([]byte, string, error) {
 				defer resp.Body.Close()
 				body, err := ioutil.ReadAll(resp.Body)
 				if err == nil {
-					log.Printf("got %s image (%s)\n", size, resp.Header.Get("Content-Type"))
+					//log.Printf("got %s image (%s)\n", size, resp.Header.Get("Content-Type"))
 					return body, resp.Header.Get("Content-Type"), nil
 				} else {
 					log.Printf("error reading %s: %s\n", url, err.Error())

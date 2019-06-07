@@ -173,7 +173,7 @@ func (cfg *SynosConfig) ConfigureNetwork() error {
 		return err
 	}
 	for _, iface := range ifaces {
-		log.Println("examining interface", iface.Name)
+		//log.Println("examining interface", iface.Name)
 		addrs, err := iface.Addrs()
 		if err != nil {
 			return err
@@ -181,7 +181,7 @@ func (cfg *SynosConfig) ConfigureNetwork() error {
 		for _, addr := range addrs {
 			ips := strings.Split(addr.String(), "/")[0]
 			ip := net.ParseIP(ips)
-			log.Println("checking ip", addr.String(), ip.String())
+			//log.Println("checking ip", addr.String(), ip.String())
 			if network.Contains(ip) {
 				cfg.iface = iface.Name
 				cfg.ip = ip

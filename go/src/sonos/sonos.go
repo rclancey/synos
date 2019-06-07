@@ -5,7 +5,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"log"
+	//"log"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -81,8 +81,6 @@ func parseTime(timestr string, layouts ...string) (int, error) {
 	for _, l := range layouts {
 		t, err = time.Parse(l, timestr)
 		if err == nil {
-			ns := t.Sub(refTime).Nanoseconds()
-			log.Println(timestr, "=", ns)
 			return int(t.Sub(refTime).Nanoseconds() / 1000000), nil
 		}
 	}
@@ -216,7 +214,6 @@ func (s *Sonos) didlLite(track *itunes.Track) string {
 		mins := (track.TotalTime % 3600000) / 60000
 		secs := (track.TotalTime % 60000) / 1000
 		duration = fmt.Sprintf("%d:%02d:%02d", hours, mins, secs)
-		log.Println("total time", track.TotalTime, "=", duration)
 	}
 	coverUri := s.coverUri(track)
 	title, _ := track.GetName()
@@ -285,7 +282,6 @@ func (s *Sonos) AppendToQueue(tracks []*itunes.Track) error {
 		if err != nil {
 			return err
 		}
-		//log.Printf("added %s to sonos queue", track.Location)
 	}
 	return nil
 }
