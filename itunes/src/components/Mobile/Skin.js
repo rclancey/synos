@@ -125,7 +125,7 @@ export class MobileSkin extends React.Component {
 
   render() {
     return (
-      <div className="mobile">
+      <div id="app" className={`mobile ${this.props.theme}`}>
         {this.renderScreen()}
         <NowPlaying
           status={this.props.status}

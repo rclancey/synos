@@ -38,7 +38,7 @@ export const Triangle = ({ orientation, size, color, style, ...props }) => {
     xstyle[`border${d}Width`] = `${sz.v / root3}${sz.u}`;
   });
   const d = ori[2];
-  xstyle[`border${d}Color`] = color || 'black';
+  //xstyle[`border${d}Color`] = color || 'black';
   xstyle[`border${d}Style`] = 'solid';
   xstyle[`border${d}Width`] = `${sz.v}${sz.u}`;
   return (<div style={xstyle} {...props} />);
@@ -55,10 +55,10 @@ export const PauseButton = ({ size, onPause }) => {
     width: `${sz.v / 4}${sz.u}`,
     height: `${sz.v * 2 / root3}${sz.u}`,
     borderLeftStyle: 'solid',
-    borderLeftColor: '#444',
+    //borderLeftColor: '#444',
     borderLeftWidth: `${sz.v * 7 / 24}${sz.u}`,
     borderRightStyle: 'solid',
-    borderRightColor: '#444',
+    //borderRightColor: '#444',
     borderRightWidth: `${sz.v * 7 / 24}${sz.u}`,
     marginLeft: `${sz.v / 12}${sz.u}`,
     marginRight: `${sz.v / 12}${sz.u}`,

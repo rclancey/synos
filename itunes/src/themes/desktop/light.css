@@ -1,0 +1,253 @@
+#app.desktop.light #loading {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+#app.desktop.light #loading .progress {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+#app.desktop.light #loading .progress .complete {
+  background: url(../../icons/progress-alpha.png);
+  background-color: #6cf;
+}
+
+#app.desktop.light .library .ReactVirtualized__Table__headerRow {
+  border-bottom-color: #ccc;
+}
+
+#app.desktop.light .library .ReactVirtualized__Table__headerColumn {
+  border-right-color: #ccc;
+}
+
+#app.desktop.light .library .ReactVirtualized__Table__row.dropTarget {
+  border-bottom-color: blue;
+}
+
+#app.desktop.light .library .ReactVirtualized__Table__row.even {
+  background-color: #f5f5f5;
+}
+
+#app.desktop.light .library .playlistBrowser:focus-within .selected,
+#app.desktop.light .library .columnBrowser:focus-within .selected,
+#app.desktop.light .library .trackListContainer:focus-within .selected {
+  background-color: #2687fb;
+  color: white;
+}
+
+#app.desktop.light .library .selected {
+  background-color: #dcdcdc;
+}
+
+#app.desktop.light .library .ReactVirtualized__Table__rowColumn.stars {
+  color: #2687fb;
+}
+
+#app.desktop.light .library .ReactVirtualized__Table__row.selected .ReactVirtualized__Table__rowColumn.stars {
+  color: white;
+}
+
+#app.desktop.light .library .DragHandle {
+  color: #0085ff;
+}
+
+#app.desktop.light .library .DragHandle:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+#app.desktop.light .library .DragHandleActive,
+#app.desktop.light .library .DragHandleActive:hover {
+  color: #0b6fcc;
+}
+
+#app.desktop.light .columnBrowser {
+  background-color: #f5f5f5;
+  border-right-color: #ccc;
+}
+
+#app.desktop.light .columnBrowser .ReactVirtualized__Table__headerRow {
+  background-color: white;
+}
+
+#app.desktop.light .playlistBrowser {
+  background-color: #eaecf0;
+}
+
+#app.desktop.light .columnBrowserContainer {
+  border-top-color: #ccc;
+  border-bottom-color: #ccc;
+}
+
+#app.desktop.light .playlistBrowser h1 {
+  color: #999;
+}
+
+.icon.sonos {
+  background-image: url(../../icons/sonos.png);
+}
+
+.icon.appletv {
+  background-image: url(../../icons/appletv.png);
+}
+
+.icon.computer {
+  background-image: url(../../icons/computer.png);
+}
+
+.icon.airplay {
+  background-image: url(../../icons/airplay.png);
+}
+
+.icon.artists {
+  background-image: url(../../icons/artists.png);
+}
+
+.icon.albums {
+  background-image: url(../../icons/albums.png);
+}
+
+.icon.genres {
+  background-image: url(../../icons/genres.png);
+}
+
+.icon.songs {
+  background-image: url(../../icons/songs.png);
+}
+
+.icon.audiobooks {
+  background-image: url(../../icons/audiobooks.png);
+}
+
+.icon.books {
+  background-image: url(../../icons/books.png);
+}
+
+.icon.music {
+  background-image: url(../../icons/music.png);
+}
+
+.icon.tvshows {
+  background-image: url(../../icons/tvshows.png);
+}
+
+.icon.movies {
+  background-image: url(../../icons/movies.png);
+}
+
+.icon.podcasts {
+  background-image: url(../../icons/podcasts.png);
+}
+
+.icon.purchased {
+  background-image: url(../../icons/purchased.png);
+}
+
+.icon.recent {
+  background-image: url(../../icons/recent.png);
+}
+
+.icon.downloaded_music,
+.icon.downloaded_tvshows,
+.icon.downloaded_movies {
+  background-image: url(../../icons/downloaded.png);
+}
+
+.icon.folder {
+  background-image: url(../../icons/folder.png);
+}
+
+.icon.smart {
+  background-image: url(../../icons/smart.png);
+}
+
+.icon.genius {
+  background-image: url(../../icons/genius.png);
+}
+
+.icon.playlists,
+.icon.playlist {
+  background-image: url(../../icons/playlist.png);
+}
+
+#app.desktop.light .playlistBrowser .folder .folderToggle {
+  border-left-color: #999;
+}
+
+#app.desktop.light .playlistBrowser .folder .folderToggle.open {
+  border-top-color: #999;
+}
+
+#app.desktop.light .playlistBrowser .folder.dropTarget>.label {
+  background-color: yellow;
+}
+
+#app.desktop.light .playlistBrowser .playlist.dropTarget>.label {
+  background-color: orange !important;
+}
+
+#app.desktop.light .controls .playpause {
+  background-image: linear-gradient(#e8e8e8, #ccc);
+}
+
+#app.desktop.light .controls .nowplaying {
+  border-left-color: #999;
+  border-right-color: #999;
+  background-color: #eee;
+}
+
+#app.desktop.light .controls .search {
+  background-image: linear-gradient(#e8e8e8, #ccc);
+}
+
+#app.desktop.light .controls .search input {
+  border-color: #999;
+}
+
+#app.desktop.light .controls .nowplaying .coverart {
+  border-right-color: #999;
+}
+
+#app.desktop.light .controls .nowplaying .progressContainer {
+  background-color: #ccc;
+}
+
+#app.desktop.light .controls .nowplaying .progressContainer .progress {
+  background-color: #666;
+}
+
+#app.desktop.light .queue {
+  background-color: rgba(245, 245, 245, 0.97);
+  border-color: #ccc;
+  box-shadow: 1px 4px 5px 1px rgba(204, 204, 204, 0.5);
+}
+
+#app.desktop.light .queue .item.selected {
+  background-color: #2687fb;
+  color: white !important;
+}
+
+#app.desktop.light .queue .item .trackInfo {
+  border-top-color: #ccc;
+}
+
+#app.desktop.light .queue .item .time {
+  border-top-color: #ccc;
+}
+
+#app.desktop.light .queue .item.selected .info .artist,
+#app.desktop.light .queue .item.selected .info .title,
+#app.desktop.light .queue .item.selected .time {
+  color: white;
+}
+
+#app.desktop.light .queueMenu {
+  border-color: #ccc;
+  background-color: #f5f5f5;
+}
+
+#app.desktop.light .queueMenu>div {
+  color: #666;
+}
+
+#app.desktop.light .queueMenu>div>.row {
+  background-color: #666;
+}

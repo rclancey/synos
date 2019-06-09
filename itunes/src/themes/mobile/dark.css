@@ -1,0 +1,198 @@
+#app.mobile.dark {
+  background-color: #000;
+  color: #09c;
+}
+
+#app.mobile.dark .back {
+  background-color: #222;
+  background-image: url(../../icons/back.png);
+}
+
+#app.mobile.dark .header {
+  background-color: #222;
+}
+
+#app.mobile.dark .header .icon.artists {
+  background-image: url(../../icons/artists.png);
+}
+
+#app.mobile.dark .header .icon.playlists {
+  background-image: url(../../icons/playlist.png);
+}
+
+#app.mobile.dark .items {
+  color: #777;
+}
+
+#app.mobile.dark .home .item .title {
+  border-bottom-color: #444;
+}
+
+#app.mobile.dark .playlistList .item .title {
+  border-bottom-color: #444;
+}
+
+#app.mobile.dark .artistList .index,
+#app.mobile.dark .albumList .index,
+#app.mobile.dark .genreList .index {
+  color: #09c;
+  font-weight: bold;
+}
+
+#app.mobile.dark .artistList .item .artistImage,
+#app.mobile.dark .genreList .item .genreImage {
+  background-color: #868b95;
+}
+
+#app.mobile.dark .artistList .item .title,
+#app.mobile.dark .genreList .item .title {
+  border-bottom-color: #777;
+}
+
+#app.mobile.dark .songList .header .title .genre {
+  color: #999;
+}
+
+#app.mobile.dark .songList .header .dotsmenu {
+  background: #000;
+  color: #09c;
+}
+
+#app.mobile.dark .songList .item .cover {
+  background-color: #868b95;
+}
+
+#app.mobile.dark .songList .item .tracknum {
+  color: #999;
+}
+
+#app.mobile.dark .songList .item .title {
+  border-bottom-color: #777;
+}
+
+#app.mobile.dark .songList .item .title .artist {
+  color: #999;
+}
+
+#app.mobile.dark .disabler {
+  background: rgba(0, 153, 204, 0.3);
+}
+
+#app.mobile.dark .trackMenu,
+#app.mobile.dark .playlistMenu {
+  background-color: #000;
+}
+
+#app.mobile.dark .trackMenu .header,
+#app.mobile.dark .playlistMenu .header {
+  border-bottom-color: #777;
+  background-color: transparent;
+}
+
+#app.mobile.dark .trackMenu .header .title .album,
+#app.mobile.dark .playlistMenu .header .title .queueInfo {
+  color: #999;
+}
+
+#app.mobile.dark .trackMenu .item,
+#app.mobile.dark .playlistMenu .item {
+  color: #09c;
+}
+
+#app.mobile.dark .trackMenu .cancel,
+#app.mobile.dark .playlistMenu .cancel {
+  color: #09c;
+}
+
+#app.mobile.dark .nowplaying {
+  background: #000;
+  border-top-color: #666;
+}
+
+#app.mobile.dark .nowplaying .controls .rewind div,
+#app.mobile.dark .nowplaying .controls .play,
+#app.mobile.dark .nowplaying .controls .pause,
+#app.mobile.dark .nowplaying .controls .ffwd div {
+  border-color: #09c;
+}
+
+#app.mobile.dark .nowplaying.big .header {
+  color: #09c;
+}
+
+#app.mobile.dark .nowplaying .coverart {
+  border-right-color: #999;
+}
+
+#app.mobile.dark .nowplaying>div {
+  color: #777;
+}
+
+#app.mobile.dark .nowplaying>div.fa-angle-up {
+  color: #09c;
+}
+
+#app.mobile.dark .nowplaying .trackInfo .title {
+  color: #999;
+}
+
+#app.mobile.dark .nowplaying .progressContainer {
+  background-color: #ccc;
+}
+
+#app.mobile.dark .nowplaying .progressContainer .progress {
+  background-color: #666;
+}
+
+#app.mobile.dark .queue {
+  background: #000;
+}
+
+#app.mobile.dark .queue .items {
+  color: #777;
+}
+
+#app.mobile.dark .queue .item.selected {
+  background-color: #2687fb;
+  color: white !important;
+}
+
+#app.mobile.dark .queue .item .info {
+  border-top-color: #777;
+}
+
+#app.mobile.dark .queue .item .time {
+  border-top-color: #777;
+}
+
+#app.mobile.dark .queue .item.selected .info .artist,
+#app.mobile.dark .queue .item.selected .info .title,
+#app.mobile.dark .queue .item.selected .time {
+  color: white;
+}
+
+#app.mobile.dark .queue .item .coverart .current {
+  background-image: url(../../icons/equalizer.gif);
+}
+
+#app.mobile.dark .queue .item .trackInfo {
+  border-top-color: #777;
+}
+
+#app.mobile.dark .switch {
+  border-color: rgba(204, 204, 204, 0.7);
+}
+
+#app.mobile.dark .switch.on {
+  border-color: #09c;
+}
+
+#app.mobile.dark .switch .onbg {
+  background-color: #09c;
+}
+
+#app.mobile.dark .switch .knob {
+  background-color: #444;
+  box-shadow: 0px 0px 0px 1px rgba(200, 200, 200, 0.7);
+}
+

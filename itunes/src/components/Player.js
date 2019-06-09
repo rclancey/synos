@@ -578,6 +578,7 @@ export class Player extends React.Component {
 
   render() {
     const props = {
+      theme: this.props.theme,
       status: this.state.status,
       queue: this.state.queue,
       queueIndex: this.state.queueIndex,

@@ -1,0 +1,535 @@
+.App {
+  text-align: left;
+}
+
+.App-logo {
+  animation: App-logo-spin infinite 5s linear;
+  height: 40vmin;
+  pointer-events: none;
+  position: absolute;
+  top: 50vh;
+  left: 50vw;
+  margin-top: -20vmin;
+  margin-left: -28.25vmin;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+#app.desktop #loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000;
+}
+
+#app.desktop #loading .progress {
+  position: absolute;
+  top: 70vh;
+  left: 25vw;
+  width: 50vw;
+  border: solid black 1px;
+  height: 1vh;
+  border-radius: 1vh;
+  overflow: hidden;
+}
+
+#app.desktop #loading .progress .complete {
+  height: 100%;
+  background: url(../../icons/progress-alpha.png);
+  background-color: #6cf;
+  animation: Prog-Scroll infinite 1s linear;
+}
+
+#app.desktop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: Tahoma;
+}
+
+#app.desktop .controls {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 56px;
+  max-height: 56px;
+  height: 56px;
+}
+
+#app.desktop .library {
+  flex: 100;
+  display: flex;
+  flex-direction: row;
+}
+
+#app.desktop .library .ReactVirtualized__Table__headerRow:focus,
+#app.desktop .library .ReactVirtualized__Table__row:focus {
+  outline: none;
+}
+
+#app.desktop .library .ReactVirtualized__Table__headerRow {
+  font-size: 12px;
+  text-transform: none;
+  white-space: nowrap;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+
+#app.desktop .library .ReactVirtualized__Table__headerColumn {
+/*
+  border-left: solid #ccc 1px;
+  margin-right: -1px;
+*/
+  border-right-style: solid;
+  border-right-width: 1px;
+  cursor: default;
+  user-select: none;
+  box-sizing: border-box;
+  padding-left: 0.25em;
+  padding-right: 0.25em;
+}
+
+#app.desktop .library .ReactVirtualized__Table__row.dropTarget {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  z-index: 1;
+}
+
+#app.desktop .library .ReactVirtualized__Table__rowColumn {
+  font-size: 12px;
+  padding-right: 10px;
+  box-sizing: border-box;
+  cursor: default;
+  user-select: none;
+}
+
+#app.desktop .library .ReactVirtualized__Table__rowColumn.num,
+#app.desktop .library .ReactVirtualized__Table__rowColumn.time {
+  text-align: right;
+}
+
+#app.desktop .library .ReactVirtualized__Table__rowColumn.num,
+#app.desktop .library .ReactVirtualized__Table__rowColumn.time,
+#app.desktop .library .ReactVirtualized__Table__rowColumn.date {
+  font-family: sans-serif;
+  white-space: pre;
+}
+
+#app.desktop .library .ReactVirtualized__Table__rowColumn.stars {
+  font-family: monospace;
+}
+
+#app.desktop .library .ReactVirtualized__Table__headerColumn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+#app.desktop .library .ReactVirtualized__Table__headerTruncatedText {
+  flex: auto;
+}
+
+#app.desktop .library .DragHandle {
+  flex: 0 0 16px;
+  z-index: 2;
+  cursor: col-resize;
+}
+
+#app.desktop .library .DragHandleActive,
+#app.desktop .library .DragHandleActive:hover {
+  z-index: 3;
+}
+
+#app.desktop .library .DragHandleIcon {
+  flex: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#app.desktop .columnBrowser {
+  border-right-style: solid;
+  border-right-width: 1px;
+  overflow: hidden;
+}
+
+#app.desktop .columnBrowser .ReactVirtualized__Table__headerColumn {
+  border-right: none;
+}
+
+#app.desktop .playlistBrowser {
+  flex: 1;
+  min-width: 200px;
+  max-width: 200px;
+  font-size: 13px;
+  height: 100%;
+  overflow: auto;
+}
+
+#app.desktop .trackBrowser {
+  flex: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+#app.desktop .columnBrowserContainer {
+  flex: 1;
+  min-height: 200px;
+  display: flex;
+  flex-direction: row;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+
+#app.desktop .trackListContainer {
+  flex: 20;
+}
+
+#app.desktop .playlistBrowser .icon {
+  width: 16px;
+  height: 16px;
+  background-size: cover;
+  margin-right: 0.25em;
+  margin-left: 25px;
+}
+
+#app.desktop .playlistBrowser h1 {
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-left: 1em;
+}
+
+#app.desktop .playlistBrowser .groups {
+}
+
+#app.desktop .airplayMenu .item {
+  display: flex;
+}
+
+#app.desktop .airplayMenu .item .icon {
+  flex: 1;
+  width: 18px;
+  min-width: 18px;
+  max-width: 18px;
+  height: 18px;
+  margin-right: 1em;
+  background-size: cover;
+}
+
+#app.desktop .airplayMenu .item .title {
+  flex: 10;
+  font-size: 13px;
+}
+
+#app.desktop .airplayMenu .item .checkbox {
+  flex: 1;
+}
+
+#app.desktop .playlistBrowser .rstcustom__collapseButton,
+#app.desktop .playlistBrowser .rstcustom__expandButton {
+  top: 25%;
+  margin-left: 5px;
+}
+#app.desktop .playlistBrowser .rstcustom__collapseButton {
+  top: 35%;
+}
+
+#app.desktop .playlistBrowser .rstcustom__collapseButton::after,
+#app.desktop .playlistBrowser .rstcustom__expandButton::after {
+  border-left-width: 5px;
+  border-right-width: 5px;
+  border-top-width: 7px;
+  border-bottom-width: 7px;
+}
+
+#app.desktop .playlistBrowser .label {
+  display: flex;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  cursor: default;
+}
+
+#app.desktop .playlistBrowser .folder {
+  font-weight: bold;
+}
+
+#app.desktop .playlistBrowser .folder .folderToggle {
+  width: 0;
+  height: 0;
+  border: solid transparent 6px;
+  margin-left: 10px;
+  margin-right: -23px;
+  border-bottom-width: 5px;
+  border-top-width: 5px;
+  border-left-width: 6px;
+  position: relative;
+  top: 4px;
+  left: 1px;
+}
+
+#app.desktop .playlistBrowser .folder .folderToggle.open {
+  border-left-color: transparent;
+  border-right-width: 5px;
+  border-left-width: 5px;
+  border-top-width: 6px;
+  left: -2px;
+  top: 6px;
+  margin-right: -21px;
+}
+
+#app.desktop .playlistBrowser .label .title {
+  font-weight: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#app.desktop .controls .playpause {
+  width: 33%;
+  display: flex;
+}
+
+#app.desktop .controls .playpause .buttons {
+  display: flex;
+  padding-left: 4em;
+}
+
+#app.desktop .controls .rewind,
+#app.desktop .controls .ffwd {
+  padding: 5px;
+  margin-left: 1em;
+  margin-right: 1em;
+}
+
+#app.desktop .controls .nowplaying {
+  width: 34%;
+  border-left-style: solid;
+  border-left-width: 1px;
+  border-right-style: solid;
+  border-right-width: 1px;
+  display: flex;
+  height: 56px;
+}
+
+#app.desktop .controls .search {
+  width: 33%;
+  display: flex;
+  padding-right: 10px;
+  box-sizing: border-box;
+}
+
+#app.desktop .controls .search input {
+  flex: 1;
+  font-size: 10pt;
+  border-radius: 30px;
+  border-style: solid;
+  border-width: 1px;
+  padding: 5px;
+  padding-left: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#app.desktop .controls .nowplaying>div {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 56px;
+}
+
+#app.desktop .controls .nowplaying .coverart {
+  width: 56px;
+  height: 56px;
+  border-right-style: solid;
+  border-right-width: 1px;
+  background-size: cover;
+  background-position: center;
+}
+
+#app.desktop .controls .nowplaying .timer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 50px;
+  max-width: 50px;
+}
+
+#app.desktop .controls .nowplaying .currentTime {
+  flex: 1;
+  min-height: 14px;
+  max-height: 14px;
+  font-size: 11px;
+  text-align: right;
+  padding-right: 5px;
+  padding-bottom: 5px;
+}
+
+#app.desktop .controls .nowplaying .trackInfo {
+  flex: 100;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  text-align: center;
+}
+
+#app.desktop .controls .nowplaying .trackInfo .name {
+  font-size: 14px;
+  padding-top: 5px;
+  flex: 2;
+}
+
+#app.desktop .controls .nowplaying .trackInfo .artist {
+  font-size: 11px;
+  padding-bottom: 5px;
+}
+
+#app.desktop .controls .nowplaying .progressContainer {
+  flex: 1;
+  min-height: 4px;
+  max-height: 4px;
+}
+
+#app.desktop .controls .nowplaying .progressContainer .progress {
+  height: 100%;
+  pointer-events: none;
+}
+
+#app.desktop .queue {
+  position: absolute;
+  z-index: 10;
+  margin-left: -165px;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 6px;
+  width: 330px;
+  padding-top: 1em;
+  padding-bottom: 1em;
+  max-height: 80vh;
+  overflow: auto;
+}
+
+#app.desktop .queue .item {
+  display: flex;
+  flex-direction: row;
+  box-sizing: border-box;
+  width: 100%;
+  height: 48px;
+  border: solid transparent 1px;
+  border-radius: 4px;
+  padding-left: 1em;
+  padding-right: 1em;
+  padding-top: 1px;
+  padding-bottom: 1px;
+  margin-bottom: 1px;
+}
+
+#app.desktop .queue .item .coverart {
+  flex: 1;
+  box-sizing: border-box;
+  min-width: 44px;
+  max-width: 44px;
+  border: solid transparent 1px;
+  border-radius: 3px;
+  margin-right: 1em;
+}
+
+#app.desktop .queue .item .trackInfo {
+  flex: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top-style: solid;
+  border-top-width: 1px;
+  padding-top: 5px;
+  padding-right: 1em;
+  margin-top: -2px;
+}
+
+#app.desktop .queue .item.selected .trackInfo,
+#app.desktop .queue .item.selected .time {
+  border-top: none;
+}
+
+#app.desktop .queue .item .trackInfo .title {
+  font-size: 14px;
+  color: #333;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#app.desktop .queue .item .trackInfo .artist {
+  font-size: 12px;
+  color: #666;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#app.desktop .queue .item .time {
+  flex: 1;
+  border-top-style: solid;
+  border-top-width: 1px;
+  font-size: 12px;
+  color: #666;
+  padding-top: 14px;
+  text-align: right;
+  margin-top: -2px;
+}
+#app.desktop .queue .item.selected .info .artist,
+#app.desktop .queue .item.selected .info .title,
+#app.desktop .queue .item.selected .time {
+  color: white;
+}
+
+#app.desktop .queueMenu {
+  flex: 1;
+  margin-left: 1em;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 5px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+#app.desktop .queueMenu>div {
+  font-size: 4px;
+  display: flex;
+
+}
+#app.desktop .queueMenu>div>.row {
+  width: 16px;
+  height: 2px;
+  background-color: #666;
+  margin-top: 2px;
+  margin-left: 2px;
+}

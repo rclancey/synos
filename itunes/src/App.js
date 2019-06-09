@@ -4,7 +4,14 @@ import HTML5Backend from 'react-dnd-html5-backend'
 import 'react-virtualized/styles.css';
 import 'react-sortable-tree/style.css';
 import '@fortawesome/fontawesome-free/css/all.css';
-import './App.css';
+import './themes/animations.css';
+import './themes/desktop/layout.css';
+import './themes/desktop/light.css';
+import './themes/desktop/dark.css';
+import './themes/mobile/layout.css';
+import './themes/mobile/light.css';
+import './themes/mobile/dark.css';
+//import './App.css';
 //import { Library } from './components/Library';
 //import { HomeList } from './components/HomeList';
 import { Player } from './components/Player';
@@ -43,6 +50,7 @@ class App extends Component {
     this.state = {
       loading: true,
       mobile: mobile,
+      theme: 'dark',
       loading: true,
       installPrompt: null,
       standalone,
@@ -73,7 +81,7 @@ class App extends Component {
           <InstallAppButton onInstall={this.onInstall} />
         ) : null }
         <DragDropContextProvider backend={HTML5Backend}>
-          <Player mobile={this.state.mobile} />
+          <Player mobile={this.state.mobile} theme={this.state.theme} />
         </DragDropContextProvider>
         {/*
         <HomeList />

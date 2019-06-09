@@ -1,0 +1,171 @@
+#app.mobile.light .back {
+  background-color: #f7f7f7;
+  background-image: url(../../icons/back.png);
+}
+
+#app.mobile.light .header {
+  background-color: #f7f7f7;
+}
+
+#app.mobile.light .header .icon.artists {
+  background-image: url(../../icons/artists.png);
+}
+
+#app.mobile.light .header .icon.playlists {
+  background-image: url(../../icons/playlist.png);
+}
+
+#app.mobile.light .home .item .title {
+  border-bottom-color: #ccc;
+}
+
+#app.mobile.light .playlistList .item .title {
+  border-bottom-color: #ccc;
+}
+
+#app.mobile.light .artistList .index,
+#app.mobile.light .albumList .index,
+#app.mobile.light .genreList .index {
+  color: #ff2d55;
+}
+
+#app.mobile.light .artistList .item .artistImage,
+#app.mobile.light .genreList .item .genreImage {
+  background-color: #868b95;
+}
+
+#app.mobile.light .artistList .item .title,
+#app.mobile.light .genreList .item .title {
+  border-bottom-color: #ccc;
+}
+
+#app.mobile.light .songList .header .title .genre {
+  color: #999;
+}
+
+#app.mobile.light .songList .header .dotsmenu {
+  background: black;
+  color: white;
+}
+
+#app.mobile.light .songList .item .cover {
+  background-color: #868b95;
+}
+
+#app.mobile.light .songList .item .tracknum {
+  color: #999;
+}
+
+#app.mobile.light .songList .item .title {
+  border-bottom-color: #ccc;
+}
+
+#app.mobile.light .songList .item .title .artist {
+  color: #999;
+}
+
+#app.mobile.light .disabler {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+#app.mobile.light .trackMenu,
+#app.mobile.light .playlistMenu {
+  background-color: white;
+}
+
+#app.mobile.light .trackMenu .header,
+#app.mobile.light .playlistMenu .header {
+  border-bottom-color: #ccc;
+}
+
+#app.mobile.light .trackMenu .header .title .album,
+#app.mobile.light .playlistMenu .header .title .queueInfo {
+  color: #999;
+}
+
+#app.mobile.light .trackMenu .item,
+#app.mobile.light .playlistMenu .item {
+  color: #ff2d55;
+}
+
+#app.mobile.light .trackMenu .cancel,
+#app.mobile.light .playlistMenu .cancel {
+  color: #ff2d55;
+}
+
+#app.mobile.light .nowplaying {
+  background: white;
+  border-top-color: #666;
+}
+
+#app.mobile.light .nowplaying.big .header {
+  color: #777;
+}
+
+#app.mobile.light .nowplaying .coverart {
+  border-right-color: #999;
+}
+
+#app.mobile.light .nowplaying>div {
+  color: #777;
+}
+
+#app.mobile.light .nowplaying .trackInfo .title {
+  color: #444;
+}
+
+#app.mobile.light .nowplaying .progressContainer {
+  background-color: #ccc;
+}
+
+#app.mobile.light .nowplaying .progressContainer .progress {
+  background-color: #666;
+}
+
+#app.mobile.light .queue {
+  background: white;
+}
+
+#app.mobile.light .queue .item.selected {
+  background-color: #2687fb;
+  color: white !important;
+}
+
+#app.mobile.light .queue .item .info {
+  border-top-color: #ccc;
+}
+
+#app.mobile.light .queue .item .time {
+  border-top-color: #ccc;
+}
+
+#app.mobile.light .queue .item.selected .info .artist,
+#app.mobile.light .queue .item.selected .info .title,
+#app.mobile.light .queue .item.selected .time {
+  color: white;
+}
+
+#app.mobile.light .queue .item .coverart .current {
+  background-image: url(../../icons/equalizer.gif);
+}
+
+#app.mobile.light .queue .item .trackInfo {
+  border-top-color: #ccc;
+}
+
+#app.mobile.light .switch {
+  border-color: rgba(204, 204, 204, 0.7);
+}
+
+#app.mobile.light .switch.on {
+  border-color: #0e0;
+}
+
+#app.mobile.light .switch .onbg {
+  background-color: #0e0;
+}
+
+#app.mobile.light .switch .knob {
+  background-color: white;
+  box-shadow: 0px 0px 0px 1px rgba(200, 200, 200, 0.7);
+}

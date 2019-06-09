@@ -3,6 +3,7 @@ import { Controls } from './Controls';
 import { Library } from '../Library';
 
 export const DesktopSkin = ({
+  theme,
   status,
   queue,
   queueIndex,
@@ -27,7 +28,7 @@ export const DesktopSkin = ({
   const [progress, setProgress] = useState({ complete: 0, total: 0 });
   const track = queue[queueIndex];
   return (
-    <div className="desktop">
+    <div id="app" className={`desktop ${theme}`}>
       <Controls
         status={status}
         queue={queue}
