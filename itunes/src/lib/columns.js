@@ -146,7 +146,7 @@ export const displayTime = (t) => {
         d += `0${m}:`;
       }
     } else {
-      d = `${m}:`;
+      d += `${m}:`;
     }
     if (s >= 10) {
       d += `${s}`;

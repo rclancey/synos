@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import _ from 'lodash';
 import { trackDB } from '../lib/trackdb';
-import { Controls } from './Controls';
+import { Controls } from './Desktop/Controls';
 import { PlaylistBrowser } from './PlaylistBrowser';
 import { TrackBrowser } from './TrackBrowser';
 import { ProgressBar } from './ProgressBar';
@@ -11,18 +11,12 @@ export class Library extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      search: null,
-      queue: {
-        index: -1,
-        tracks: [],
-      },
       trackCount: 1,
       loaded: 0,
       tracks: [],
       playlists: [],
       playlist: null,
       openFolders: {},
-      currentTrack: null,
     };
     this.onSearch = this.onSearch.bind(this);
     this.onSelectPlaylist = this.onSelectPlaylist.bind(this);
@@ -30,30 +24,18 @@ export class Library extends React.Component {
     this.onMovePlaylist = this.onMovePlaylist.bind(this);
     this.onAddToPlaylist = this.onAddToPlaylist.bind(this);
     this.onReorderTracks = this.onReorderTracks.bind(this);
+    this.onDeleteTracks = this.onDeleteTracks.bind(this);
     this.onTrackPlay = this.onTrackPlay.bind(this);
+    this.onConfirm = this.onConfirm.bind(this);
+    window.trackDB = trackDB;
   }
 
   loadTrackPage(page, size, since) {
-    /*
-    if (page > 10) {
-      throw new Error("404");
-    }
-    */
-    //const url = `/api/library/tracks?start=${page*size}&count=${size}`;
-    //const url = `/api/library/tracks/${page}.json`;
-    //const url = `/jsonlib/${page}.json`;
-    const url = `/api/tracks?page=${page}&count=${size}&since=${since}`;
-    return fetch(url, { method: 'GET' })
-      .then(resp => {
-        if (resp.status === 204) {
-          throw new Error("204");
-        }
-        if (resp.status !== 200) {
-          throw new Error(resp.statusText);
-        }
-        return resp.json();
-      })
+    return this.props.api.loadTracks(page, size, since)
       .then(tracks => {
+        if (tracks.length === 0) {
+          return;
+        }
         return trackDB.updateTracks(tracks)
           .then(() => {
             let music = tracks;/*.filter(track => {
@@ -71,20 +53,29 @@ export class Library extends React.Component {
       });
   }
 
-  loadTrackCount(since) {
-    //const url = '/jsonlib/trackCount.json';
-    const url = `/api/trackCount?since=${since}`;
-    return fetch(url, { method: 'GET' })
-      .then(resp => resp.json());
-  }
-
   loadTracks(page, since) {
     const size = 100;
     this.loadTrackPage(page, size, since)
-      .then(() => { if (this.state.loaded < this.state.trackCount) { this.loadTracks(page+1, since) } })
+      .then(() => this.loadTracks(page+1, since))
       .catch(err => {
-        console.debug(err);
-        this.props.onLoad();
+        console.error(err);
+        if (err === "204") {
+          if (this.props.onLoad !== null && this.props.onLoad !== undefined) {
+            this.props.onLoad();
+          }
+          setTimeout(() => {
+            let newest = 0;
+            this.state.tracks.forEach(track => {
+              if (track.date_added > newest) {
+                newest = track.date_added;
+              }
+              if (track.date_modified > newest) {
+                newest = track.date_modified;
+              }
+            });
+            this.loadTracks(1, newest);
+          }, 60000);
+        }
       });
   }
 
@@ -97,7 +88,7 @@ export class Library extends React.Component {
         pl.kind = DISTINGUISHED_KINDS[pl.distinguished_kind]
       } else if (pl.folder) {
         pl.kind = 'folder';
-        pl.children = playlist.children ? _.sortBy(playlist.children.map(restructure), [(x => !x.folder), (x => x.title.toLowerCase())]) : [];
+        pl.children = playlist.children ? _.sortBy(playlist.children.map(restructure), [(x => !x.folder), (x => x.name.toLowerCase())]) : [];
       } else if (pl.genius_track_id) {
         pl.kind = 'genius';
       } else if (pl.smart) {
@@ -107,12 +98,9 @@ export class Library extends React.Component {
       }
       return pl;
     };
-    //const url = '/jsonlib/playlists.json';
-    const url = '/api/playlists';
-    return fetch(url, { method: 'GET' })
-      .then(resp => resp.json())
+    return this.props.api.loadPlaylists()
       .then(data => {
-        const playlists = _.sortBy(data.map(restructure).filter(x => PLAYLIST_ORDER[x.kind] !== -1), [(x => PLAYLIST_ORDER[x.kind] || 999), (x => x.title.toLowerCase())]);
+        const playlists = _.sortBy(data.map(restructure).filter(x => PLAYLIST_ORDER[x.kind] !== -1), [(x => PLAYLIST_ORDER[x.kind] || 999), (x => x.name.toLowerCase())]);
         this.setState({ playlists });
       });
   }
@@ -126,7 +114,7 @@ export class Library extends React.Component {
           if (pl.tracks) {
             upl.tracks = pl.tracks;
           }
-          upl.title = pl.title;
+          upl.name = pl.name;
           upl.children = pl.children;
           updated = upl;
           console.debug('updated playlist %o', upl);
@@ -143,42 +131,22 @@ export class Library extends React.Component {
     this.setState(update);
   }
 
-  loadPlaylistTracks(pl) {
-    if (pl.tracks) {
-      return Promise.resolve(pl);
-    }
-    const playlist = Object.assign({}, pl);
-    //const url = `/jsonlib/${pl.persistent_id}.json`;
-    const url = `/api/playlist/${pl.persistent_id}`;
-    return fetch(url, { method: 'GET' })
-      .then(resp => resp.json())
-      .then(ids => {
-        const tracksById = {};
-        this.state.tracks.forEach(track => tracksById[track.persistent_id] = track);
-        const tracks = ids.map(id => tracksById[id]).filter(track => !!track);
-        playlist.tracks = tracks;
-        this.updatePlaylist(playlist);
-        return playlist;
-      });
+  setPlaylistTracks(playlist, trackIds) {
+    const tracksById = {};
+    this.state.tracks.forEach(track => tracksById[track.persistent_id] = track);
+    const tracks = trackIds.map(id => tracksById[id]).filter(track => !!track);
+    const pl = Object.assign({}, playlist, { tracks });
+    this.updatePlaylist(pl);
+    return pl;
   }
 
-  /*
   loadPlaylistTracks(pl) {
     if (pl.tracks) {
       return Promise.resolve(pl);
     }
-    const playlist = Object.assign({}, pl);
-    return fetch(`/jsonlib/${pl.persistent_id}.json`, { method: 'GET' })
-      .then(resp => resp.json())
-      .then(ids => {
-        const tracksById = {};
-        this.state.tracks.forEach(track => tracksById[track.persistent_id] = track);
-        const tracks = ids.map(id => tracksById[id]).filter(track => !!track);
-        playlist.tracks = tracks;
-        return new Promise(resolve => this.setState({ playlist }, () => resolve((pl)));
-      });
+    return this.props.api.loadPlaylistTrackIds(pl)
+      .then(ids => this.setPlaylistTracks(pl, ids));
   }
-  */
 
   componentDidMount() {
     this.loadPlaylists();
@@ -191,7 +159,7 @@ export class Library extends React.Component {
       })
       .then(() => trackDB.getNewest())
       .then(newest => {
-        this.loadTrackCount(newest).then(trackCount => {
+        this.props.api.loadTrackCount(newest).then(trackCount => {
           this.setState({ trackCount }, () => this.loadTracks(1, newest));
         });
       });
@@ -199,7 +167,7 @@ export class Library extends React.Component {
 
   onTrackPlay({ event, index, rowData, list }) {
     console.debug('play %o', { event, index, rowData, list });
-    this.setQueue(list.slice(index)).then(() => this.advanceQueue());
+    this.setQueue(list.slice(index));//.then(() => this.advanceQueue());
     //this.setState({ currentTrack: rowData });
   }
 
@@ -210,7 +178,9 @@ export class Library extends React.Component {
   onSelectPlaylist(playlist) {
     if (playlist === null) {
       this.setState({ playlist: null });
+      this.props.onViewPlaylist(null);
     } else if (!playlist.folder) {
+      this.props.onViewPlaylist(playlist.persistent_id);
       this.loadPlaylistTracks(playlist)
         .then(playlist => this.setState({ playlist }));
     }
@@ -238,7 +208,7 @@ export class Library extends React.Component {
         children = recurse(children);
         if (dst !== null && pl.persistent_id === dst.persistent_id) {
           children = children.concat([src]);
-          children = _.sortBy(children, [(x => !x.folder), (x => x.title.toLowerCase())]);
+          children = _.sortBy(children, [(x => !x.folder), (x => x.name.toLowerCase())]);
         }
         return Object.assign({}, pl, { children });
       });
@@ -249,31 +219,32 @@ export class Library extends React.Component {
     root = recurse(root);
     if (dst === null) {
       root = root.concat([src]);
-      root = _.sortBy(root, [(x => !x.folder), (x => x.title.toLowerCase())]);
+      root = _.sortBy(root, [(x => !x.folder), (x => x.name.toLowerCase())]);
     }
     console.debug('playlists now %o', root);
     this.setState({ playlists: root });
   }
 
   onAddToPlaylist(dst, tracks) {
-    this.loadPlaylistTracks(dst)
-      .then(pl => this.updatePlaylist(Object.assign({}, pl, { tracks: pl.tracks.concat(tracks) })));
-    return { playlist: dst, tracks: tracks };
+    return this.props.api.addToPlaylist(dst, tracks)
+      .then(ids => this.setPlaylistTracks(dst, ids));
   }
 
   onReorderTracks(playlist, targetIndex, sourceIndices) {
-    console.debug('onReorderTracks(%o)', { playlist, targetIndex, sourceIndices });
-    const target = playlist.tracks[targetIndex];
-    const sources = sourceIndices.map(i => playlist.tracks[i]);
-    const tracks = playlist.tracks.filter((t, i) => !sourceIndices.includes(i));
-    const newIdx = tracks.findIndex(t => t === target);
-    const before = newIdx === -1 ? [] : tracks.slice(0, newIdx+1);
-    const after = newIdx === -1 ? tracks.slice(0) : tracks.slice(newIdx+1);
-    const newTracks = before.concat(sources).concat(after);
-    const pl = Object.assign({}, playlist, { tracks: newTracks });
-    console.debug({ playlist, targetIndex, sourceIndices, target, sources, tracks, newIdx, before, after, newTracks, pl });
-    this.updatePlaylist(pl);
-    return pl;
+    return this.props.api.reorderTracks(playlist, targetIndex, sourceIndices)
+      .then(ids => this.setPlaylistTracks(playlist, ids));
+  }
+
+  onDeleteTracks(playlist, selected) {
+    if (playlist === null || playlist === undefined) {
+      return Promise.resolve(null);
+    }
+    return this.props.api.deletePlaylistTracks(playlist, selected)
+      .then(ids => this.setPlaylistTracks(playlist, ids));
+  }
+
+  onConfirm(message, callback) {
+    this.setState({ confirming: { message, callback } });
   }
 
   clearQueue() {
@@ -281,11 +252,14 @@ export class Library extends React.Component {
   }
 
   setQueue(tracks) {
+    this.props.onReplaceQueue(tracks);
+    /*
     const queue = {
       tracks: tracks,
       index: -1,
     };
     return new Promise(resolve => this.setState({ queue }, resolve));
+    */
   }
 
   appendToQueue(tracks) {
@@ -340,18 +314,9 @@ export class Library extends React.Component {
   }
 
   render() {
-    return [
-      <div key="library" className="library">
-        <Controls
-          search={this.state.search}
-          track={this.state.currentTrack}
-          queue={this.state.queue.tracks}
-          index={this.state.queue.index}
-          onAdvanceQueue={() => this.advanceQueue()}
-          onRewindQueue={() => this.rewindQueue()}
-          onSearch={this.onSearch}
-        />
-        <div className="dataContainer">
+    return (
+      <Fragment>
+        <div key="library" className="library">
           <PlaylistBrowser
             playlists={this.state.playlists}
             openFolders={this.state.openFolders}
@@ -361,18 +326,42 @@ export class Library extends React.Component {
             onToggle={this.onTogglePlaylist}
             onMovePlaylist={this.onMovePlaylist}
             onAddToPlaylist={this.onAddToPlaylist}
+            onConfirm={this.onConfirm}
           />
           <TrackBrowser
             tracks={this.state.playlist ? this.state.playlist.tracks : this.state.tracks}
             playlist={this.state.playlist}
             onReorderTracks={this.onReorderTracks}
+            onDeleteTracks={this.onDeleteTracks}
+            onConfirm={this.onConfirm}
             onPlay={this.onTrackPlay}
-            search={this.state.search}
+            search={this.props.search}
           />
         </div>
-      </div>,
-      <ProgressBar key="progress" total={this.state.trackCount} complete={this.state.loaded} />
-    ];
+        <ProgressBar key="progress" total={this.state.trackCount} complete={this.state.loaded} />
+        { this.state.confirming ? (
+          <Confirm
+            message={this.state.confirming.message}
+            onConfirm={() => { this.setState({ confirming: null }); this.state.confirming.callback(); }}
+            onCancel={() => this.setState({ confirming: null })}
+          />
+        ) : null }
+      </Fragment>
+    );
   }
 }
+
+const Confirm = ({ message, onConfirm, onCancel }) => (
+  <div className="cover">
+    <div className="padding" />
+    <div className="dialog">
+      <p>{message}</p>
+      <p style={{ textAlign: 'right' }}>
+        <input type="button" className="dflt" value="Cancel" onClick={onCancel} />
+        <input type="button" style={{ borderColor: 'red', color: 'red' }} value="Proceed" onClick={onConfirm} />
+      </p>
+    </div>
+    <div className="padding" />
+  </div>
+);
 

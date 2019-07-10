@@ -25,12 +25,13 @@ export const QueueInfo = ({ tracks }) => {
   );
 };
 
-export const QueueItem = ({ track, current, selected, onSelect }) => (
+export const QueueItem = ({ track, coverSize, coverRadius, current, selected, onSelect, onPlay }) => (
   <div
     className={"item" + (selected ? ' selected' : '')}
     onClick={onSelect}
+    onDoubleClick={onPlay}
   >
-    <CoverArt track={track}>
+    <CoverArt track={track} size={coverSize} radius={coverRadius} >
       { current ? (<div className="current" />) : null }
     </CoverArt>
     <TrackInfo track={track} />

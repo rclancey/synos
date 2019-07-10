@@ -41,15 +41,15 @@ func SonosGetQueue(w http.ResponseWriter, req *http.Request) {
 }
 
 func readTracks(req *http.Request) ([]*itunes.Track, *HTTPError) {
-	trackIds := []string{}
+	trackIds := []itunes.PersistentID{}
 	err := ReadJSON(req, &trackIds)
 	if err != nil {
 		return nil, err
 	}
 	tracks := make([]*itunes.Track, len(trackIds))
 	for i, id := range trackIds {
-		track, ok := lib.Tracks[id]
-		if !ok {
+		track := lib.GetTrack(id)
+		if track == nil {
 			return nil, NotFound.Raise(nil, "Track %s does not exist", id)
 		}
 		tracks[i] = track
@@ -63,9 +63,10 @@ func SonosReplaceQueue(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	var err error
-	plid := req.URL.Query().Get("playlist")
-	if plid != "" {
-		pl, ok := lib.PlaylistIDIndex[plid]
+	plid := new(itunes.PersistentID)
+	err = plid.DecodeString(req.URL.Query().Get("playlist"))
+	if err != nil && *plid != 0 {
+		pl, ok := lib.Playlists[*plid]
 		if !ok {
 			NotFound.Raise(nil, "playlist %s not found", plid).RespondJSON(w)
 			return
@@ -97,9 +98,10 @@ func SonosAppendQueue(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	var err error
-	plid := req.URL.Query().Get("playlist")
-	if plid != "" {
-		pl, ok := lib.PlaylistIDIndex[plid]
+	plid := new(itunes.PersistentID)
+	err = plid.DecodeString(req.URL.Query().Get("playlist"))
+	if err == nil && *plid != 0 {
+		pl, ok := lib.Playlists[*plid]
 		if !ok {
 			NotFound.Raise(nil, "playlist %s not found", plid).RespondJSON(w)
 			return
@@ -130,9 +132,10 @@ func SonosInsertQueue(w http.ResponseWriter, req *http.Request) {
 		InternalServerError.Raise(err, "Error communicating with Sonos").RespondJSON(w)
 		return
 	}
-	plid := req.URL.Query().Get("playlist")
-	if plid != "" {
-		pl, ok := lib.PlaylistIDIndex[plid]
+	plid := new(itunes.PersistentID)
+	err = plid.DecodeString(req.URL.Query().Get("playlist"))
+	if err == nil && *plid != 0 {
+		pl, ok := lib.Playlists[*plid]
 		if !ok {
 			NotFound.Raise(nil, "playlist %s not found", plid).RespondJSON(w)
 			return

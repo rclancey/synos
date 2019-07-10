@@ -123,7 +123,7 @@ export class Player extends React.Component {
     if (this.state.queue.length === 0) {
       this.setState({ sonos: true }, () => this.startupSonos());
     } else {
-      this.transferQueueToSonos();
+      this.transferQueueToSonos(this.state);
     }
   }
 
@@ -133,7 +133,7 @@ export class Player extends React.Component {
 
   shutdownSonos() {
     if (this.sonos) {
-      pauseSonos();
+      this.props.api.pauseSonos();
       this.sonos.close();
       this.sonos = null;
     }
@@ -201,8 +201,10 @@ export class Player extends React.Component {
   onSonosError() {
     const sonos = this.sonos;
     this.sonos = null;
-    sonos.close();
-    this.startupSonos();
+    if (sonos) {
+      sonos.close();
+    }
+    setTimeout(() => this.startupSonos(), 1000);
   }
 
   onSonosClose() {
@@ -224,7 +226,7 @@ export class Player extends React.Component {
     return new Promise(resolve => {
       this.sonos = new WebSocket(uri);
       this.sonos.onopen = evt => {
-        getSonosQueue()
+        this.props.api.getSonosQueue()
           .then(queue => {
             console.debug('updating with sonos queue info %o', queue);
             this.setState({
@@ -239,8 +241,10 @@ export class Player extends React.Component {
             }, () => console.debug('set sonos state %o', this.state));
           });
         setInterval(() => {
-          let t = Math.min(this.state.duration, Math.max(0, this.state.currentTimeSet + (Date.now() - this.state.currentTimeSetAt)));
-          this.setState({ currentTime: t });
+          if (this.state.status === 'PLAYING') {
+            let t = Math.min(this.state.duration, Math.max(0, this.state.currentTimeSet + (Date.now() - this.state.currentTimeSetAt)));
+            this.setState({ currentTime: t });
+          }
         }, 250);
         resolve(this.sonos);
       };
@@ -251,25 +255,28 @@ export class Player extends React.Component {
   }
 
   transferQueueToSonos() {
+    console.debug('transferQueueToSonos');
     const status = this.state.status;
-    this.currentPlayer.current.pause();
+    if (this.currentPlayer.current) {
+      this.currentPlayer.current.pause();
+    }
     const tracks = this.state.queue;
     const index = this.state.queueIndex;
-    const ms = this.currentPlayer.current.currentTime;
+    const ms = this.currentPlayer.current ? this.currentPlayer.current.currentTime * 1000 : 0;
     return new Promise(resolve => {
       this.setState({ sonos: true }, () => {
         this.startupSonos()
-          .then(() => pauseSonos())
-          .then(() => replaceSonosQueue(tracks))
-          .then(() => skipSonosTo(index))
-          .then(() => seekSonosTo(ms))
+          .then(() => this.props.api.pauseSonos())
+          .then(() => this.props.api.replaceSonosQueue(tracks))
+          .then(() => this.props.api.skipSonosTo(index))
+          .then(() => this.props.api.seekSonosTo(ms))
           .then(() => {
             if (status === 'PLAYING') {
-              return playSonos();
+              return this.props.api.playSonos();
             }
             return true;
           })
-          .then(() => getSonosVolume())
+          .then(() => this.props.api.getSonosVolume())
           .then(volume => this.setState({ volume }, resolve));
       });
     });
@@ -277,32 +284,30 @@ export class Player extends React.Component {
 
   onPlay() {
     if (this.state.sonos) {
-      playSonos();
+      this.props.api.playSonos();
     } else {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.volume = this.state.volume / 100;
         this.currentPlayer.current.play();
-      } else {
-        this.setState({ status: 'PLAYING' });
       }
+      this.setState({ status: 'PLAYING' });
     }
   }
 
   onPause() {
     if (this.state.sonos) {
-      pauseSonos();
+      this.props.api.pauseSonos();
     } else {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.pause();
-      } else {
-        this.setState({ status: 'PAUSED' });
       }
+      this.setState({ status: 'PAUSED' });
     }
   }
 
   onReplaceQueue(tracks) {
     if (this.state.sonos) {
-      replaceSonosQueue(tracks);
+      this.props.api.replaceSonosQueue(tracks);
     } else {
       this.setState({ queue: tracks, queueIndex: 0, status: 'PLAYING' });
     }
@@ -310,7 +315,7 @@ export class Player extends React.Component {
 
   onAppendToQueue(tracks) {
     if (this.state.sonos) {
-      appendToSonosQueue(tracks);
+      this.props.api.appendToSonosQueue(tracks);
     } else {
       this.setState({ queue: this.state.queue.concat(tracks) });
     }
@@ -318,7 +323,7 @@ export class Player extends React.Component {
 
   onInsertIntoQueue(tracks) {
     if (this.state.sonos) {
-      insertIntoSonosQueue(tracks);
+      this.props.api.insertIntoSonosQueue(tracks);
     } else {
       if (this.state.queue.length == 0) {
         this.onReplaceQueue(tracks);
@@ -333,7 +338,7 @@ export class Player extends React.Component {
 
   onSeekTo(ms) {
     if (this.state.sonos) {
-      seekSonosTo(ms);
+      this.props.api.seekSonosTo(ms);
     } else {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.currentTime = ms / 1000.0;
@@ -349,7 +354,7 @@ export class Player extends React.Component {
 
   onSeekBy(ms) {
     if (this.state.sonos) {
-      seekSonosBy(ms);
+      this.props.api.seekSonosBy(ms);
     } else {
       if (this.currentPlayer.current) {
         const t = this.currentPlayer.current.currentTime + ms / 1000.0;
@@ -379,14 +384,14 @@ export class Player extends React.Component {
 
   onSkipBy(count) {
     if (this.state.sonos) {
-      skipSonosBy(count);
+      this.props.api.skipSonosBy(count);
     } else {
+      if (this.currentPlayer.current) {
+        this.currentPlayer.current.pause();
+      }
       const idx = this.state.queueIndex + count;
       if (idx < 0 || idx >= this.state.queue.length) {
-        if (this.currentPlayer.current) {
-          this.currentPlayer.current.pause();
-          this.setState({ queueIndex: 0, currentTime: 0 });
-        }
+        this.setState({ queueIndex: 0, currentTime: 0 });
       } else {
         this.setState({ queueIndex: idx });
       }
@@ -395,13 +400,13 @@ export class Player extends React.Component {
 
   onSkipTo(idx) {
     if (this.state.sonos) {
-      skipSonosTo(idx);
+      this.props.api.skipSonosTo(idx);
     } else {
+      if (this.currentPlayer.current) {
+        this.currentPlayer.current.pause();
+      }
       if (idx < 0 || idx >= this.state.queue.length) {
-        if (this.currentPlayer.current) {
-          this.currentPlayer.current.pause();
-          this.setState({ queueIndex: 0, currentTime: 0 });
-        }
+        this.setState({ queueIndex: 0, currentTime: 0 });
       } else {
         this.setState({ queueIndex: idx });
       }
@@ -410,7 +415,7 @@ export class Player extends React.Component {
 
   onChangeVolumeBy(delta) {
     if (this.state.sonos) {
-      changeSonosVolumeBy(delta);
+      this.props.api.changeSonosVolumeBy(delta);
     } else {
       if (this.currentPlayer.current) {
         let vol = this.currentPlayer.current.volume + delta / 100.0;
@@ -440,7 +445,7 @@ export class Player extends React.Component {
       vol = 0;
     }
     if (this.state.sonos) {
-      setSonosVolumeTo(vol);
+      this.props.api.setSonosVolumeTo(vol);
     } else {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.volume = vol / 100.0;
@@ -450,16 +455,25 @@ export class Player extends React.Component {
     }
   }
 
-  onTrackEnd() {
-    console.debug('onTrackEnd');
+  onTrackEnd(evt) {
+    console.debug('onTrackEnd %o', evt.nativeEvent);
     const idx = this.state.queueIndex + 1;
     if (idx >= this.state.queue.length) {
       this.currentPlayer.current.pause();
       this.setState({ queueIndex: 0 });
     } else {
       if (this.nextPlayer.current) {
+        if (this.currentPlayer.current) {
+          console.debug('swapping current src');
+          const track = this.state.queue[idx];
+          this.currentPlayer.current.currentTime = 0;
+          this.currentPlayer.current.src = this.trackUrl(track);
+          this.currentPlayer.current.play();
+        }
+        /*
         this.nextPlayer.current.volume = this.state.volume / 100;
         this.nextPlayer.current.play();
+        */
       }
       this.setState({ queueIndex: idx });
     }
@@ -478,6 +492,8 @@ export class Player extends React.Component {
   componentDidUpdate(prevProps, prevState) {
     if (!this.state.sonos && this.state.status === 'PLAYING') {
       if (this.currentPlayer.current) {
+        //this.currentPlayer.current.volume = this.state.volume / 100;
+        //this.currentPlayer.current.play();
         const prevTrack = prevState.queue[prevState.queueIndex];
         const track = this.state.queue[this.state.queueIndex];
         if (prevTrack !== track) {
@@ -498,6 +514,16 @@ export class Player extends React.Component {
     }
   }
 
+  trackUrl(track) {
+    let url = `/api/track/${track.persistent_id}`;
+    if (track.kind === 'MPEG audio file') {
+      url += '.mp3';
+    } else if (track.kind === 'Purchased AAC audio file') {
+      url += '.m4a';
+    }
+    return url;
+  }
+
   renderCurrentAudio() {
     if (this.state.sonos) {
       return null;
@@ -508,19 +534,27 @@ export class Player extends React.Component {
     }
     return (
       <audio
-        key={track.persistent_id}
-        ref={this.currentPlayer}
-        src={`/api/track/${track.persistent_id}`}
+        key="current"
+        ref={node => {
+          if (node !== null) {
+            if (this.currentPlayer.current !== node) {
+              console.log("current audio node changing! %o => %o", node, this.currentPlayer.current);
+            }
+            this.currentPlayer.current = node;
+          }
+        }}
+        src={this.trackUrl(track)}
         volume={this.state.volume / 100.0}
         onCanPlay={evt => { evt.target.volume = this.state.volume / 100; this.state.status === 'PLAYING' && evt.target.play(); }}
         onDurationChange={evt => this.setState({ duration: Math.round(evt.target.duration * 1000) })}
         onEnded={this.onTrackEnd}
         onPlaying={evt => this.setState({ status: 'PLAYING' })}
-        onPause={() => this.setState({ status: 'PAUSED' })}
         onTimeUpdate={this.onTimeUpdate}
         onVolumeChange={evt => this.setState({ volume: Math.round(100 * evt.target.volume) })}
       />
     );
+        //onPause={evt => { console.debug('paused! %o', evt.nativeEvent); this.setState({ status: 'PAUSED' }); }}
+        //key={track.persistent_id}
   }
 
   renderNextAudio() {
@@ -533,16 +567,18 @@ export class Player extends React.Component {
     }
     return (
       <audio
-        key={track.persistent_id}
+        key="preload"
         ref={this.nextPlayer}
-        src={`/api/track/${track.persistent_id}`}
+        src={this.trackUrl(track)}
         preload="auto"
       />
     );
+        //key={track.persistent_id}
   }
 
   render() {
     const props = {
+      theme: this.props.theme,
       status: this.state.status,
       queue: this.state.queue,
       queueIndex: this.state.queueIndex,

@@ -12,14 +12,14 @@ export class Playlist extends React.Component {
   }
 
   componentDidMount() {
-    fetch(`/api/playlist/${this.props.playlist.persistent_id}?full=true`, { method: 'GET' })
+    fetch(`/api/playlist/${this.props.playlist.persistent_id}/tracks`, { method: 'GET' })
       .then(resp => resp.json())
       .then(tracks => this.setState({ tracks }));
   }
 
   renderIcon() {
     const img = this.state.tracks.slice(0, 4).map(track => {
-      return `url(/api/cover/${track.persistent_id})`;
+      return `url(/api/art/track/${track.persistent_id})`;
     });
     return (
       <div className="cover">
@@ -65,7 +65,7 @@ export class Playlist extends React.Component {
     const track = this.state.tracks[index];
     return (
       <div key={key} className="item" style={style}>
-        <div className="cover" style={{ backgroundImage: `url(/api/cover/${track.persistent_id})` }} />
+        <div className="cover" style={{ backgroundImage: `url(/api/art/track/${track.persistent_id})` }} />
         <div className="title">
           <div className="song">{track.name}</div>
           <div className="artist">{track.artist}</div>
@@ -111,7 +111,7 @@ export class Album extends React.Component {
   }
 
   componentDidMount() {
-    fetch(`/api/index/songs?artist=${this.props.artist}&album=${this.props.album}`, { method: 'GET' })
+    fetch(`/api/index/songs?artist=${escape(this.props.album.artist.sort)}&album=${escape(this.props.album.sort)}`, { method: 'GET' })
       .then(resp => resp.json())
       .then(tracks => this.setState({ tracks }));
   }
@@ -120,7 +120,7 @@ export class Album extends React.Component {
     if (this.state.tracks.length === 0) {
       return null;
     }
-    const url = `/api/cover/${this.state.tracks[0].persistent_id}.jpg`;
+    const url = `/api/art/track/${this.state.tracks[0].persistent_id}.jpg`;
     return (
       <div className="cover" style={{backgroundImage: `url(${url})`}} />
     );
@@ -163,7 +163,7 @@ export class Album extends React.Component {
   render() {
     return (
       <div className="songList">
-        <div className="back" onClick={this.props.onClose}>{this.props.prev}</div>
+        <div className="back" onClick={this.props.onClose}>{this.props.prev.name}</div>
         <div className="header">
           {this.renderIcon()}
           {this.renderTitle()}

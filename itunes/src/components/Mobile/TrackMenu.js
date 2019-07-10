@@ -58,7 +58,7 @@ export const TrackMenu = ({
   <div className="disabler">
     <div className="trackMenu">
       <div className="header">
-        <div className="cover" style={{ backgroundImage: `url(/api/cover/${track.persistent_id})` }} />
+        <div className="cover" style={{ backgroundImage: `url(/api/art/track/${track.persistent_id})` }} />
         <div className="title">
           <div className="name">{track.name}</div>
           <div className="album">{track.artist}{'\u00a0\u2219\u00a0'}{track.album}</div>

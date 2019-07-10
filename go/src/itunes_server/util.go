@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -50,6 +51,7 @@ func ReadJSON(req *http.Request, target interface{}) *HTTPError {
 	}
 	err = json.Unmarshal(body, target)
 	if err != nil {
+		log.Println(err)
 		return BadRequest.Raise(err, "Malformed JSON input")
 	}
 	return nil

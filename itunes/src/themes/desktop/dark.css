@@ -1,0 +1,409 @@
+#app.desktop.dark {
+  background-color: black;
+}
+
+#app.desktop.dark #loading {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+#app.desktop.dark #loading .progress {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+#app.desktop.dark #loading .progress .complete {
+  background: url(../../icons/progress-alpha.png);
+  background-color: #6cf;
+}
+
+#app.desktop.dark .library .ReactVirtualized__Table__headerRow {
+  border-bottom-color: #353739;
+  background-color: #1e2023;
+  color: white;
+}
+
+#app.desktop.dark .library .ReactVirtualized__Table__headerColumn {
+  border-right-color: #494b4d;
+}
+
+#app.desktop.dark .library .ReactVirtualized__Table__row.dropTarget {
+  border-bottom-color: blue;
+}
+
+#app.desktop.dark .library .ReactVirtualized__Table__row {
+  background-color: #1e2023;
+  color: white;
+}
+
+#app.desktop.dark .library .ReactVirtualized__Table__row.even {
+  background-color: #292b2e;
+}
+
+#app.desktop.dark .library .trackListContainer {
+  background-color: #1e2023;
+}
+
+#app.desktop.dark .library .playlistBrowser:focus-within .selected,
+#app.desktop.dark .library .columnBrowser:focus-within .selected,
+#app.desktop.dark .library .trackListContainer:focus-within .selected {
+  background-color: #2687fb;
+  color: white;
+}
+
+#app.desktop.dark .library .selected {
+  background-color: #545456;
+}
+
+#app.desktop.dark .library .ReactVirtualized__Table__rowColumn.stars {
+  color: #2687fb;
+}
+
+#app.desktop.dark .library .ReactVirtualized__Table__row.selected .ReactVirtualized__Table__rowColumn.stars {
+  color: white;
+}
+
+#app.desktop.dark .library .DragHandle {
+  color: #0085ff;
+}
+
+#app.desktop.dark .library .DragHandle:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+#app.desktop.dark .library .DragHandleActive,
+#app.desktop.dark .library .DragHandleActive:hover {
+  color: #0b6fcc;
+}
+
+#app.desktop.dark .columnBrowser {
+  background-color: #1e2023;
+  border-right-color: #494b4d;
+  color: white;
+}
+
+#app.desktop.dark .columnBrowser .ReactVirtualized__Table__headerRow {
+  background-color: #1e2023;
+  color: white;
+}
+
+#app.desktop.dark .playlistBrowser {
+  background-color: #32363b;
+  color: #fff;
+}
+
+#app.desktop.dark .columnBrowserContainer {
+  border-top-color: #494b4d;
+  border-bottom-color: #494b4d;
+}
+
+#app.desktop.dark .playlistBrowser h1 {
+  color: #999;
+}
+
+.icon.sonos {
+  background-image: url(../../icons/sonos.png);
+}
+
+.icon.appletv {
+  background-image: url(../../icons/appletv.png);
+}
+
+#app.dark .icon.appletv {
+  background-image: url(../../icons/appletv-dark.png);
+}
+
+.icon.computer {
+  background-image: url(../../icons/computer.png);
+}
+
+#app.dark .icon.computer {
+  background-image: url(../../icons/computer-dark.png);
+}
+
+.icon.airplay {
+  background-image: url(../../icons/airplay.png);
+}
+
+#app.dark .icon.airplay {
+  background-image: url(../../icons/airplay-dark.png);
+}
+
+.icon.artists {
+  background-image: url(../../icons/artists.png);
+}
+
+#app.dark .icon.artists {
+  background-image: url(../../icons/artists-dark.png);
+}
+
+.icon.albums {
+  background-image: url(../../icons/albums.png);
+}
+
+#app.dark .icon.albums {
+  background-image: url(../../icons/albums-dark.png);
+}
+
+.icon.genres {
+  background-image: url(../../icons/genres.png);
+}
+
+#app.dark .icon.genres {
+  background-image: url(../../icons/genres-dark.png);
+}
+
+.icon.songs {
+  background-image: url(../../icons/songs.png);
+}
+
+#app.dark .icon.songs {
+  background-image: url(../../icons/songs-dark.png);
+}
+
+.icon.audiobooks {
+  background-image: url(../../icons/audiobooks.png);
+}
+
+#app.dark .icon.audiobooks {
+  background-image: url(../../icons/audiobooks-dark.png);
+}
+
+.icon.books {
+  background-image: url(../../icons/books.png);
+}
+
+#app.dark .icon.books {
+  background-image: url(../../icons/books-dark.png);
+}
+
+.icon.music {
+  background-image: url(../../icons/music.png);
+}
+
+#app.dark .icon.music {
+  background-image: url(../../icons/music-dark.png);
+}
+
+.icon.tvshows {
+  background-image: url(../../icons/tvshows.png);
+}
+
+#app.dark .icon.tvshows {
+  background-image: url(../../icons/tvshows-dark.png);
+}
+
+.icon.movies {
+  background-image: url(../../icons/movies.png);
+}
+
+#app.dark .icon.movies {
+  background-image: url(../../icons/movies-dark.png);
+}
+
+.icon.podcasts {
+  background-image: url(../../icons/podcasts.png);
+}
+
+#app.dark .icon.podcasts {
+  background-image: url(../../icons/podcasts-dark.png);
+}
+
+.icon.purchased {
+  background-image: url(../../icons/purchased.png);
+}
+
+#app.dark .icon.purchased {
+  background-image: url(../../icons/purchased-dark.png);
+}
+
+.icon.recent {
+  background-image: url(../../icons/recent.png);
+}
+
+#app.dark .icon.recent {
+  background-image: url(../../icons/recent-dark.png);
+}
+
+.icon.downloaded_music,
+.icon.downloaded_tvshows,
+.icon.downloaded_movies {
+  background-image: url(../../icons/downloaded.png);
+}
+
+#app.dark .icon.downloaded_music,
+#app.dark .icon.downloaded_tvshows,
+#app.dark .icon.downloaded_movies {
+  background-image: url(../../icons/downloaded-dark.png);
+}
+
+.icon.folder {
+  background-image: url(../../icons/folder.png);
+}
+
+#app.dark .icon.folder {
+  background-image: url('../../icons/folder-dark.png');
+}
+
+.icon.smart {
+  background-image: url(../../icons/smart.png);
+}
+
+#app.dark .icon.smart {
+  background-image: url(../../icons/smart-dark.png);
+}
+
+.icon.genius {
+  background-image: url(../../icons/genius.png);
+}
+
+#app.dark .icon.genius {
+  background-image: url(../../icons/genius-dark.png);
+}
+
+.icon.playlists,
+.icon.playlist {
+  background-image: url(../../icons/playlist.png);
+}
+
+#app.dark .icon.playlists,
+#app.dark .icon.playlist {
+  background-image: url(../../icons/playlist-dark.png);
+}
+
+#app.desktop.dark .playlistBrowser .folder .folderToggle {
+  border-left-color: #999;
+}
+
+#app.desktop.dark .playlistBrowser .folder .folderToggle.open {
+  border-top-color: #999;
+}
+
+#app.desktop.dark .playlistBrowser .folder.dropTarget>.label {
+  background-color: yellow;
+}
+
+#app.desktop.dark .playlistBrowser .playlist.dropTarget>.label {
+  background-color: orange !important;
+}
+
+#app.desktop.dark .controls .playpause {
+  background-color: #434446;
+  /*
+  background-image: linear-gradient(#e8e8e8, #ccc);
+  */
+}
+
+#app.desktop.dark .controls .playpause .buttons .rewind div,
+#app.desktop.dark .controls .playpause .buttons .play,
+#app.desktop.dark .controls .playpause .buttons .pause,
+#app.desktop.dark .controls .playpause .buttons .ffwd div {
+  border-color: #a9a9ab;
+}
+
+#app.desktop.dark .controls .nowplaying {
+  border-left-color: #999;
+  border-right-color: #999;
+  background-color: #1e2023;
+  color: white;
+}
+
+#app.desktop.dark .controls .search {
+  background-color: #434446;
+  /*
+  background-image: linear-gradient(#e8e8e8, #ccc);
+  */
+}
+
+#app.desktop.dark .controls .search input {
+  border-color: #999;
+}
+
+#app.desktop.dark .controls .nowplaying .coverart {
+  border-right-color: #999;
+}
+
+#app.desktop.dark .controls .nowplaying .progressContainer {
+  background-color: #494b4d;
+}
+
+#app.desktop.dark .controls .nowplaying .progressContainer .progress {
+  background-color: #666;
+}
+
+#app.desktop.dark .queue {
+  background-color: rgba(245, 245, 245, 0.97);
+  border-color: #494b4d;
+  box-shadow: 1px 4px 5px 1px rgba(204, 204, 204, 0.5);
+}
+
+#app.desktop.dark .queue .item.selected {
+  background-color: #2687fb;
+  color: white !important;
+}
+
+#app.desktop.dark .queue .item .trackInfo {
+  border-top-color: #494b4d;
+}
+
+#app.desktop.dark .queue .item .time {
+  border-top-color: #494b4d;
+}
+
+#app.desktop.dark .queue .item.selected .info .artist,
+#app.desktop.dark .queue .item.selected .info .title,
+#app.desktop.dark .queue .item.selected .time {
+  color: white;
+}
+
+#app.desktop.dark .queueMenu {
+  border-color: #494b4d;
+  background-color: #f5f5f5;
+}
+
+#app.desktop.dark .queueMenu>div {
+  color: #666;
+}
+
+#app.desktop.dark .queueMenu>div>.row {
+  background-color: #666;
+}
+
+#app.desktop.dark .cover .dialog {
+  border-color: white;
+  background-color: black;
+  color: white;
+  box-shadow: white 0 0 35px;
+}
+
+#app.desktop.dark .cover input[type="button"] {
+  border-color: white;
+  background: linear-gradient(#292b2e, #000);
+  color: white;
+}
+
+#app.desktop.dark .cover input.dflt[type="button"] {
+  border-color: blue;
+  background: linear-gradient(#08f, #00f);
+  color: white;
+}
+
+#app.desktop.dark.login .centerPad .topPad {
+  color: #2687fb;
+}
+
+#app.desktop.dark .login {
+  border-color: white;
+  background-color: black;
+  color: #2687fb;
+  box-shadow: #2687fb 0px 0px 50px 20px;
+}
+
+#app.desktop.dark .login input {
+  background-color: #1e2023;
+  border-color: #2687fb;
+  color: #2687fb;
+}
+
+#app.desktop.dark .login input[type="button"] {
+  background-image: linear-gradient(#144987, #1e2023);
+}
+

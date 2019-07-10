@@ -1,0 +1,6 @@
+syntax = "proto2";
+package itunespb;
+
+message Time {
+    required int64 ms = 1;
+}

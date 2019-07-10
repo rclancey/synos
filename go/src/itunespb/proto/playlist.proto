@@ -1,0 +1,27 @@
+syntax = "proto2";
+package itunespb;
+
+import "track.proto";
+
+message Playlist {
+	optional bool     master                 = 1;
+	optional int32    playlist_id            = 2;
+	optional uint64   persistent_id          = 3;
+	optional bool     all_items              = 4;
+	optional bool     visible                = 5;
+	optional string   name                   = 6;
+	optional int32    distinguished_kind     = 7;
+	optional bool     music                  = 8;
+    optional bytes    smart_info             = 9;
+    optional bytes    smart_criteria         = 10;
+	optional bool     movies                 = 11;
+	optional bool     tv_shows               = 12;
+	optional bool     podcasts               = 13;
+	optional bool     audiobooks             = 14;
+	optional bool     purchased_music        = 15;
+	optional bool     folder                 = 16;
+	optional uint64   parent_persistent_id   = 17;
+	optional uint64   genius_track_id        = 18;
+    repeated Playlist children               = 19;
+    repeated uint64   items                  = 20;
+}

@@ -1,34 +1,42 @@
 package itunes
 
 import (
-	"encoding/xml"
-	"strconv"
+	"bytes"
+	"sort"
 	"strings"
 	"time"
 )
 
+type SortablePlaylistList []*Playlist
+
+func (spl SortablePlaylistList) Len() int { return len(spl) }
+func (spl SortablePlaylistList) Swap(i, j int) { spl[i], spl[j] = spl[j], spl[i] }
+func (spl SortablePlaylistList) Less(i, j int) bool {
+	ap := spl[i].Priority()
+	bp := spl[j].Priority()
+	if ap < bp {
+		return true
+	}
+	if bp > ap {
+		return false
+	}
+	if spl[i].Name < spl[j].Name {
+		return true
+	}
+	return false
+}
+
 type Playlist struct {
-	Master *bool `json:"master,omitempty"`
-	PlaylistID *int `json:"playlist_id,omitempty"`
-	PlaylistPersistentID *string `json:"persistent_id,omitempty"`
-	AllItems *bool `json:"all_items,omitempty"`
-	Visible *bool `json:"visible,omitempty"`
-	Name *string `json:"name,omitempty"`
-	PlaylistItems []*Track `json:"items,omitempty"`
-	DistinguishedKind *int `json:"distinguished_kind,omitempty"`
-	Music *bool `json:"music,omitempty"`
-	SmartInfo []byte `json:"-"`
-	SmartCriteria []byte `json:"-"`
-	Smart *SmartPlaylist `json:"smart,omitempty"`
-	Movies *bool `json:"movies,omitempty"`
-	TVShows *bool `json:"tv_shows,omitempty"`
-	Podcasts *bool `json:"podcasts,omitempty"`
-	Audiobooks *bool `json:"audiobooks,omitempty"`
-	PurchasedMusic *bool `json:"purchased,omitempty"`
-	Folder *bool `json:"folder,omitempty"`
-	ParentPersistentID *string `json:"parent_persistent_id,omitempty"`
-	GeniusTrackID *int `json:"genius_track_id,omitempty"`
-	Children []*Playlist `json:"children,omitempty"`
+	PersistentID         PersistentID   `json:"persistent_id,omitempty"`
+	ParentPersistentID   *PersistentID  `json:"parent_persistent_id,omitempty"`
+	Folder               bool           `json:"folder,omitempty"`
+	Name                 string         `json:"name,omitempty"`
+	Smart                *SmartPlaylist `json:"smart,omitempty"`
+	GeniusTrackID        *PersistentID  `json:"genius_track_id,omitempty"`
+	TrackIDs             []PersistentID `json:"track_ids"`
+	Children             []*Playlist    `json:"children,omitempty"`
+	PlaylistItems        []*Track       `json:"items,omitempty"`
+	SortField            string         `json:"sort_field,omitempty"`
 }
 
 func NewPlaylist() *Playlist {
@@ -38,55 +46,120 @@ func NewPlaylist() *Playlist {
 	return p
 }
 
-func (p *Playlist) Prune() *Playlist {
+func (p *Playlist) Populate(lib *Library) *Playlist {
 	clone := *p
-	clone.PlaylistItems = nil
-	clone.Children = make([]*Playlist, len(p.Children))
-	for i, child := range p.Children {
-		clone.Children[i] = child.Prune()
+	if p.Smart != nil {
+		tl, err := lib.TrackList().SmartFilter(p.Smart, lib)
+		if err == nil {
+			clone.PlaylistItems = []*Track(*tl)
+		}
+	} else {
+		items := make([]*Track, len(p.TrackIDs))
+		for i, id := range p.TrackIDs {
+			items[i] = lib.GetTrack(id)
+		}
+		clone.PlaylistItems = items
 	}
 	return &clone
 }
 
-func (p *Playlist) IsSystemPlaylist() bool {
-	if p.Master != nil && *p.Master {
-		return true
+func (p *Playlist) Nest(lib *Library) {
+	if p.ParentPersistentID != nil {
+		parent, ok := lib.Playlists[*p.ParentPersistentID]
+		if ok {
+			parent.Children = append(parent.Children, p)
+			return
+		}
 	}
-	if p.Music != nil && *p.Music {
-		return true
-	}
-	if p.Movies != nil && *p.Movies {
-		return true
-	}
-	if p.TVShows != nil && *p.TVShows {
-		return true
-	}
-	if p.Podcasts != nil && *p.Podcasts {
-		return true
-	}
-	if p.Audiobooks != nil && *p.Audiobooks {
-		return true
-	}
-	if p.PurchasedMusic != nil && *p.PurchasedMusic {
-		return true
-	}
-	if p.SmartInfo != nil && len(p.SmartInfo) > 0 && *p.Name == "Downloaded" {
-		return true
-	}
-	return false
+	lib.PlaylistTree = append(lib.PlaylistTree, p)
 }
 
-func (p *Playlist) Set(key []byte, kind string, val []byte) {
-	SetField(p, key, kind, val)
+func (p *Playlist) Unnest(lib *Library) {
+	var orig []*Playlist
+	var ppl *Playlist
+	var ok bool
+	if p.ParentPersistentID == nil {
+		orig = lib.PlaylistTree
+	} else {
+		ppl, ok = lib.Playlists[*p.ParentPersistentID]
+		if ok {
+			orig = ppl.Children
+		} else {
+			orig = lib.PlaylistTree
+		}
+	}
+	if orig != nil && len(orig) > 0 {
+		children := make([]*Playlist, 0, len(orig) - 1)
+		for _, child := range orig {
+			if child.PersistentID != p.PersistentID {
+				children = append(children, child)
+			}
+		}
+		if ok {
+			ppl.Children = children
+		} else {
+			lib.PlaylistTree = children
+		}
+	}
+}
+
+func (p *Playlist) Move(lib *Library, parentId *PersistentID) error {
+	if p.ParentPersistentID == nil && parentId == nil {
+		return nil
+	}
+	if p.ParentPersistentID != nil && parentId != nil && *p.ParentPersistentID == *parentId {
+		return nil
+	}
+	p.Unnest(lib)
+	p.ParentPersistentID = parentId
+	p.Nest(lib)
+	return nil
+}
+
+func (p *Playlist) Dedup() {
+	if p.Folder || p.GeniusTrackID != nil || p.Smart != nil {
+		return
+	}
+	seen := map[PersistentID]bool{}
+	for _, id := range p.TrackIDs {
+		if _, ok := seen[id]; ok {
+			seen[id] = true
+		} else {
+			seen[id] = false
+		}
+	}
+	ids := make([]PersistentID, len(seen))
+	i := 0
+	seen = map[PersistentID]bool{}
+	for _, id := range p.TrackIDs {
+		if _, ok := seen[id]; !ok {
+			ids[i] = id
+			i += 1
+			seen[id] = true
+		}
+	}
+	p.TrackIDs = ids
+}
+
+func (p *Playlist) Prune() *Playlist {
+	clone := *p
+	clone.PlaylistItems = nil
+	clone.TrackIDs = nil
+	clone.Children = make([]*Playlist, len(p.Children))
+	for i, child := range p.Children {
+		clone.Children[i] = child.Prune()
+	}
+	sort.Sort(SortablePlaylistList(clone.Children))
+	return &clone
 }
 
 func (p *Playlist) AddTrack(t *Track) {
-	p.PlaylistItems = append(p.PlaylistItems, t)
+	p.TrackIDs = append(p.TrackIDs, t.PersistentID)
 }
 
 func (p *Playlist) DescendantCount() int {
 	i := 0
-	if p.Folder == nil || *p.Folder == false {
+	if p.Folder == false {
 		i++
 	}
 	for _, c := range p.Children {
@@ -99,8 +172,8 @@ func (p *Playlist) TotalTime() time.Duration {
 	var t time.Duration
 	t = 0
 	for _, track := range p.PlaylistItems {
-		if track.TotalTime != nil {
-			t += time.Duration(*track.TotalTime) * time.Millisecond
+		if track.TotalTime != 0 {
+			t += time.Duration(track.TotalTime) * time.Millisecond
 		}
 	}
 	return t
@@ -108,7 +181,7 @@ func (p *Playlist) TotalTime() time.Duration {
 
 func (p *Playlist) GetByName(name string) *Playlist {
 	for _, c := range p.Children {
-		if c.Name != nil && *c.Name == name {
+		if c.Name == name {
 			return c
 		}
 	}
@@ -118,7 +191,7 @@ func (p *Playlist) GetByName(name string) *Playlist {
 func (p *Playlist) FindByName(name string) []*Playlist {
 	matches := make([]*Playlist, 0)
 	for _, c := range p.Children {
-		if c.Name != nil && *c.Name == name {
+		if c.Name == name {
 			matches = append(matches, c)
 		}
 		matches = append(matches, c.FindByName(name)...)
@@ -138,69 +211,86 @@ func (p *Playlist) GetByPath(path string) *Playlist {
 	return f.GetByPath(strings.Join(parts[1:], "/"))
 }
 
+func (p *Playlist) Kind() string {
+	if p.Folder {
+		return "folder"
+	}
+	if p.GeniusTrackID != nil {
+		return "genius"
+	}
+	if p.Smart != nil {
+		return "smart"
+	}
+	return "playlist"
+}
 
-func (p *Playlist) Parse(dec *xml.Decoder, idx *TrackIDIndex) error {
-	var key, val []byte
-	isKey := false
-	isVal := false
-	isArray := false
-	keyStack := make([]string, 1, 5)
-	keyStackSize := 0
-	keyStack[0] = ""
-	for {
-		t, err := dec.Token()
-		if err != nil {
-			return err
+func (p *Playlist) Priority() int {
+	switch p.Kind() {
+	case "folder":
+		return 100
+	case "genius":
+		return 103
+	case "smart":
+		return 104
+	default:
+		return 199
+	}
+	return 200
+}
+
+func (p *Playlist) Update(orig, cur *Playlist) (*PersistentID, bool) {
+	if p.Folder != cur.Folder {
+		return nil, false
+	}
+	if p.Smart != nil && cur.Smart == nil {
+		return nil, false
+	}
+	if p.Smart != nil {
+		if cur.Smart == nil || orig.Smart == nil {
+			return nil, false
 		}
-		switch se := t.(type) {
-		case xml.StartElement:
-			if se.Name.Local == "key" {
-				isKey = true
-				key = []byte{}
-			} else if se.Name.Local == "array" {
-				isArray = true
-			} else if se.Name.Local == "dict" {
-				keyStackSize++
-				if len(keyStack) <= keyStackSize {
-					keyStack = append(keyStack, "")
-				}
-			} else {
-				isVal = true
-				val = []byte{}
-			}
-		case xml.EndElement:
-			if se.Name.Local == "key" {
-				keyStack[keyStackSize] = string(key)
-				isKey = false
-			} else if se.Name.Local == "array" {
-				isArray = false
-			} else if se.Name.Local == "dict" {
-				keyStackSize--
-				if keyStackSize < 0 {
-					return nil
-				}
-			} else {
-				if isArray {
-					if se.Name.Local == "integer" && keyStackSize == 1 && keyStack[0] == "Playlist Items" && keyStack[1] == "Track ID" {
-						id, _ := strconv.Atoi(string(val))
-						t := idx.Get(id)
-						if t != nil {
-							p.AddTrack(t)
-						}
-					}
-				} else {
-					p.Set(key, se.Name.Local, val)
-				}
-				isVal = false
-			}
-		case xml.CharData:
-			if isKey {
-				key = append(key, []byte(se)...)
-			} else if(isVal) {
-				val = append(val, []byte(se)...)
+		origInfo, origCrit, err := orig.Smart.Encode()
+		if err != nil {
+			return nil, false
+		}
+		curInfo, curCrit, err := cur.Smart.Encode()
+		if err != nil {
+			return nil, false
+		}
+		if !bytes.Equal(origInfo, curInfo) || !bytes.Equal(origCrit, curCrit) {
+			p.Smart = cur.Smart
+		}
+	} else if cur.Smart != nil {
+		return nil, false
+	}
+	if orig.Name != cur.Name {
+		p.Name = cur.Name
+	}
+	tracksDiffer := false
+	if len(orig.TrackIDs) != len(cur.TrackIDs) {
+		tracksDiffer = true
+	} else {
+		for i, tid := range cur.TrackIDs {
+			if tid != orig.TrackIDs[i] {
+				tracksDiffer = true
+				break
 			}
 		}
 	}
-	return nil
+	if tracksDiffer {
+		p.TrackIDs, _ = ThreeWayMerge(orig.TrackIDs, cur.TrackIDs, p.TrackIDs)
+	}
+	if orig.ParentPersistentID == nil {
+		if cur.ParentPersistentID != nil {
+			return cur.ParentPersistentID, true
+		}
+		return nil, false
+	}
+	if cur.ParentPersistentID == nil {
+		return nil, true
+	}
+	if *orig.ParentPersistentID != *cur.ParentPersistentID {
+		return cur.ParentPersistentID, true
+	}
+	return nil, false
 }
-

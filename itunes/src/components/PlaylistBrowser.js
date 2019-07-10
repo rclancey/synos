@@ -6,6 +6,44 @@ import { TreeView } from './TreeView';
 export class PlaylistBrowser extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      focused: false,
+    };
+    this.onKeyPress = this.onKeyPress.bind(this);
+  }
+
+  findPlaylist(id, folder) {
+    let pl = folder.find(p => p.persistent_id === id);
+    if (pl !== null && pl !== undefined) {
+      return pl;
+    }
+    for (let c of folder) {
+      if (c.children !== null && c.children !== undefined) {
+        pl = this.findPlaylist(id, c.children);
+        if (pl !== null) {
+          return pl;
+        }
+      }
+    }
+    return null;
+  }
+
+  componentDidMount() {
+    if (typeof window !== 'undefined') {
+      document.body.addEventListener('keydown', this.onKeyPress);
+    }
+  }
+
+  onKeyPress(evt) {
+    if (this.state.focused) {
+      if (evt.key === 'Delete' || evt.key === 'Backspace') {
+        const pl = this.findPlaylist(this.props.selected, this.props.playlists);
+        if (pl !== null) {
+          const msg = `Are you sure you want to delete the playlist ${pl.name}?`;
+          this.props.onConfirm(msg, () => console.debug('deleting playlist %o', pl));
+        }
+      }
+    }
   }
 
   render() {
@@ -21,7 +59,13 @@ export class PlaylistBrowser extends React.Component {
           }
     */
     return (
-      <div className="playlistBrowser">
+      <div
+        ref={node => this.node = node}
+        tabIndex={10}
+        className="playlistBrowser"
+        onFocus={(evt) => { console.debug('focusing: %o', evt.nativeEvent); this.setState({ focused: true }); }}
+        onBlur={(evt) => { console.debug('bluring: %o', evt.nativeEvent); this.setState({ focused: false }); }}
+      >
         <h1>Library</h1>
         <div className="groups">
           <div
@@ -52,7 +96,7 @@ export class PlaylistBrowser extends React.Component {
             indentPixels={12}
             openFolders={this.props.openFolders}
             onToggle={this.props.onToggle}
-            onSelect={this.props.onSelect}
+            onSelect={node => { this.node.focus(); this.props.onSelect(node); }}
             onMovePlaylist={this.props.onMovePlaylist}
             onAddToPlaylist={this.props.onAddToPlaylist}
           />

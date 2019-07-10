@@ -29,14 +29,16 @@ export class ArtistList extends React.Component {
   loadArtists() {
     let url = '/api/index/artists';
     if (this.props.genre) {
-      url += `?genre=${this.props.genre}`
+      url += `?genre=${escape(this.props.genre.sort)}`
     }
     return fetch(url, { method: 'GET' })
       .then(resp => resp.json())
       .then(artists => {
+        artists.forEach(art => {
+          art.name = Object.keys(art.names).sort((a, b) => art.names[a] < art.names[b] ? 1 : art.names[a] > art.names[b] ? -1 : 0)[0];
+        });
         const index = this.makeIndex(artists || []);
-        const arts = artists ? artists.map(art => art[0]) : [];
-        this.setState({ artists: arts, index });
+        this.setState({ artists, index });
       });
   }
 
@@ -44,7 +46,7 @@ export class ArtistList extends React.Component {
     const index = [];
     let prev = null;
     artists.forEach((artist, i) => {
-      let first = artist[1].substr(0, 1);
+      let first = artist.sort.substr(0, 1);
       if (!first.match(/^[a-z]/)) {
         first = '#';
       }
@@ -73,7 +75,7 @@ export class ArtistList extends React.Component {
   }
 
   artistImageUrl(artist) {
-    const url = `url(/api/art/artist?artist=${escape(artist)})`;
+    const url = `url(/api/art/artist?artist=${escape(artist.sort)})`;
     console.debug('artist image url = %o', url);
     return url;
   }
@@ -83,7 +85,7 @@ export class ArtistList extends React.Component {
     return (
       <div key={key} className="item" style={style} onClick={() => this.onOpen(artist)}>
         <div className="artistImage" style={{backgroundImage: this.artistImageUrl(artist)}} />
-        <div className="title">{artist}</div>
+        <div className="title">{artist.name}</div>
       </div>
     );
   }
@@ -92,7 +94,7 @@ export class ArtistList extends React.Component {
     if (this.state.artist !== null) {
       return (
         <AlbumList
-          prev={this.props.genre || "Artists"}
+          prev={this.props.genre ? this.props.genre.name : "Artists"}
           artist={this.state.artist}
           onClose={this.onClose}
           onTrackMenu={this.props.onTrackMenu}
@@ -104,7 +106,7 @@ export class ArtistList extends React.Component {
       <div className="artistList">
         <div className="back" onClick={this.onClose}>{this.props.prev}</div>
         <div className="header">
-          <div className="title">{this.props.genre || 'Artists'}</div>
+          <div className="title">{this.props.genre ? this.props.genre.name : 'Artists'}</div>
         </div>
         <div className="index">
           {this.state.index.map(idx => (

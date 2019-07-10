@@ -1,3 +1,9 @@
+body {
+	-webkit-user-select: none;
+	-webkit-tap-highlight-color: transparent;
+	-webkit-touch-callout: none;
+}
+
 .App {
   text-align: left;
 }
@@ -75,7 +81,7 @@
   animation: Prog-Scroll infinite 1s linear;
 }
 
-.desktop .library {
+.desktop {
   position: fixed;
   top: 0;
   left: 0;
@@ -86,17 +92,28 @@
   font-family: Tahoma;
 }
 
-.desktop .library .controls {
+.desktop .controls {
   display: flex;
   flex-direction: row;
   flex: 1;
+  min-height: 56px;
+  max-height: 56px;
+  height: 56px;
 }
 
+.desktop .library {
+    flex: 100;
+    display: flex;
+    flex-direction: row;
+}
+
+/*
 .desktop .library .dataContainer {
   display: flex;
   flex-direction: row;
   flex: 100;
 }
+*/
 
 .desktop .library .ReactVirtualized__Table__headerRow:focus,
 .desktop .library .ReactVirtualized__Table__row:focus {
@@ -219,6 +236,7 @@
 .desktop .columnBrowser {
   background-color: #f5f5f5;
   border-right: solid #ccc 1px;
+  overflow: hidden;
 }
 
 .desktop .columnBrowser .ReactVirtualized__Table__headerColumn {
@@ -286,6 +304,45 @@
   padding-bottom: 3px;
 }
 */
+
+.desktop .airplayMenu .item {
+    display: flex;
+}
+
+.desktop .airplayMenu .item .icon {
+    flex: 1;
+    width: 18px;
+    min-width: 18px;
+    max-width: 18px;
+    height: 18px;
+    margin-right: 1em;
+    background-size: cover;
+}
+
+.desktop .airplayMenu .item .title {
+    flex: 10;
+    font-size: 13px;
+}
+
+.desktop .airplayMenu .item .checkbox {
+    flex: 1;
+}
+
+.icon.sonos {
+    background-image: url('icons/sonos.png');
+}
+
+.icon.appletv {
+    background-image: url('icons/appletv.png');
+}
+
+.icon.computer {
+    background-image: url('icons/computer.png');
+}
+
+.icon.airplay {
+    background-image: url('icons/airplay.png');
+}
 
 .icon.artists {
   background-image: url('icons/artists.png');
@@ -427,40 +484,45 @@
   background-color: orange !important;
 }
 
-.desktop .library .controls .playpause {
+.desktop .controls .playpause {
   width: 33%;
   background-image: linear-gradient(#e8e8e8, #ccc);
   display: flex;
 }
 
-.desktop .library .controls .playpause .buttons {
+.desktop .controls .playpause .buttons {
   display: flex;
   padding-left: 4em;
 }
 
-.desktop .library .controls .rewind,
-.desktop .library .controls .fastforward {
+.desktop .controls .rewind,
+.desktop .controls .ffwd {
+  /*
   display: flex;
+  */
   padding: 5px;
+  margin-left: 1em;
+  margin-right: 1em;
 }
 
-.desktop .library .controls .rewind div,
-.desktop .library .controls .fastforward div {
+/*
+.desktop .controls .rewind div,
+.desktop .controls .ffwd div {
   width: 0;
   height: 0;
   border-top: 7px solid transparent;
   border-bottom: 7px solid transparent;
 }
 
-.desktop .library .controls .rewind div {
+.desktop .controls .rewind div {
   border-right: 12px solid #666;
 }
 
-.desktop .library .controls .fastforward div {
+.desktop .controls .ffwd div {
   border-left: 12px solid #666;
 }
 
-.desktop .library .controls .play {
+.desktop .controls .play {
   width: 0;
   height: 0;
   border-top: 12px solid transparent;
@@ -470,7 +532,7 @@
   margin-right: 1em;
 }
 
-.desktop .library .controls .pause {
+.desktop .controls .pause {
   height: 24px;
   display: flex;
   border-left: solid #444 6px;
@@ -479,8 +541,9 @@
   margin-left: calc(1em + 2px);
   margin-right: calc(1em + 2px);
 }
+*/
 
-.desktop .library .controls .nowplaying {
+.desktop .controls .nowplaying {
   width: 34%;
   border-left: solid #999 1px;
   border-right: solid #999 1px;
@@ -489,7 +552,7 @@
   height: 56px;
 }
 
-.desktop .library .controls .search {
+.desktop .controls .search {
   width: 33%;
   background-image: linear-gradient(#e8e8e8, #ccc);
   display: flex;
@@ -497,7 +560,7 @@
   box-sizing: border-box;
 }
 
-.desktop .library .controls .search input {
+.desktop .controls .search input {
   flex: 1;
   font-size: 10pt;
   border-radius: 30px;
@@ -508,7 +571,7 @@
   box-sizing: border-box;
 }
 
-.desktop .library .controls .nowplaying>div {
+.desktop .controls .nowplaying>div {
   display: flex;
   flex-direction: row;
   width: 100%;
@@ -516,7 +579,7 @@
   color: #777;
 }
 
-.desktop .library .controls .nowplaying .coverart {
+.desktop .controls .nowplaying .coverart {
   width: 56px;
   height: 56px;
   border-right: solid #999 1px;
@@ -524,7 +587,7 @@
   background-position: center;
 }
 
-.desktop .library .controls .nowplaying .timer {
+.desktop .controls .nowplaying .timer {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -533,7 +596,7 @@
   max-width: 50px;
 }
 
-.desktop .library .controls .nowplaying .currentTime {
+.desktop .controls .nowplaying .currentTime {
   flex: 1;
   min-height: 14px;
   max-height: 14px;
@@ -543,7 +606,7 @@
   padding-bottom: 5px;
 }
 
-.desktop .library .controls .nowplaying .trackinfo {
+.desktop .controls .nowplaying .trackInfo {
   flex: 100;
   display: flex;
   flex-direction: column;
@@ -551,26 +614,26 @@
   text-align: center;
 }
 
-.desktop .library .controls .nowplaying .trackinfo .name {
+.desktop .controls .nowplaying .trackInfo .name {
   font-size: 14px;
   padding-top: 5px;
   flex: 2;
   color: #444;
 }
 
-.desktop .library .controls .nowplaying .trackinfo .artist {
+.desktop .controls .nowplaying .trackInfo .artist {
   font-size: 11px;
   padding-bottom: 5px;
 }
 
-.desktop .library .controls .nowplaying .progressContainer {
+.desktop .controls .nowplaying .progressContainer {
   flex: 1;
   min-height: 4px;
   max-height: 4px;
   background-color: #ccc;
 }
 
-.desktop .library .controls .nowplaying .progressContainer .progress {
+.desktop .controls .nowplaying .progressContainer .progress {
   height: 100%;
   background-color: #666;
   pointer-events: none;
@@ -611,19 +674,17 @@
   color: white !important;
 }
 
-.desktop .queue .item .cover {
+.desktop .queue .item .coverart {
     flex: 1;
     box-sizing: border-box;
     min-width: 44px;
     max-width: 44px;
     border: solid transparent 1px;
     border-radius: 3px;
-    background-size: cover;
-    background-position: center;
     margin-right: 1em;
 }
 
-.desktop .queue .item .info {
+.desktop .queue .item .trackInfo {
     flex: 10;
     display: flex;
     flex-direction: column;
@@ -634,12 +695,12 @@
     margin-top: -2px;
 }
 
-.desktop .queue .item.selected .info,
+.desktop .queue .item.selected .trackInfo,
 .desktop .queue .item.selected .time {
     border-top: none;
 }
 
-.desktop .queue .item .info .title {
+.desktop .queue .item .trackInfo .title {
     font-size: 14px;
     color: #333;
     width: 100%;
@@ -648,7 +709,7 @@
     text-overflow: ellipsis;
 }
 
-.desktop .queue .item .info .artist {
+.desktop .queue .item .trackInfo .artist {
     font-size: 12px;
     color: #666;
     width: 100%;
@@ -698,7 +759,7 @@
     margin-left: 2px;
 }
 
-.back {
+.mobile .back {
     /*
     flex: 1;
     width: 18px;
@@ -721,7 +782,7 @@
     font-size: 18px;
 }
 
-.header {
+.mobile .header {
     /*
     display: flex;
     flex-direction: row;
@@ -734,7 +795,7 @@
     padding-top: 54px;
 }
 
-.header .icon {
+.mobile .header .icon {
     /*
     flex: 1;
     */
@@ -745,15 +806,15 @@
     background-size: cover;
 }
 
-.header .icon.artists {
+.mobile .header .icon.artists {
     background-image: url(icons/artists.png);
 }
 
-.header .icon.playlists {
+.mobile .header .icon.playlists {
     background-image: url(icons/playlist.png);
 }
 
-.header .title {
+.mobile .header .title {
     /*
     flex: 2;
     text-align: center;
@@ -764,17 +825,17 @@
     padding-left: 0.5em;
 }
 
-.home .items {
+.mobile .home .items {
     width: 100vw;
 }
 
-.home .item {
+.mobile .home .item {
     display: flex;
     flex-direction: row;
     padding: 9px 9px 0px 9px;
 }
 
-.home .item .icon {
+.mobile .home .item .icon {
     flex: 1;
     width: 36px;
     min-width: 36px;
@@ -783,7 +844,7 @@
     opacity: 0.75;
 }
 
-.home .item .title {
+.mobile .home .item .title {
     flex: 10;
     font-size: 18px;
     padding: 9px 9px 18px 9px;
@@ -820,14 +881,19 @@
     border-bottom: solid #ccc 1px;
 }
 
-.artistList {
+.playlistList,
+.artistList,
+.albumList,
+.genreList {
     width: 100vw;
     height: 100vh;
     box-sizing: border-box;
     overflow: hidden;
 }
 
-.artistList .index {
+.artistList .index,
+.albumList .index,
+.genreList .index {
     position: fixed;
     z-index: 3;
     right: 5px;
@@ -835,11 +901,15 @@
     color: #ff2d55;
 }
 
-.artistList .items {
-    height: calc(100vh - 116px);
+.playlistList .items,
+.artistList .items,
+.albumList .items,
+.genreList .items {
+    height: calc(100vh - 185px);
 }
 
-.artistList .item {
+.artistList .item,
+.genreList .item {
     display: flex;
     padding: 9px 9px 0px 9px;
     height: 58px;
@@ -848,25 +918,35 @@
     overflow: hidden;
 }
 
-.artistList .item .artistImage {
+.artistList .item .artistImage,
+.genreList .item .genreImage {
     flex: 1;
-    width: 36px;
-    min-width: 36px;
-    max-width: 36px;
-    height: 36px;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    margin-top: -2px;
     box-sizing: border-box;
-    border: solid transparent 1px;
-    border-radius: 50%;
+    border: solid transparent 0px;
     background-color: #868b95;
     /*
     background: linear-gradient(#a5aab6, #868b95);
     */
-    background-size: 24px 24px;
+    background-size: cover;
     background-repeat: no-repeat;
     background-position: 50%;
 }
 
-.artistList .item .title {
+.artistList .item .artistImage {
+  border-radius: 50%;
+}
+
+.genreList .item .genreImage {
+  border-radius: 5px;
+}
+
+.artistList .item .title,
+.genreList .item .title {
     flex: 10;
     font-size: 18px;
     padding: 9px 9px 18px 9px;
@@ -912,7 +992,7 @@
 
 .songList {
     width: 100vw;
-    height: 100vh;
+    height: calc(100vh - 69px);
     box-sizing: border-box;
     overflow: hidden;
 }
@@ -989,7 +1069,7 @@
 }
 
 .songList .items {
-    height: calc(100vh - 204px);
+    height: calc(100vh - 273px);
 }
 
 .songList .item {
@@ -1269,6 +1349,13 @@
   padding-top: 5px;
 }
 
+.mobile .nowplaying .controls .rewind,
+.mobile .nowplaying .controls .ffwd {
+    padding-top: 3px;
+    margin-left: 1em;
+    margin-right: 1em;
+}
+
 .mobile .nowplaying.big .controls {
     display: flex;
     flex-direction: row;
@@ -1279,14 +1366,24 @@
 }
 
 .mobile .nowplaying.big .controls .rewind {
+    /*
     flex: 10;
     text-align: right;
     padding-right: 1em;
+    */
+    padding-top: 5px;
+    margin-left: auto;
+    touch-action: none;
 }
 
 .mobile .nowplaying.big .controls .ffwd {
+    /*
     flex: 10;
     padding-left: 1em;
+    */
+    padding-top: 5px;
+    margin-right: auto;
+    touch-action: none;
 }
 
 .mobile .nowplaying.big .volume {
@@ -1295,9 +1392,11 @@
     width: 100%;
 }
 
+/*
 .mobile .nowplaying .controls>div {
   padding: 5px;
 }
+*/
 
 .mobile .nowplaying .progressContainer {
   flex: 1;
