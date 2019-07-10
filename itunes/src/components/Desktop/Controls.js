@@ -219,7 +219,7 @@ const Search = ({ search, onSearch }) => (
     <input
       type="text"
       placeholder={'\u{1f50d} Search'}
-      value={search}
+      value={search || ''}
       onChange={evt => onSearch(evt.target.value)}
     />
     <div style={{ flex: 1 }} />

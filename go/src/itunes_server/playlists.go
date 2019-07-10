@@ -143,7 +143,7 @@ func CreatePlaylist(w http.ResponseWriter, req *http.Request) {
 		herr.RespondJSON(w)
 		return
 	}
-	pl.PlaylistPersistentID = itunes.NewPersistentID()
+	pl.PersistentID = itunes.NewPersistentID()
 	if pl.Folder {
 		pl.PlaylistItems = nil
 		pl.TrackIDs = nil
@@ -161,14 +161,112 @@ func CreatePlaylist(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 	pl.GeniusTrackID = nil
+	lib.Playlists[pl.PersistentID] = pl
+	pl.Nest(lib)
+	SendJSON(w, pl)
 }
 
 func EditPlaylist(w http.ResponseWriter, req *http.Request) {
+	fn := path.Base(req.URL.Path)
+	id := new(itunes.PersistentID)
+	ext := path.Ext(fn)
+	if ext != "" {
+		id.DecodeString(strings.TrimSuffix(fn, ext))
+	} else {
+		id.DecodeString(fn)
+	}
+	pl, ok := lib.Playlists[*id]
+	if !ok {
+		NotFound.Raise(nil, "playlist %s not found", id).Respond(w)
+		return
+	}
+	xpl := &itunes.Playlist{}
+	herr := ReadJSON(req, pl)
+	if herr != nil {
+		herr.RespondJSON(w)
+		return
+	}
+	if xpl.ParentPersistentID != nil {
+		ppl, ok := lib.Playlists[*xpl.ParentPersistentID]
+		if !ok {
+			NotFound.Raise(nil, "parent folder %s not found", *xpl.ParentPersistentID).Respond(w)
+			return
+		}
+		if !ppl.Folder {
+			NotFound.Raise(nil, "parent playlist %s not a folder", *xpl.ParentPersistentID).Respond(w)
+			return
+		}
+	}
+	pl.Name = xpl.Name
+	if pl.Smart != nil && xpl.Smart != nil {
+		pl.Smart = xpl.Smart
+	}
+	pl.Move(lib, xpl.ParentPersistentID)
+	SendJSON(w, pl)
 }
 
 func EditPlaylistTracks(w http.ResponseWriter, req *http.Request) {
+	fn := path.Base(req.URL.Path)
+	id := new(itunes.PersistentID)
+	ext := path.Ext(fn)
+	if ext != "" {
+		id.DecodeString(strings.TrimSuffix(fn, ext))
+	} else {
+		id.DecodeString(fn)
+	}
+	pl, ok := lib.Playlists[*id]
+	if !ok {
+		NotFound.Raise(nil, "playlist %s not found", id).Respond(w)
+		return
+	}
+	if pl.Folder {
+		BadRequest.Raise(nil, "can't add tracks to a folder").Respond(w)
+		return
+	}
+	if pl.Smart != nil {
+		BadRequest.Raise(nil, "can't modify smart playlist tracks").Respond(w)
+		return
+	}
+	if pl.GeniusTrackID != nil {
+		BadRequest.Raise(nil, "can't modify genius playlist tracks").Respond(w)
+		return
+	}
+	trackIds := []itunes.PersistentID{}
+	herr := ReadJSON(req, &trackIds)
+	if herr != nil {
+		herr.RespondJSON(w)
+		return
+	}
+	if req.URL.Query().Get("replace") == "true" {
+		pl.TrackIDs = trackIds
+	} else {
+		pl.TrackIDs = append(pl.TrackIDs, trackIds...)
+	}
+	pl.Dedup()
+	storePlaylistTrackIds(nil, pl)
+	SendJSON(w, pl.TrackIDs)
 }
 
 func DeletePlaylist(w http.ResponseWriter, req *http.Request) {
+	fn := path.Base(req.URL.Path)
+	id := new(itunes.PersistentID)
+	ext := path.Ext(fn)
+	if ext != "" {
+		id.DecodeString(strings.TrimSuffix(fn, ext))
+	} else {
+		id.DecodeString(fn)
+	}
+	pl, ok := lib.Playlists[*id]
+	if !ok {
+		NotFound.Raise(nil, "playlist %s not found", id).Respond(w)
+		return
+	}
+	if pl.Folder && len(pl.Children) != 0 {
+		BadRequest.Raise(nil, "folder %s not empty", id).Respond(w)
+		return
+	}
+	pl.Unnest(lib)
+	delete(lib.Playlists, pl.PersistentID)
+	SendJSON(w, pl)
 }
 

@@ -1051,8 +1051,6 @@ func encodeb64(data []byte) []byte {
 }
 
 func ParseSmartPlaylist(info, criteria []byte) (*SmartPlaylist, error) {
-	//fmt.Println("parse smart playlist", string(info), string(criteria))
-	/*
 	dinfo, err := decodeb64(info)
 	if err != nil {
 		return nil, err
@@ -1061,19 +1059,17 @@ func ParseSmartPlaylist(info, criteria []byte) (*SmartPlaylist, error) {
 	if err != nil {
 		return nil, err
 	}
-	*/
-	//fmt.Println("parse smart playlist", dinfo, dcrit)
 	p := &SmartPlaylist{
-		rawInfo: info, //dinfo,
-		rawCriteria: criteria, //dcrit,
+		rawInfo: dinfo,
+		rawCriteria: dcrit,
 		Info: &SmartPlaylistInfo{},
 		Criteria: &SmartPlaylistCriteria{},
 	}
-	err := p.Info.Parse(info) //dinfo)
+	err = p.Info.Parse(dinfo)
 	if err != nil {
 		return nil, err
 	}
-	err = p.Criteria.Parse(criteria) //dcrit)
+	err = p.Criteria.Parse(dcrit)
 	if err != nil {
 		return nil, err
 	}
@@ -1089,6 +1085,5 @@ func (s *SmartPlaylist) Encode() (info []byte, criteria []byte, err error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return info, criteria, nil
-	//return encodeb64(info), encodeb64(criteria), nil
+	return encodeb64(info), encodeb64(criteria), nil
 }

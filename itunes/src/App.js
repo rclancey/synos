@@ -14,6 +14,8 @@ import './themes/mobile/dark.css';
 //import './App.css';
 //import { Library } from './components/Library';
 //import { HomeList } from './components/HomeList';
+import { CheckLogin } from './components/Login';
+import { API } from './lib/api';
 import { Player } from './components/Player';
 
 const InstallAppButton = ({ onInstall }) => (
@@ -53,9 +55,18 @@ class App extends Component {
       theme: 'dark',
       loading: true,
       installPrompt: null,
+      loggedIn: false,
       standalone,
     };
+    this.onLoginRequired = this.onLoginRequired.bind(this);
     this.onInstall = this.onInstall.bind(this);
+
+    this.api = new API(this.onLoginRequired);
+  }
+
+  onLoginRequired() {
+    console.debug('loginRequired');
+    this.setState({ loggedIn: false });
   }
 
   onInstall() {
@@ -81,7 +92,14 @@ class App extends Component {
           <InstallAppButton onInstall={this.onInstall} />
         ) : null }
         <DragDropContextProvider backend={HTML5Backend}>
-          <Player mobile={this.state.mobile} theme={this.state.theme} />
+          <CheckLogin
+            mobile={this.state.mobile}
+            theme={this.state.theme}
+            loggedIn={this.state.loggedIn}
+            onLogin={x => this.setState({ loggedIn: x })}
+          >
+            <Player mobile={this.state.mobile} theme={this.state.theme} api={this.api} />
+          </CheckLogin>
         </DragDropContextProvider>
         {/*
         <HomeList />

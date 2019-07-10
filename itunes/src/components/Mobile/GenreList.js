@@ -31,9 +31,11 @@ export class GenreList extends React.Component {
     return fetch(url, { method: 'GET' })
       .then(resp => resp.json())
       .then(genres => {
+        genres.forEach(genre => {
+          genre.name = Object.keys(genre.names).sort((a, b) => genre.names[a] < genre.names[b] ? 1 : genre.names[a] > genre.names[b] ? -1 : 0)[0];
+        });
         const index = this.makeIndex(genres || []);
-        const gens = genres ? genres.map(gen => gen[0]) : [];
-        this.setState({ genres: gens, index });
+        this.setState({ genres, index });
       });
   }
 
@@ -41,7 +43,7 @@ export class GenreList extends React.Component {
     const index = [];
     let prev = null;
     genres.forEach((genre, i) => {
-      let first = genre[1].substr(0, 1);
+      let first = genre.sort.substr(0, 1);
       if (!first.match(/^[a-z]/)) {
         first = '#';
       }
@@ -70,7 +72,7 @@ export class GenreList extends React.Component {
   }
 
   genreImageUrl(genre) {
-    return `url(/api/art/genre?genre=${escape(genre)})`;
+    return `url(/api/art/genre?genre=${escape(genre.sort)})`;
   }
 
   rowRenderer({ key, index, style }) {
@@ -78,7 +80,7 @@ export class GenreList extends React.Component {
     return (
       <div key={key} className="item" style={style} onClick={() => this.onOpen(genre)}>
         <div className="genreImage" style={{backgroundImage: this.genreImageUrl(genre)}} />
-        <div className="title">{genre}</div>
+        <div className="title">{genre.name}</div>
       </div>
     );
   }

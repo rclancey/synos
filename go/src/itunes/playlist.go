@@ -1,7 +1,7 @@
 package itunes
 
 import (
-	//"fmt"
+	"bytes"
 	"sort"
 	"strings"
 	"time"
@@ -27,7 +27,7 @@ func (spl SortablePlaylistList) Less(i, j int) bool {
 }
 
 type Playlist struct {
-	PlaylistPersistentID PersistentID   `json:"persistent_id,omitempty"`
+	PersistentID         PersistentID   `json:"persistent_id,omitempty"`
 	ParentPersistentID   *PersistentID  `json:"parent_persistent_id,omitempty"`
 	Folder               bool           `json:"folder,omitempty"`
 	Name                 string         `json:"name,omitempty"`
@@ -72,6 +72,73 @@ func (p *Playlist) Nest(lib *Library) {
 		}
 	}
 	lib.PlaylistTree = append(lib.PlaylistTree, p)
+}
+
+func (p *Playlist) Unnest(lib *Library) {
+	var orig []*Playlist
+	var ppl *Playlist
+	var ok bool
+	if p.ParentPersistentID == nil {
+		orig = lib.PlaylistTree
+	} else {
+		ppl, ok = lib.Playlists[*p.ParentPersistentID]
+		if ok {
+			orig = ppl.Children
+		} else {
+			orig = lib.PlaylistTree
+		}
+	}
+	if orig != nil && len(orig) > 0 {
+		children := make([]*Playlist, 0, len(orig) - 1)
+		for _, child := range orig {
+			if child.PersistentID != p.PersistentID {
+				children = append(children, child)
+			}
+		}
+		if ok {
+			ppl.Children = children
+		} else {
+			lib.PlaylistTree = children
+		}
+	}
+}
+
+func (p *Playlist) Move(lib *Library, parentId *PersistentID) error {
+	if p.ParentPersistentID == nil && parentId == nil {
+		return nil
+	}
+	if p.ParentPersistentID != nil && parentId != nil && *p.ParentPersistentID == *parentId {
+		return nil
+	}
+	p.Unnest(lib)
+	p.ParentPersistentID = parentId
+	p.Nest(lib)
+	return nil
+}
+
+func (p *Playlist) Dedup() {
+	if p.Folder || p.GeniusTrackID != nil || p.Smart != nil {
+		return
+	}
+	seen := map[PersistentID]bool{}
+	for _, id := range p.TrackIDs {
+		if _, ok := seen[id]; ok {
+			seen[id] = true
+		} else {
+			seen[id] = false
+		}
+	}
+	ids := make([]PersistentID, len(seen))
+	i := 0
+	seen = map[PersistentID]bool{}
+	for _, id := range p.TrackIDs {
+		if _, ok := seen[id]; !ok {
+			ids[i] = id
+			i += 1
+			seen[id] = true
+		}
+	}
+	p.TrackIDs = ids
 }
 
 func (p *Playlist) Prune() *Playlist {
@@ -171,3 +238,59 @@ func (p *Playlist) Priority() int {
 	return 200
 }
 
+func (p *Playlist) Update(orig, cur *Playlist) (*PersistentID, bool) {
+	if p.Folder != cur.Folder {
+		return nil, false
+	}
+	if p.Smart != nil && cur.Smart == nil {
+		return nil, false
+	}
+	if p.Smart != nil {
+		if cur.Smart == nil || orig.Smart == nil {
+			return nil, false
+		}
+		origInfo, origCrit, err := orig.Smart.Encode()
+		if err != nil {
+			return nil, false
+		}
+		curInfo, curCrit, err := cur.Smart.Encode()
+		if err != nil {
+			return nil, false
+		}
+		if !bytes.Equal(origInfo, curInfo) || !bytes.Equal(origCrit, curCrit) {
+			p.Smart = cur.Smart
+		}
+	} else if cur.Smart != nil {
+		return nil, false
+	}
+	if orig.Name != cur.Name {
+		p.Name = cur.Name
+	}
+	tracksDiffer := false
+	if len(orig.TrackIDs) != len(cur.TrackIDs) {
+		tracksDiffer = true
+	} else {
+		for i, tid := range cur.TrackIDs {
+			if tid != orig.TrackIDs[i] {
+				tracksDiffer = true
+				break
+			}
+		}
+	}
+	if tracksDiffer {
+		p.TrackIDs, _ = ThreeWayMerge(orig.TrackIDs, cur.TrackIDs, p.TrackIDs)
+	}
+	if orig.ParentPersistentID == nil {
+		if cur.ParentPersistentID != nil {
+			return cur.ParentPersistentID, true
+		}
+		return nil, false
+	}
+	if cur.ParentPersistentID == nil {
+		return nil, true
+	}
+	if *orig.ParentPersistentID != *cur.ParentPersistentID {
+		return cur.ParentPersistentID, true
+	}
+	return nil, false
+}

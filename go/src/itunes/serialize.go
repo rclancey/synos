@@ -36,6 +36,14 @@ func toInt32p(v *int) *int32 {
 	return &i
 }
 
+func toInt64(v uint64) *int64 {
+	if v == 0 {
+		return nil
+	}
+	i := int64(v)
+	return &i
+}
+
 func toInt32(v int) *int32 {
 	if v == 0 {
 		return nil
@@ -109,7 +117,7 @@ func (tr *Track) ProtoPrepare(depth int) *itunespb.Track {
 		PersistentId:         proto.Uint64(uint64(tr.PersistentID)),
 		PlayCount:            toInt32(int(tr.PlayCount)),
 		//PlayDate:             toInt32(tr.PlayDate),
-		PlayDateUtc:          toTime(tr.PlayDateUTC),
+		PlayDate:             toTime(tr.PlayDate),
 		//Podcast:              toBool(tr.Podcast),
 		//Protected:            toBool(tr.Protected),
 		Purchased:            toBool(tr.Purchased),
@@ -120,7 +128,7 @@ func (tr *Track) ProtoPrepare(depth int) *itunespb.Track {
 		//SampleRate:           toInt32(tr.SampleRate),
 		//Season:               toInt32(tr.Season),
 		//Series:               toString(tr.Series),
-		Size:                 toInt32(int(tr.Size)),
+		Size:                 toInt64(tr.Size),
 		SkipCount:            toInt32(int(tr.SkipCount)),
 		SkipDate:             toTime(tr.SkipDate),
 		SortAlbum:            toString(tr.SortAlbum),
@@ -163,7 +171,7 @@ func (tr *Track) SerializeToFile(fn string) error {
 func (pl *Playlist) ProtoPrepare(depth int) *itunespb.Playlist {
 	if depth == 0 {
 		m := &itunespb.Playlist{
-			PersistentId: proto.Uint64(uint64(pl.PlaylistPersistentID)),
+			PersistentId: proto.Uint64(uint64(pl.PersistentID)),
 		}
 		if pl.ParentPersistentID != nil {
 			m.ParentPersistentId = proto.Uint64(uint64(*pl.ParentPersistentID))
@@ -177,7 +185,7 @@ func (pl *Playlist) ProtoPrepare(depth int) *itunespb.Playlist {
 	m := &itunespb.Playlist{
 		//Master:               pl.Master,
 		//PlaylistId:           toInt32p(pl.PlaylistID),
-		PersistentId:         proto.Uint64(uint64(pl.PlaylistPersistentID)),
+		PersistentId:         proto.Uint64(uint64(pl.PersistentID)),
 		//AllItems:             pl.AllItems,
 		//Visible:              pl.Visible,
 		Name:                 proto.String(pl.Name),
@@ -199,15 +207,9 @@ func (pl *Playlist) ProtoPrepare(depth int) *itunespb.Playlist {
 		m.GeniusTrackId = proto.Uint64(uint64(*pl.GeniusTrackID))
 	}
 	if depth > 1 {
-		m.Children = make([]*itunespb.Playlist, len(pl.Children))
-		for i, c := range pl.Children {
-			m.Children[i] = c.ProtoPrepare(depth)
-		}
-		if depth > 2 {
-			m.Items = make([]uint64, len(pl.TrackIDs))
-			for i, pid := range pl.TrackIDs {
-				m.Items[i] = uint64(pid)
-			}
+		m.Items = make([]uint64, len(pl.TrackIDs))
+		for i, pid := range pl.TrackIDs {
+			m.Items[i] = uint64(pid)
 		}
 	}
 	return m
@@ -241,21 +243,21 @@ func (pl *Playlist) SerializeToDirectory(dn string) error {
 			return err
 		}
 	}
-	fn := filepath.Join(dn, "playlists", pl.PlaylistPersistentID.EncodeToString() + ".pb")
+	fn := filepath.Join(dn, "playlists", pl.PersistentID.EncodeToString() + ".pb")
 	return pl.SerializeToFile(fn)
 }
 
 func (lib *Library) ProtoPrepare(depth int) *itunespb.Library {
 	m := &itunespb.Library{
-		FileName:             lib.FileName,
-		MajorVersion:         toInt32p(lib.MajorVersion),
-		MinorVersion:         toInt32p(lib.MinorVersion),
-		ApplicationVersion:   lib.ApplicationVersion,
-		Date:                 toTime(lib.Date),
-		Features:             toInt32p(lib.Features),
-		ShowContentRatings:   lib.ShowContentRatings,
+		FileName:             proto.String(lib.FileName),
+		MajorVersion:         toInt32(lib.MajorVersion),
+		MinorVersion:         toInt32(lib.MinorVersion),
+		ApplicationVersion:   proto.String(lib.ApplicationVersion),
+		Date:                 toTime(&lib.Date),
+		Features:             toInt32(lib.Features),
+		ShowContentRatings:   proto.Bool(lib.ShowContentRatings),
 		PersistentId:         proto.Uint64(uint64(lib.PersistentID)),
-		MusicFolder:          lib.MusicFolder,
+		MusicFolder:          proto.String(lib.MusicFolder),
 	}
 	if depth == 0 {
 		return m

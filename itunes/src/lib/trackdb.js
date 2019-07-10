@@ -28,6 +28,17 @@ const getDB = () => {
 
 export const trackDB = {
   db: getDB(),
+  clear() {
+    return this.db.then(db => {
+      return new Promise(resolve => {
+        const objectStore = db.transaction("tracks", "readwrite").objectStore("tracks");
+        const req = objectStore.clear();
+        req.onsuccess = evt => {
+          resolve();
+        };
+      });
+    });
+  },
   getNewest() {
     return this.db.then(db => {
       return new Promise(resolve => {

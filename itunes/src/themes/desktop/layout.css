@@ -81,6 +81,7 @@
   flex-direction: row;
 }
 
+#app.desktop .library .playlistBrowser:focus,
 #app.desktop .library .ReactVirtualized__Table__headerRow:focus,
 #app.desktop .library .ReactVirtualized__Table__row:focus {
   outline: none;
@@ -292,7 +293,7 @@
 }
 
 #app.desktop .playlistBrowser .folder .folderToggle.open {
-  border-left-color: transparent;
+  border-left-color: transparent !important;
   border-right-width: 5px;
   border-left-width: 5px;
   border-top-width: 6px;
@@ -526,6 +527,7 @@
   display: flex;
 
 }
+
 #app.desktop .queueMenu>div>.row {
   width: 16px;
   height: 2px;
@@ -533,3 +535,106 @@
   margin-top: 2px;
   margin-left: 2px;
 }
+
+#app.desktop .cover {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+#app.desktop .cover>.padding {
+  flex: 1;
+}
+
+#app.desktop .cover .dialog {
+  margin: auto;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 10px;
+  padding: 2em;
+  max-width: 20vw;
+}
+
+#app.desktop .cover input[type="button"] {
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 0.5em;
+  font-size: 16px;
+  padding: 0.25em 0.5em;
+  margin-left: 1em;
+}
+
+#app.desktop .cover input.dflt[type="button"] {
+  font-weight: bold;
+}
+
+#app.desktop.login {
+  display: flex;
+  flex-direction: row;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+#app.desktop.login .leftPad,
+#app.desktop.login .rightPad {
+  flex: 10;
+}
+
+#app.desktop.login .centerPad {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#app.desktop.login .centerPad .topPad,
+#app.desktop.login .centerPad .bottomPad {
+  flex: 10;
+}
+
+#app.desktop.login .centerPad .topPad {
+  vertical-align: bottom;
+  font-weight: bold;
+  font-size: 16pt;
+}
+
+#app.desktop.login .centerPad .login {
+  flex: 1;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 8px;
+  padding: 2em;
+  display: grid;
+  grid-template-columns: min-content min-content;
+  grid-column-gap: 10px;
+  grid-row-gap: 10px;
+}
+
+#app.desktop.login .centerPad .login .header {
+  grid-column: span 2;
+  font-size: 16pt;
+  font-weight: bold;
+  text-align: center;
+  padding-bottom: 1em;
+}
+
+#app.desktop .login input {
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12pt;
+}
+
+#app.desktop .login input[type="button"] {
+  font-weight: bold;
+}
+

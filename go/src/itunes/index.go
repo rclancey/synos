@@ -117,16 +117,27 @@ func (tl TrackList) Less(i, j int) bool {
 	return at.Before(bt.Get())
 }
 
+func (tl *TrackList) Clone() *TrackList {
+	out := make([]*Track, len(*tl))
+	for i, tr := range *tl {
+		out[i] = tr
+	}
+	xtl := TrackList(out)
+	return &xtl
+}
+
 func (tl *TrackList) DefaultSort() *TrackList {
 	sort.Sort(*tl)
 	return tl
 }
 
 func (tl *TrackList) SortBy(key string, desc bool) error {
-	rt := reflect.TypeOf(Track{})
+	log.Println("hello?")
+	rt := reflect.TypeOf(&Track{})
 	meth, ok := rt.MethodByName(key)
 	stl := &SortableTrackList{tl: *tl}
 	if ok {
+		log.Println("trying to sort with method")
 		f := meth.Func
 		if f.Type().NumIn() != 1 {
 			return fmt.Errorf("can't sort by %s: method requires arguments", key)
@@ -135,6 +146,7 @@ func (tl *TrackList) SortBy(key string, desc bool) error {
 			return fmt.Errorf("can't sort by %s: method has no output", key)
 		}
 		if f.Type().Out(0).Kind() == reflect.String {
+			log.Println("sorting by string method")
 			stl.less = func(a, b *Track) bool {
 				av := f.Call([]reflect.Value{reflect.ValueOf(a)})[0]
 				bv := f.Call([]reflect.Value{reflect.ValueOf(b)})[0]
@@ -144,6 +156,7 @@ func (tl *TrackList) SortBy(key string, desc bool) error {
 				return av.String() < bv.String()
 			}
 		} else if f.Type().Out(0) == reflect.TypeOf(time.Time{}) {
+			log.Println("sorting by built-in time method")
 			stl.less = func(a, b *Track) bool {
 				av := f.Call([]reflect.Value{reflect.ValueOf(a)})[0].Interface().(time.Time)
 				bv := f.Call([]reflect.Value{reflect.ValueOf(b)})[0].Interface().(time.Time)
@@ -153,6 +166,7 @@ func (tl *TrackList) SortBy(key string, desc bool) error {
 				return av.Before(bv)
 			}
 		} else if f.Type().Out(0) == reflect.TypeOf(&Time{}) {
+			log.Println("sorting by wrapper time method")
 			stl.less = func(a, b *Track) bool {
 				av := f.Call([]reflect.Value{reflect.ValueOf(a)})[0].Interface().(*Time)
 				bv := f.Call([]reflect.Value{reflect.ValueOf(b)})[0].Interface().(*Time)
@@ -165,6 +179,8 @@ func (tl *TrackList) SortBy(key string, desc bool) error {
 			return fmt.Errorf("can't sort by %s: don't know how to compare %s", key, f.Type().Out(0).Name())
 		}
 	} else {
+		rt = rt.Elem()
+		log.Println("trying to sort by field")
 		f, ok := rt.FieldByName(key)
 		if !ok {
 			n := rt.NumField()
@@ -286,7 +302,9 @@ func (tl *TrackList) SortBy(key string, desc bool) error {
 				return fmt.Errorf("can't sort by %s: don't know how to compare %s", key, f.Type.Name())
 			}
 		}
+		log.Println("sorting tracks by field")
 	}
+	log.Println("sorting tracks")
 	sort.Sort(stl)
 	return nil
 }

@@ -27,7 +27,7 @@ func (t *Time) SetEpochMS(ms int64) {
 
 func (t *Time) EpochMS() int64 {
 	s := t.Unix()
-	ns := t.UnixNano()
+	ns := int64(t.Nanosecond())
 	return (s * 1000) + (ns / 1e6)
 }
 

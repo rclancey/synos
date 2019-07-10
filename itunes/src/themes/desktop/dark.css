@@ -1,3 +1,7 @@
+#app.desktop.dark {
+  background-color: black;
+}
+
 #app.desktop.dark #loading {
   background-color: rgba(0, 0, 0, 0.3);
 }
@@ -32,6 +36,10 @@
 
 #app.desktop.dark .library .ReactVirtualized__Table__row.even {
   background-color: #292b2e;
+}
+
+#app.desktop.dark .library .trackListContainer {
+  background-color: #1e2023;
 }
 
 #app.desktop.dark .library .playlistBrowser:focus-within .selected,
@@ -358,3 +366,44 @@
 #app.desktop.dark .queueMenu>div>.row {
   background-color: #666;
 }
+
+#app.desktop.dark .cover .dialog {
+  border-color: white;
+  background-color: black;
+  color: white;
+  box-shadow: white 0 0 35px;
+}
+
+#app.desktop.dark .cover input[type="button"] {
+  border-color: white;
+  background: linear-gradient(#292b2e, #000);
+  color: white;
+}
+
+#app.desktop.dark .cover input.dflt[type="button"] {
+  border-color: blue;
+  background: linear-gradient(#08f, #00f);
+  color: white;
+}
+
+#app.desktop.dark.login .centerPad .topPad {
+  color: #2687fb;
+}
+
+#app.desktop.dark .login {
+  border-color: white;
+  background-color: black;
+  color: #2687fb;
+  box-shadow: #2687fb 0px 0px 50px 20px;
+}
+
+#app.desktop.dark .login input {
+  background-color: #1e2023;
+  border-color: #2687fb;
+  color: #2687fb;
+}
+
+#app.desktop.dark .login input[type="button"] {
+  background-image: linear-gradient(#144987, #1e2023);
+}
+

@@ -1,17 +1,14 @@
 package itunes
 
 import (
-	//"encoding/xml"
-	//"fmt"
-	//"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
-	//"golang.org/x/text/unicode/norm"
 	"github.com/dhowden/tag"
 )
 
@@ -36,12 +33,12 @@ type Track struct {
 	Name                 string       `json:"name,omitempty"`
 	PartOfGaplessAlbum   bool         `json:"part_of_gapless_album,omitempty"`
 	PlayCount            uint         `json:"play_count,omitempty"`
-	PlayDateUTC          *Time        `json:"play_date_utc,omitempty"`
+	PlayDate             *Time        `json:"play_date,omitempty"`
 	Purchased            bool         `json:"purchased,omitempty"`
 	PurchaseDate         *Time        `json:"purchase_date,omitempty"`
 	Rating               uint8        `json:"rating,omitempty"`
 	ReleaseDate          *Time        `json:"release_date,omitempty"`
-	Size                 uint         `json:"size,omitempty"`
+	Size                 uint64       `json:"size,omitempty"`
 	SkipCount            uint         `json:"skip_count,omitempty"`
 	SkipDate             *Time        `json:"skip_date,omitempty"`
 	SortAlbum            string       `json:"sort_album,omitempty"`
@@ -85,22 +82,30 @@ func (t *Track) MediaKind() MediaKind {
 	return MediaKind_MUSIC
 }
 
+type stimes []time.Time
+func (s stimes) Len() int { return len(s) }
+func (s stimes) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s stimes) Less(i, j int) bool { return s[i].Before(s[j]) }
+
 func (t *Track) ModDate() time.Time {
-	if t.DateModified == nil {
-		if t.DateAdded == nil {
-			return time.Date(2999, time.December, 31, 23, 59, 59, 999999999, time.UTC)
-		}
-		return t.DateAdded.Get()
+	times := []time.Time{}
+	if t.DateModified != nil {
+		times = append(times, t.DateModified.Get())
 	}
-	if t.DateAdded == nil {
-		return t.DateModified.Get()
+	if t.DateAdded != nil {
+		times = append(times, t.DateAdded.Get())
 	}
-	at := t.DateAdded.Get()
-	mt := t.DateModified.Get()
-	if at.After(mt) {
-		return at
+	if t.PlayDate != nil {
+		times = append(times, t.PlayDate.Get())
 	}
-	return mt
+	if t.SkipDate != nil {
+		times = append(times, t.SkipDate.Get())
+	}
+	if len(times) == 0 {
+		return time.Date(2999, time.December, 31, 23, 59, 59, 999999999, time.UTC)
+	}
+	sort.Sort(stimes(times))
+	return times[len(times) - 1]
 }
 
 func (t *Track) Path() string {
@@ -247,3 +252,141 @@ func (t *Track) GetExt() string {
 	}
 	return ""
 }
+
+func (t *Track) Update(orig, cur *Track) {
+	mod := false
+	if cur.Album != orig.Album {
+		t.Album = cur.Album
+		mod = true
+	}
+	if cur.AlbumArtist != orig.AlbumArtist {
+		t.AlbumArtist = cur.AlbumArtist
+		mod = true
+	}
+	if cur.Artist != orig.Artist {
+		t.Artist = cur.Artist
+		mod = true
+	}
+	if cur.Comments != orig.Comments {
+		t.Comments = cur.Comments
+		mod = true
+	}
+	if cur.Compilation != orig.Compilation {
+		t.Compilation = cur.Compilation
+		mod = true
+	}
+	if cur.Composer != orig.Composer {
+		t.Composer = cur.Composer
+		mod = true
+	}
+	if cur.DiscCount != orig.DiscCount {
+		t.DiscCount = cur.DiscCount
+		mod = true
+	}
+	if cur.DiscNumber != orig.DiscNumber {
+		t.DiscNumber = cur.DiscNumber
+		mod = true
+	}
+	if cur.Genre != orig.Genre {
+		t.Genre = cur.Genre
+		mod = true
+	}
+	if cur.Grouping != orig.Grouping {
+		t.Grouping = cur.Grouping
+		mod = true
+	}
+	if cur.Loved != orig.Loved {
+		t.Loved = cur.Loved
+		mod = true
+	}
+	if cur.Name != orig.Name {
+		t.Name = cur.Name
+		mod = true
+	}
+	if cur.PartOfGaplessAlbum != orig.PartOfGaplessAlbum {
+		t.PartOfGaplessAlbum = cur.PartOfGaplessAlbum
+		mod = true
+	}
+	if cur.Rating != orig.Rating {
+		t.Rating = cur.Rating
+		mod = true
+	}
+	if cur.ReleaseDate == nil {
+		if orig.ReleaseDate != nil {
+			t.ReleaseDate = nil
+			mod = true
+		}
+	} else {
+		if orig.ReleaseDate == nil {
+			t.ReleaseDate = cur.ReleaseDate
+			mod = true
+		} else if !cur.ReleaseDate.Equal(orig.ReleaseDate.Get()) {
+			t.ReleaseDate = cur.ReleaseDate
+			mod = true
+		}
+	}
+	if cur.SortAlbum != orig.SortAlbum {
+		t.SortAlbum = cur.SortAlbum
+		mod = true
+	}
+	if cur.SortAlbumArtist != orig.SortAlbumArtist {
+		t.SortAlbumArtist = cur.SortAlbumArtist
+		mod = true
+	}
+	if cur.SortArtist != orig.SortArtist {
+		t.SortArtist = cur.SortArtist
+		mod = true
+	}
+	if cur.SortComposer != orig.SortComposer {
+		t.SortComposer = cur.SortComposer
+		mod = true
+	}
+	if cur.SortName != orig.SortName {
+		t.SortName = cur.SortName
+		mod = true
+	}
+	if cur.TrackCount != orig.TrackCount {
+		t.TrackCount = cur.TrackCount
+		mod = true
+	}
+	if cur.TrackNumber != orig.TrackNumber {
+		t.TrackNumber = cur.TrackNumber
+		mod = true
+	}
+	if cur.VolumeAdjustment != orig.VolumeAdjustment {
+		t.VolumeAdjustment = cur.VolumeAdjustment
+		mod = true
+	}
+	if cur.Work != orig.Work {
+		t.Work = cur.Work
+		mod = true
+	}
+	if cur.PlayDate != nil {
+		if t.PlayDate == nil || cur.PlayDate.After(t.PlayDate.Get()) {
+			t.PlayDate = cur.PlayDate
+			mod = true
+		}
+	}
+	if cur.SkipDate != nil {
+		if t.SkipDate == nil || cur.SkipDate.After(t.SkipDate.Get()) {
+			t.SkipDate = cur.SkipDate
+			mod = true
+		}
+	}
+	if cur.PlayCount > orig.PlayCount {
+		t.PlayCount += (cur.PlayCount - orig.PlayCount)
+		mod = true
+	}
+	if cur.SkipCount > orig.SkipCount {
+		t.SkipCount += (cur.SkipCount - orig.SkipCount)
+		mod = true
+	}
+	if !cur.Unplayed && t.Unplayed {
+		t.Unplayed = false
+		mod = true
+	}
+	if mod {
+		t.DateModified = &Time{time.Now().In(time.UTC)}
+	}
+}
+

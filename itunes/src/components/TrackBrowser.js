@@ -5,6 +5,9 @@ import { ColumnBrowser } from './ColumnBrowser';
 import * as COLUMNS from '../lib/columns';
 
 const stringSorter = v => {
+  if (v === null || v === undefined) {
+    return '';
+  }
   if (typeof v !== 'string') {
     return v;
   }
@@ -427,6 +430,8 @@ export class TrackBrowser extends React.Component {
             onTrackSelect={this.onTrackSelect}
             onTrackPlay={this.props.onPlay}
             onReorderTracks={this.props.onReorderTracks}
+            onDeleteTracks={this.props.onDeleteTracks}
+            onConfirm={this.props.onConfirm}
           />
         </div>
       </div>

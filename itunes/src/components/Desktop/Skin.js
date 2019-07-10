@@ -3,6 +3,7 @@ import { Controls } from './Controls';
 import { Library } from '../Library';
 
 export const DesktopSkin = ({
+  api,
   theme,
   status,
   queue,
@@ -11,6 +12,7 @@ export const DesktopSkin = ({
   duration,
   volume,
   sonos,
+  onViewPlaylist,
   onPlay,
   onPause,
   onInsertIntoQueue,
@@ -24,7 +26,8 @@ export const DesktopSkin = ({
   onEnableSonos,
   onDisableSonos,
 }) => {
-  const [search, setSearch] = useState(null);
+  const [search, setSearch] = useState({});
+  const [playlist, setPlaylist] = useState(null);
   const [progress, setProgress] = useState({ complete: 0, total: 0 });
   const track = queue[queueIndex];
   return (
@@ -37,7 +40,7 @@ export const DesktopSkin = ({
         duration={duration}
         volume={volume}
         sonos={sonos}
-        search={search}
+        search={search[playlist]}
         onPlay={onPlay}
         onPause={onPause}
         onSkipTo={onSkipTo}
@@ -47,14 +50,16 @@ export const DesktopSkin = ({
         onSetVolumeTo={onSetVolumeTo}
         onEnableSonos={onEnableSonos}
         onDisableSonos={onDisableSonos}
-        onSearch={setSearch}
+        onSearch={(query) => { const s = Object.assign({}, search); s[playlist] = query; setSearch(s); }}
       />
       <Library 
-        search={search}
+        api={api}
+        search={search[playlist]}
         currentTrack={track}
         onInsertIntoQueue={onInsertIntoQueue}
         onAppendToQueue={onAppendToQueue}
         onReplaceQueue={onReplaceQueue}
+        onViewPlaylist={setPlaylist}
       />
       {/*
         onProgress={(complete, total) => setProgress({ complete, total: total || progress.total })}

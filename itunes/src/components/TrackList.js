@@ -170,11 +170,21 @@ export class TrackList extends React.Component {
         event.preventDefault();
         event.stopPropagation();
         this.props.onTrackPlay();
-      } else if (event.key == 'ArrowDown') {
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        event.stopPropagation();
+        if (this.props.playlist !== null && this.props.playlist !== undefined) {
+          if (this.props.onDeleteTracks !== null && this.props.onDeleteTracks !== undefined) {
+            const n = Object.keys(this.props.selected).length;
+            const msg = `Are you sure you want to delete ${n} track${n > 1 ? 's' : ''} from the playlist "${this.props.playlist.name}"?`;
+            this.props.onConfirm(msg, () => this.props.onDeleteTracks(this.props.playlist, this.props.selected));
+          }
+        }
+      } else if (event.key === 'ArrowDown') {
         event.preventDefault();
         event.stopPropagation();
         this.props.onTrackDown(event.shiftKey);
-      } else if (event.key == 'ArrowUp') {
+      } else if (event.key === 'ArrowUp') {
         event.preventDefault();
         event.stopPropagation();
         this.props.onTrackUp(event.shiftKey);
@@ -189,7 +199,7 @@ export class TrackList extends React.Component {
       <div
         ref={node => this.node = node}
         style={{ height: '100%' }}
-        onFocus={() => this.setState({ focused: true })}
+        onFocus={(evt) => { console.debug('focusing track list: %o', evt.nativeEvent); this.setState({ focused: true }); }}
         onBlur={() => this.setState({ focused: false })}
       >
         <Table

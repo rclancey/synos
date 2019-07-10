@@ -67,7 +67,7 @@ func (tr *Track) LoadProto(m *itunespb.Track) {
 		PersistentID:         PersistentID(m.GetPersistentId()),
 		PlayCount:            uint(m.GetPlayCount()),
 		//PlayDate:             int(m.GetPlayDate()),
-		PlayDateUTC:          fromTime(m.PlayDateUtc),
+		PlayDate:             fromTime(m.PlayDate),
 		//Podcast:              m.GetPodcast(),
 		//Protected:            m.GetProtected(),
 		Purchased:            m.GetPurchased(),
@@ -78,7 +78,7 @@ func (tr *Track) LoadProto(m *itunespb.Track) {
 		//SampleRate:           int(m.GetSampleRate()),
 		//Season:               int(m.GetSeason()),
 		//Series:               m.GetSeries(),
-		Size:                 uint(m.GetSize()),
+		Size:                 uint64(m.GetSize()),
 		SkipCount:            uint(m.GetSkipCount()),
 		SkipDate:             fromTime(m.SkipDate),
 		SortAlbum:            m.GetSortAlbum(),
@@ -130,7 +130,7 @@ func (pl *Playlist) LoadProto(m *itunespb.Playlist) {
 	*pl = Playlist{
 		//Master:               m.Master,
 		//PlaylistID:           fromInt32(m.PlaylistId),
-		PlaylistPersistentID: PersistentID(m.GetPersistentId()),
+		PersistentID:         PersistentID(m.GetPersistentId()),
 		//AllItems:             m.AllItems,
 		//Visible:              m.Visible,
 		Name:                 m.GetName(),
@@ -194,16 +194,18 @@ func DeserializePlaylist(data []byte) (*Playlist, error) {
 }
 
 func (lib *Library) LoadProto(m *itunespb.Library) {
+	t := &Time{}
+	t.SetEpochMS(m.GetDate().GetMs())
 	*lib = Library{
-		FileName:             m.FileName,
-		MajorVersion:         fromInt32(m.MajorVersion),
-		MinorVersion:         fromInt32(m.MinorVersion),
-		ApplicationVersion:   m.ApplicationVersion,
-		Date:                 fromTime(m.Date),
-		Features:             fromInt32(m.Features),
-		ShowContentRatings:   m.ShowContentRatings,
+		FileName:             m.GetFileName(),
+		MajorVersion:         int(m.GetMajorVersion()),
+		MinorVersion:         int(m.GetMinorVersion()),
+		ApplicationVersion:   m.GetApplicationVersion(),
+		Date:                 *t,
+		Features:             int(m.GetFeatures()),
+		ShowContentRatings:   m.GetShowContentRatings(),
 		PersistentID:         PersistentID(m.GetPersistentId()),
-		MusicFolder:          m.MusicFolder,
+		MusicFolder:          m.GetMusicFolder(),
 	}
 	lib.Tracks = make([]*Track, len(m.Tracks))
 	for i, tr := range m.Tracks {

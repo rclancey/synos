@@ -148,6 +148,7 @@ class PlainTreeView extends React.Component {
       <div
         className={cls.join(' ')}
         onClick={this.select}
+        onFocus={evt => console.debug('tree view focus: %o', evt.nativeEvent)}
       >
         { this.renderLabel() }
         { node.kind === 'folder' && open ? (

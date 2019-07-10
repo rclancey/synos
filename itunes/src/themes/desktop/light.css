@@ -1,3 +1,7 @@
+#app.desktop.dark {
+  background-color: white;
+}
+
 #app.desktop.light #loading {
   background-color: rgba(0, 0, 0, 0.3);
 }
@@ -251,3 +255,36 @@
 #app.desktop.light .queueMenu>div>.row {
   background-color: #666;
 }
+
+#app.desktop.light .cover .dialog {
+  border-color: white;
+  background-color: white;
+  color: black;
+  box-shadow: black 0 0 35px;
+}
+
+#app.desktop.light .cover input[type="button"] {
+  border-color: black;
+  background-color: #ddd;
+  color: black;
+}
+
+#app.desktop.light .cover input.dflt[type="button"] {
+  border-color: blue;
+  background-color: blue;
+  color: white;
+}
+
+#app.desktop.light .login {
+  border-color: black;
+  background-color: white;
+  color: black;
+  box-shadow: white 0px 0px 50px 10px;
+}
+
+#app.desktop.dark .login input {
+  background-color: white;
+  border-color: black;
+  color: black;
+}
+

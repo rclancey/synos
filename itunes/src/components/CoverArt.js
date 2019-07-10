@@ -27,7 +27,7 @@ export const CoverArt = ({ track, size, radius, style, children }) => {
   }
   if (track) {
     if (track.persistent_id) {
-      xstyle.backgroundImage = `url(/api/cover/${track.persistent_id})`;
+      xstyle.backgroundImage = `url(/api/art/track/${track.persistent_id})`;
     } else if (track.album) {
       if (track.album_artist) {
         xstyle.backgroundImage = `url(/api/art/album?artist=${escape(track.album_artist)}&album=${escape(track.album)})`;

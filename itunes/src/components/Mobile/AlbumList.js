@@ -28,13 +28,19 @@ export class AlbumList extends React.Component {
   loadAlbums() {
     let url = '/api/index/';
     if (this.props.artist) {
-      url += `albums?artist=${escape(this.props.artist)}`;
+      url += `albums?artist=${escape(this.props.artist.sort)}`;
     } else {
       url += 'album-artist';
     }
     return fetch(url, { method: 'GET' })
       .then(resp => resp.json())
-      .then(albums => this.setState({ albums }));
+      .then(albums => {
+        albums.forEach(album => {
+          album.name = Object.keys(album.names).sort((a, b) => album.names[a] < album.names[b] ? 1 : album.names[a] > album.names[b] ? -1 : 0)[0];
+          album.artist.name = Object.keys(album.artist.names).sort((a, b) => album.artist.names[a] < album.artist.names[b] ? 1 : album.artist.names[a] > album.artist.names[b] ? -1 : 0)[0];
+        });
+        this.setState({ albums });
+      });
   }
 
   onOpen(album) {
@@ -51,12 +57,12 @@ export class AlbumList extends React.Component {
 
   coverArtUrl(album) {
     let url = '/api/art/album?';
-    if (album[0]) {
-      url += `artist=${escape(album[0])}`;
+    if (album) {
+      url += `artist=${escape(album.artist.sort)}`;
     } else if (this.props.artist) {
-      url += `artist=${escape(this.props.artist)}`;
+      url += `artist=${escape(this.props.artist.sort)}`;
     }
-    url += `&album=${escape(album[1])}`;
+    url += `&album=${escape(album.sort)}`;
     return `url(${url})`;
     //return `url(/api/art/album?artist=${escape(this.props.artist)}&album=${escape(album)})`;
   }
@@ -73,13 +79,13 @@ export class AlbumList extends React.Component {
         <div className="padding" />
         <div className="item" onClick={() => this.onOpen(album1)}>
           <div className="coverArt" style={{backgroundImage: this.coverArtUrl(album1)}} />
-          <div className="title">{album1[1]}</div>
+          <div className="title">{album1.name}</div>
         </div>
         <div className="padding" />
         { album2 ? (
           <div className="item" onClick={() => this.onOpen(album2)}>
             <div className="coverArt" style={{backgroundImage: this.coverArtUrl(album2)}} />
-            <div className="title">{album2[1]}</div>
+            <div className="title">{album2.name}</div>
           </div>
         ) : (
           <div className="item" />
@@ -91,11 +97,12 @@ export class AlbumList extends React.Component {
 
   render() {
     if (this.state.album !== null) {
+      console.debug('rendering album %o', this.state.album);
       return (
         <Album
-          prev={this.props.artist || "Albums"}
-          artist={this.props.artist || this.state.album[0]}
-          album={this.state.album[1]}
+          prev={this.props.artist || { name: "Albums"}}
+          artist={this.props.artist || this.state.album.artist}
+          album={this.state.album}
           onClose={this.onClose}
           onTrackMenu={this.props.onTrackMenu}
           onPlaylistMenu={this.props.onPlaylistMenu}
@@ -106,7 +113,7 @@ export class AlbumList extends React.Component {
       <div className="albumList">
         <div className="back" onClick={this.onClose}>{this.props.prev}</div>
         <div className="header">
-          <div className="title">{this.props.artist}</div>
+          <div className="title">{this.props.artist ? this.props.artist.name : "Albums"}</div>
         </div>
         <div className="items">
           <AutoSizer>

@@ -133,7 +133,7 @@ export class Player extends React.Component {
 
   shutdownSonos() {
     if (this.sonos) {
-      pauseSonos();
+      this.props.api.pauseSonos();
       this.sonos.close();
       this.sonos = null;
     }
@@ -226,7 +226,7 @@ export class Player extends React.Component {
     return new Promise(resolve => {
       this.sonos = new WebSocket(uri);
       this.sonos.onopen = evt => {
-        getSonosQueue()
+        this.props.api.getSonosQueue()
           .then(queue => {
             console.debug('updating with sonos queue info %o', queue);
             this.setState({
@@ -266,17 +266,17 @@ export class Player extends React.Component {
     return new Promise(resolve => {
       this.setState({ sonos: true }, () => {
         this.startupSonos()
-          .then(() => pauseSonos())
-          .then(() => replaceSonosQueue(tracks))
-          .then(() => skipSonosTo(index))
-          .then(() => seekSonosTo(ms))
+          .then(() => this.props.api.pauseSonos())
+          .then(() => this.props.api.replaceSonosQueue(tracks))
+          .then(() => this.props.api.skipSonosTo(index))
+          .then(() => this.props.api.seekSonosTo(ms))
           .then(() => {
             if (status === 'PLAYING') {
-              return playSonos();
+              return this.props.api.playSonos();
             }
             return true;
           })
-          .then(() => getSonosVolume())
+          .then(() => this.props.api.getSonosVolume())
           .then(volume => this.setState({ volume }, resolve));
       });
     });
@@ -284,7 +284,7 @@ export class Player extends React.Component {
 
   onPlay() {
     if (this.state.sonos) {
-      playSonos();
+      this.props.api.playSonos();
     } else {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.volume = this.state.volume / 100;
@@ -296,7 +296,7 @@ export class Player extends React.Component {
 
   onPause() {
     if (this.state.sonos) {
-      pauseSonos();
+      this.props.api.pauseSonos();
     } else {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.pause();
@@ -307,7 +307,7 @@ export class Player extends React.Component {
 
   onReplaceQueue(tracks) {
     if (this.state.sonos) {
-      replaceSonosQueue(tracks);
+      this.props.api.replaceSonosQueue(tracks);
     } else {
       this.setState({ queue: tracks, queueIndex: 0, status: 'PLAYING' });
     }
@@ -315,7 +315,7 @@ export class Player extends React.Component {
 
   onAppendToQueue(tracks) {
     if (this.state.sonos) {
-      appendToSonosQueue(tracks);
+      this.props.api.appendToSonosQueue(tracks);
     } else {
       this.setState({ queue: this.state.queue.concat(tracks) });
     }
@@ -323,7 +323,7 @@ export class Player extends React.Component {
 
   onInsertIntoQueue(tracks) {
     if (this.state.sonos) {
-      insertIntoSonosQueue(tracks);
+      this.props.api.insertIntoSonosQueue(tracks);
     } else {
       if (this.state.queue.length == 0) {
         this.onReplaceQueue(tracks);
@@ -338,7 +338,7 @@ export class Player extends React.Component {
 
   onSeekTo(ms) {
     if (this.state.sonos) {
-      seekSonosTo(ms);
+      this.props.api.seekSonosTo(ms);
     } else {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.currentTime = ms / 1000.0;
@@ -354,7 +354,7 @@ export class Player extends React.Component {
 
   onSeekBy(ms) {
     if (this.state.sonos) {
-      seekSonosBy(ms);
+      this.props.api.seekSonosBy(ms);
     } else {
       if (this.currentPlayer.current) {
         const t = this.currentPlayer.current.currentTime + ms / 1000.0;
@@ -384,7 +384,7 @@ export class Player extends React.Component {
 
   onSkipBy(count) {
     if (this.state.sonos) {
-      skipSonosBy(count);
+      this.props.api.skipSonosBy(count);
     } else {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.pause();
@@ -400,7 +400,7 @@ export class Player extends React.Component {
 
   onSkipTo(idx) {
     if (this.state.sonos) {
-      skipSonosTo(idx);
+      this.props.api.skipSonosTo(idx);
     } else {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.pause();
@@ -415,7 +415,7 @@ export class Player extends React.Component {
 
   onChangeVolumeBy(delta) {
     if (this.state.sonos) {
-      changeSonosVolumeBy(delta);
+      this.props.api.changeSonosVolumeBy(delta);
     } else {
       if (this.currentPlayer.current) {
         let vol = this.currentPlayer.current.volume + delta / 100.0;
@@ -445,7 +445,7 @@ export class Player extends React.Component {
       vol = 0;
     }
     if (this.state.sonos) {
-      setSonosVolumeTo(vol);
+      this.props.api.setSonosVolumeTo(vol);
     } else {
       if (this.currentPlayer.current) {
         this.currentPlayer.current.volume = vol / 100.0;

@@ -8,8 +8,8 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
-	"runtime"
-	"runtime/debug"
+	//"runtime"
+	//"runtime/debug"
 	"time"
 
 	"itunes"
@@ -54,21 +54,23 @@ func main() {
 	go func() {
 		log.Println("loading library", fn)
 		//time.Sleep(time.Duration(5) * time.Second)
+		BootstrapPlaylists()
+		MonitorLibrary(fn)
+		/*
 		err = lib.Load(fn)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		runtime.GC()
-		debug.FreeOSMemory()
-		log.Printf("%d tracks in library\n", len(lib.Tracks))
-	}()
-
-	go func() {
+		log.Println("loading purchase dates")
 		for _, tr := range lib.Tracks {
 			tr.GetPurchaseDate()
 		}
 		log.Println("purchase dates loaded")
+		runtime.GC()
+		debug.FreeOSMemory()
+		log.Printf("%d tracks in library\n", len(lib.Tracks))
+		*/
 	}()
 
 	cacheTime := 30 * 24 * time.Hour
@@ -91,7 +93,7 @@ func main() {
 	mux.HandleFunc("/api/track/", GetTrack)
 	mux.HandleFunc("/api/cover/", GetTrackCover)
 	mux.HandleFunc("/api/playlists", ListPlaylists)
-	mux.HandleFunc("/api/playlist/", PlaylistTracks)
+	mux.HandleFunc("/api/playlist/", PlaylistHandler)
 	mux.HandleFunc("/api/sonos/available", HasSonos)
 	mux.HandleFunc("/api/sonos/queue", SonosQueue)
 	mux.HandleFunc("/api/sonos/skip", SonosSkip)

@@ -775,3 +775,67 @@
   font-weight: bold;
 }
 
+#app.mobile.login {
+  display: flex;
+  flex-direction: row;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+#app.mobile.login .leftPad,
+#app.mobile.login .rightPad {
+  flex: 10;
+}
+
+#app.mobile.login .centerPad {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#app.mobile.login .centerPad .topPad,
+#app.mobile.login .centerPad .bottomPad {
+  flex: 10;
+}
+
+#app.mobile.login .centerPad .topPad {
+  vertical-align: bottom;
+  font-weight: bold;
+  font-size: 16pt;
+}
+
+#app.mobile.login .centerPad .login {
+  flex: 1;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 8px;
+  padding: 2em;
+  display: grid;
+  grid-template-columns: min-content min-content;
+  grid-column-gap: 10px;
+  grid-row-gap: 10px;
+}
+
+#app.mobile.login .centerPad .login .header {
+  grid-column: span 2;
+  font-size: 16pt;
+  font-weight: bold;
+  text-align: center;
+  padding: 0 0 1em 0;
+}
+
+#app.mobile .login input {
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12pt;
+}
+
+#app.mobile .login input[type="button"] {
+  font-weight: bold;
+}
+
