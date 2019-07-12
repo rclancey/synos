@@ -82,7 +82,11 @@ func main() {
 	mux.HandleFunc("/api/sonos/ws", ServeWS)
 	mux.Handle("/", http.FileServer(http.Dir(cfg.StaticRoot)))
 	lm := &LogMux{ mux: mux }
-	err = http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), lm)
+	if cfg.UseSSL() {
+		err = http.ListenAndServeTLS(fmt.Sprintf(":%d", cfg.Port), cfg.SSLCertFile, cfg.SSLKeyFile, lm)
+	} else {
+		err = http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), lm)
+	}
 	log.Println(err)
 }
 

@@ -13,7 +13,7 @@ const doLogin = (username, password) => {
     headers,
   })
     .then(resp => {
-      if (resp.statusCode === 200) {
+      if (resp.status === 200) {
         return resp.json();
       }
       return { status: resp.statusText };
