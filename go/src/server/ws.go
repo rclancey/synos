@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 	//"github.com/ianr0bkny/go-sonos/upnp"
 
+	H "httpserver"
 	"sonos"
 )
 
@@ -180,22 +181,20 @@ func (c *Client) WritePump() {
 	}
 }
 
-func ServeWS(w http.ResponseWriter, req *http.Request) {
+func ServeWS(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	if hub == nil {
-		ServiceUnavailable.Raise(nil, "sonos not available").Respond(w)
-		return
+		return nil, H.ServiceUnavailable.Raise(nil, "sonos not available")
 	}
 	conn, err := upgrader.Upgrade(w, req, nil)
 	if err != nil {
-		log.Println("error upgrading websocket connection:", err)
-		return
+		return nil, H.InternalServerError.Raise(err, "Can't upgrade websocket connection")
 	}
-	log.Println("opening websocket")
 	client := &Client{hub: hub, conn: conn, Send: make(chan []byte, 256)}
 	client.hub.Register <- client
 	// Allow collection of memory referenced by the caller by doing all
 	// work in new goroutines
 	go client.WritePump()
 	go client.ReadPump()
+	return H.WebSocket("WS"), nil
 }
 

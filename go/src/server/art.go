@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	H "httpserver"
 	"musicdb"
 )
 
@@ -14,9 +15,9 @@ func TrackArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	}
 	fn, err := GetAlbumArtFilename(tr)
 	if err != nil {
-		return Redirect("/nocover.jpg"), nil
+		return H.Redirect("/nocover.jpg"), nil
 	}
-	return StaticFile(fn), nil
+	return H.StaticFile(fn), nil
 }
 
 func ArtistArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -33,7 +34,7 @@ func ArtistArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	}
 	if len(art.Names) == 0 {
 		log.Printf("no tracks for %s / %s\n", genre, artist)
-		return nil, NotFound.Raise(nil, "No such artist")
+		return nil, H.NotFound.Raise(nil, "No such artist")
 	}
 	n := 0
 	for _, count := range art.Names {
@@ -46,18 +47,18 @@ func ArtistArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		}
 		img, err := GetGenreImageURL(genres[0].SortName)
 		if err != nil {
-			return nil, NotFound.Raise(err, "no genre for single track artist")
+			return nil, H.NotFound.Raise(err, "no genre for single track artist")
 		}
-		return Redirect(img), nil
+		return H.Redirect(img), nil
 	}
 	for aname := range art.Names {
 		fn, err := GetArtistImageFilename(aname)
 		if err == nil {
-			return StaticFile(fn), nil
+			return H.StaticFile(fn), nil
 		}
 		log.Println("error getting artist image from track:", err)
 	}
-	return nil, NotFound.Raise(nil, "no artist image found")
+	return nil, H.NotFound.Raise(nil, "no artist image found")
 }
 
 func AlbumArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -78,16 +79,16 @@ func AlbumArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	}
 	if tracks == nil || len(tracks) == 0 {
 		log.Printf("no tracks for genre='%s', artist='%s', album='%s'", genre, artist, album)
-		return nil, NotFound.Raise(nil, "No such album")
+		return nil, H.NotFound.Raise(nil, "No such album")
 	}
 	for _, tr := range tracks {
 		fn, err := GetAlbumArtFilename(tr)
 		if err == nil {
-			return StaticFile(fn), nil
+			return H.StaticFile(fn), nil
 		}
 		log.Println("error getting album art:", err)
 	}
-	return Redirect("/nocover.jpg"), nil
+	return H.Redirect("/nocover.jpg"), nil
 }
 
 func GenreArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -95,7 +96,7 @@ func GenreArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	genre := musicdb.MakeSort(q.Get("genre"))
 	u, err := GetGenreImageURL(genre)
 	if err != nil {
-		return nil, InternalServerError.Raise(err, "system error")
+		return nil, H.InternalServerError.Raise(err, "system error")
 	}
-	return Redirect(u), nil
+	return H.Redirect(u), nil
 }

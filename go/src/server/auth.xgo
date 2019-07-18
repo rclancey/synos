@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -16,11 +17,18 @@ import (
 )
 
 var hmacSecret []byte
-func init() {
-	log.Println("initializing hmac secret")
-	hmacSecret = make([]byte, 16)
-	rand.Read(hmacSecret)
-	log.Println("hmac secret =", hmacSecret)
+func initAuthSecret(s string) {
+	sb, _ := hex.DecodeString(s)
+	if sb == nil {
+		sb = []byte{}
+	}
+	if len(sb) < 16 {
+		pad := make([]byte, 16 - len(sb))
+		rand.Seed(time.Now().UnixNano())
+		rand.Read(pad)
+		sb = append(sb, pad...)
+	}
+	hmacSecret = sb[:16]
 }
 
 func LoginHandler(w http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -34,7 +42,7 @@ func LoginHandler(w http.ResponseWriter, req *http.Request) (interface{}, error)
 func CheckAuth(w http.ResponseWriter, req *http.Request) error {
 	username, password, ok := req.BasicAuth()
 	if ok {
-		ok, _ := CheckHTPasswd(cfg.HTPasswdFile, username, password)
+		ok, _ := CheckHTPasswd(cfg.PasswordFile, username, password)
 		if ok {
 			SetAuthCookie(w, username, time.Duration(time.Hour * 24 * 7))
 			return nil

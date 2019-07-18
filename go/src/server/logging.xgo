@@ -1,0 +1,119 @@
+package main
+
+import (
+	"bufio"
+	"errors"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	//"runtime"
+	//"runtime/debug"
+	"strconv"
+	"syscall"
+	"time"
+
+	"lastfm"
+	"musicdb"
+	"sonos"
+	"spotify"
+)
+
+
+var errorLogFile *os.File
+var accessLogFile *os.File
+var accessLog *log.Logger
+
+func reopenLogs(cfg *SynosConfig) error {
+	fn := filepath.Join(cfg.LogDirectory, "error.log")
+	errf, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("error opening error log %s: %s", fn, err)
+		return err
+	}
+	fn = filepath.Join(cfg.LogDirectory, "access.log")
+	accf, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("error opening access log %s: %s", fn, err)
+		return err
+	}
+	log.SetOutput(errf)
+	log.SetFlags(log.Ldate|log.Ltime|log.Lshortfile)
+	if errorLogFile != nil {
+		errorLogFile.Close()
+	}
+	errorLogFile = errf
+	if accessLog != nil {
+		accessLog.SetOutput(accf)
+	} else {
+		accessLog = log.New(accf, "", 0)
+	}
+	if accessLogFile != nil {
+		accessLogFile.Close()
+	}
+	accessLogFile = accf
+	return nil
+}
+
+func listenForHup(cfg *SynosConfig) {
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, syscall.SIGHUP)
+	go func() {
+		for {
+			<-c
+			log.Println("reopening logs")
+			reopenLogs(cfg)
+		}
+	}()
+}
+
+type ResponseLogger struct {
+	w http.ResponseWriter
+	StatusCode int
+	BytesWritten int
+}
+
+func (rl *ResponseLogger) Header() http.Header {
+	return rl.w.Header()
+}
+
+func (rl *ResponseLogger) Write(data []byte) (int, error) {
+	if rl.StatusCode == 0 {
+		rl.StatusCode = http.StatusOK
+	}
+	rl.BytesWritten += len(data)
+	return rl.w.Write(data)
+}
+
+func (rl *ResponseLogger) WriteHeader(statusCode int) {
+	rl.StatusCode = statusCode
+	rl.w.WriteHeader(statusCode)
+}
+
+func (rl *ResponseLogger) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hj, ok := rl.w.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("webserver doesn't support hijacking")
+		http.Error(rl, "webserver doesn't support hijacking", http.StatusInternalServerError)
+	}
+	return hj.Hijack()
+}
+
+type LogMux struct {
+	mux *http.ServeMux
+}
+
+func (lm *LogMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	//log.Println("Serving", r.Method, r.URL.String())
+	rl := &ResponseLogger{w: w}
+	lm.mux.ServeHTTP(rl, r)
+	dt := time.Now().Sub(start)
+	if accessLog != nil {
+		accessLog.Printf(`%s - - [%s] "%s %s" %d %d %.3f "%s" "%s"`, r.RemoteAddr, start.Format("02/Jan/2006:15:04:05 -0700"), r.Method, r.URL.String(), rl.StatusCode, rl.BytesWritten, float64(dt) / 1.0e6, r.Referer(), r.UserAgent())
+	}
+}
+

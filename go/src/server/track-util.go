@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	H "httpserver"
 	"musicdb"
 )
 
@@ -88,7 +89,7 @@ func ApplyTrackUpdates(tracks []*musicdb.Track, update map[string]interface{}) e
 	tup := &musicdb.Track{}
 	err = json.Unmarshal(raw, tup)
 	if err != nil {
-		return BadRequest.Raise(err, "Malformed JSON input")
+		return H.BadRequest.Raise(err, "Malformed JSON input")
 	}
 	_, ok := update["album"]
 	if ok {

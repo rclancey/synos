@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	H "httpserver"
 	"musicdb"
 )
 
@@ -23,7 +24,7 @@ func SonosQueue(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	case http.MethodDelete:
 		return SonosClearQueue(w, req)
 	default:
-		return nil, MethodNotAllowed.Raise(nil, "")
+		return nil, H.MethodNotAllowed.Raise(nil, "")
 	}
 }
 
@@ -40,7 +41,7 @@ func SonosGetQueue(w http.ResponseWriter, req *http.Request) (interface{}, error
 
 func readTracks(req *http.Request) ([]*musicdb.Track, error) {
 	trackIds := []musicdb.PersistentID{}
-	err := ReadJSON(req, &trackIds)
+	err := H.ReadJSON(req, &trackIds)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +52,7 @@ func readTracks(req *http.Request) ([]*musicdb.Track, error) {
 			return nil, DatabaseError.Raise(err, "")
 		}
 		if track == nil {
-			return nil, NotFound.Raise(nil, "Track %s does not exist", id)
+			return nil, H.NotFound.Raise(nil, "Track %s does not exist", id)
 		}
 		tracks[i] = track
 	}
@@ -72,7 +73,7 @@ func SonosReplaceQueue(w http.ResponseWriter, req *http.Request) (interface{}, e
 			return nil, DatabaseError.Raise(err, "")
 		}
 		if pl == nil {
-			return nil, NotFound.Raise(nil, "playlist %s not found", plid)
+			return nil, H.NotFound.Raise(nil, "playlist %s not found", plid)
 		}
 		err = dev.ReplaceQueueWithPlaylist(pl)
 	} else {
@@ -107,7 +108,7 @@ func SonosAppendQueue(w http.ResponseWriter, req *http.Request) (interface{}, er
 			return nil, DatabaseError.Raise(err, "")
 		}
 		if pl == nil {
-			return nil, NotFound.Raise(nil, "playlist %s not found", plid)
+			return nil, H.NotFound.Raise(nil, "playlist %s not found", plid)
 		}
 		err = dev.AppendPlaylistToQueue(pl)
 	} else {
@@ -141,7 +142,7 @@ func SonosInsertQueue(w http.ResponseWriter, req *http.Request) (interface{}, er
 			return nil, DatabaseError.Raise(err, "")
 		}
 		if pl == nil {
-			return nil, NotFound.Raise(nil, "playlist %s not found", plid)
+			return nil, H.NotFound.Raise(nil, "playlist %s not found", plid)
 		}
 		err = dev.AppendPlaylistToQueue(pl)
 		if queue.Index + 1 < len(queue.Tracks) {
@@ -183,7 +184,7 @@ func SonosSkip(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		return nil, SonosUnavailableError
 	}
 	var count int
-	err := ReadJSON(req, &count)
+	err := H.ReadJSON(req, &count)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +204,7 @@ func SonosSeek(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		return nil, SonosUnavailableError
 	}
 	var ms int
-	err := ReadJSON(req, &ms)
+	err := H.ReadJSON(req, &ms)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +252,7 @@ func SonosVolume(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 		return vol, nil
 	case http.MethodPost:
 		var vol int
-		err = ReadJSON(req, &vol)
+		err = H.ReadJSON(req, &vol)
 		if err != nil {
 			return nil, err
 		}
@@ -262,7 +263,7 @@ func SonosVolume(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 		return JSONStatusOK, nil
 	case http.MethodPut:
 		var delta int
-		err = ReadJSON(req, &delta)
+		err = H.ReadJSON(req, &delta)
 		if err != nil {
 			return nil, err
 		}
@@ -272,7 +273,7 @@ func SonosVolume(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 		}
 		return JSONStatusOK, nil
 	default:
-		return nil, MethodNotAllowed.Raise(nil, "Method %s not allowed", req.Method)
+		return nil, H.MethodNotAllowed.Raise(nil, "Method %s not allowed", req.Method)
 	}
 }
 

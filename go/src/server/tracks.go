@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	H "httpserver"
 	"musicdb"
 )
 
@@ -54,7 +55,7 @@ func TrackHandler(w http.ResponseWriter, req *http.Request) (interface{}, error)
 	case http.MethodDelete:
 		return DeleteTrack(w, req)
 	}
-	return nil, MethodNotAllowed
+	return nil, H.MethodNotAllowed
 }
 
 func TracksHandler(w http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -70,7 +71,7 @@ func TracksHandler(w http.ResponseWriter, req *http.Request) (interface{}, error
 	case http.MethodPut:
 		return UpdateTracks(w, req)
 	}
-	return nil, MethodNotAllowed
+	return nil, H.MethodNotAllowed
 }
 
 func GetTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -92,7 +93,7 @@ func GetTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	h.Set("transferMode.dlna.org", "Streaming")
 	h.Set("X-XSS-Protection", "1; mode=block")
 	h.Set("X-Content-Type-Options", "nosniff")
-	return StaticFile(fn), nil
+	return H.StaticFile(fn), nil
 }
 
 func GetTrackInfo(w http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -116,13 +117,13 @@ func GetTrackCover(w http.ResponseWriter, req *http.Request) (interface{}, error
 	fn, err := GetAlbumArtFilename(tr)
 	if err != nil {
 		log.Println("error getting cover art:", err)
-		return Redirect("/nocover.jpg"), nil
+		return H.Redirect("/nocover.jpg"), nil
 	}
-	return StaticFile(fn), nil
+	return H.StaticFile(fn), nil
 }
 
 func AddTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	err := CheckAuth(w, req)
+	_, err := cfg.Auth.Authenticate(w, req)
 	if err != nil {
 		return nil, err
 	}
@@ -142,9 +143,9 @@ func AddTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	case "audio/webm":
 		pat = "*.weba"
 	default:
-		return nil, BadRequest.Raise(nil, "Unknown file type: %s", ct)
+		return nil, H.BadRequest.Raise(nil, "Unknown file type: %s", ct)
 	}
-	tfn, err := CopyToFile(req.Body, pat, false)
+	tfn, err := H.CopyToFile(req.Body, pat, false)
 	if err != nil {
 		return nil, FilesystemError.Raise(err, "")
 	}
@@ -161,10 +162,10 @@ func AddTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		return nil, FilesystemError.Raise(err, "")
 	}
 	savefn := filepath.Join(musicdb.GetGlobalFinder().GetMediaFolder(), track.CanonicalPath())
-	outfn, err := CopyToFile(tf, savefn, false)
+	outfn, err := H.CopyToFile(tf, savefn, false)
 	if err != nil {
 		if os.IsExist(err) {
-			return nil, BadRequest.Raise(err, "%s already exists", savefn)
+			return nil, H.BadRequest.Raise(err, "%s already exists", savefn)
 		}
 		return nil, FilesystemError.Raise(err, "")
 	}
@@ -177,7 +178,7 @@ func AddTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 func UpdateTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	err := CheckAuth(w, req)
+	_, err := cfg.Auth.Authenticate(w, req)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +187,7 @@ func UpdateTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 		return nil, err
 	}
 	update := map[string]interface{}{}
-	err = ReadJSON(req, &update)
+	err = H.ReadJSON(req, &update)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +204,7 @@ func UpdateTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 }
 
 func SkipTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	err := CheckAuth(w, req)
+	_, err := cfg.Auth.Authenticate(w, req)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +225,7 @@ func SkipTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 func RateTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	err := CheckAuth(w, req)
+	_, err := cfg.Auth.Authenticate(w, req)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +234,7 @@ func RateTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		return nil, err
 	}
 	var rating *uint8
-	err = ReadJSON(req, &rating)
+	err = H.ReadJSON(req, &rating)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +247,7 @@ func RateTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 func DeleteTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	err := CheckAuth(w, req)
+	_, err := cfg.Auth.Authenticate(w, req)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +270,7 @@ func ListTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	}
 	params.Count = 100
 	params.Page = 1
-	err := QueryScan(req, &params)
+	err := H.QueryScan(req, &params)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +279,7 @@ func ListTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		return nil, DatabaseError.Raise(err, "")
 	}
 	if len(tracks) == 0 {
-		return nil, NoContent
+		return nil, H.NoContent
 	}
 	return tracks, nil
 }
@@ -290,7 +291,7 @@ func TrackCount(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	if since_s != "" {
 		since_i, err := strconv.ParseInt(since_s, 10, 64)
 		if err != nil {
-			return nil, BadRequest.Raise(err, "since param %s not an int", since_s)
+			return nil, H.BadRequest.Raise(err, "since param %s not an int", since_s)
 		}
 		since = musicdb.Time(since_i)
 	}
@@ -307,12 +308,12 @@ type MultiTrackUpdate struct {
 }
 
 func UpdateTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	err := CheckAuth(w, req)
+	_, err := cfg.Auth.Authenticate(w, req)
 	if err != nil {
 		return nil, err
 	}
 	var mtu MultiTrackUpdate
-	err = ReadJSON(req, &mtu)
+	err = H.ReadJSON(req, &mtu)
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +346,7 @@ func getTrackById(req *http.Request) (*musicdb.Track, error) {
 	}
 	if tr == nil {
 		log.Printf("track %s does not exist", pid)
-		return nil, NotFound.Raise(nil, "Track %s does not exist", pid)
+		return nil, H.NotFound.Raise(nil, "Track %s does not exist", pid)
 	}
 	return tr, nil
 }

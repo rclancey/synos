@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	H "httpserver"
 	"musicdb"
 )
 
@@ -57,7 +58,7 @@ func ListSongs(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	} else if genre != nil {
 		tracks, err = db.GenreTracks(genre)
 	} else {
-		return nil, BadRequest.Raise(nil, "must include album, artist or genre")
+		return nil, H.BadRequest.Raise(nil, "must include album, artist or genre")
 	}
 	if err != nil {
 		return nil, DatabaseError.Raise(err, "")
