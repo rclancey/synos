@@ -1,0 +1,80 @@
+{
+    "server_root": ".",
+    "document_root": "htdocs",
+    "logging": {
+        "directory": "var/log",
+        "access": "access.log",
+        "error": "error.log",
+        "rotate_period": 1440,
+        "retain": 7,
+        "logging": "INFO"
+    },
+    "auth": {
+        "htpasswd": ".htpasswd",
+        "key": "0123456789abcdef0123456789abcdef",
+        "ttl": 2592000
+    },
+    "cache_directory": "var/cache",
+    "pidfile": "var/synos.pid",
+    "bind": {
+        "external_hostname": "myhost",
+        "port": 8080,
+        "ssl": {
+            "port": 8443,
+            "cert": "ssl/MYCERT.crt",
+            "key": "ssl/MYCERT.key"
+        }
+    },
+    "database": {
+        "name": "synos",
+        "host": "localhost",
+        "port": 5432,
+        "socket": "/run/postgresql",
+        "username": "guest",
+        "password": "guest",
+        "timeout": 0,
+        "ssl": true
+    },
+    "finder": {
+        "media_path": [
+            "$HOME",
+            "/volume1/music"
+        ],
+        "media_folder": "Music/iTunes/iTunes Music",
+        "cover_art": [
+            "cover.jpg",
+            "cover.png",
+            "cover.gif"
+        ]
+    },
+    "itunes": {
+        "library": "iTunes Music Library.xml"
+    },
+    "airplay": {
+        "network": "10.0.0.0/8",
+        "interface": "eth0",
+        "ip": "10.0.0.100"
+    },
+    "sonos": {
+        "network": "10.0.0.0/8",
+        "interface": "eth0",
+        "ip": "10.0.0.101"
+    },
+    "jooki": {
+        "network": "10.0.0.0/8",
+        "interface": "eth0",
+        "ip": "10.0.0.102"
+    },
+    "lastfm": {
+        "api_key": "0123456789abcdef0123456789abcdef",
+        "cache": "var/cache/lastfm",
+        "cache_time": 2592000
+    },
+    "spotify": {
+        "client_id": "0123456789abcdef0123456789abcdef",
+        "client_secret": "0123456789abcdef0123456789abcdef",
+        "cache": "var/cache/spotify",
+        "cache_time": 2592000
+    }
+}
+
