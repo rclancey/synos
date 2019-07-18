@@ -1259,6 +1259,10 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) error {
 		}
 		return err
 	}
+	playlist.TrackIDs, err = db.PlaylistTrackIDs(playlist)
+	if err != nil {
+		return err
+	}
 	orig := &loader.Playlist{}
 	err = deserializeGob(data, orig)
 	if err != nil {

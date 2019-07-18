@@ -2,6 +2,7 @@ package loader
 
 import (
 	"encoding/xml"
+	"errors"
 	"log"
 	"io"
 	"os"
@@ -11,11 +12,15 @@ import (
 	"time"
 )
 
+var AbortError = errors.New("abort")
+var AlreadyLoading = errors.New("already loading")
+
 type Loader struct {
 	LibraryCh chan *Library
 	TrackCh chan *Track
 	PlaylistCh chan *Playlist
 	ErrorCh chan error
+	quitCh chan bool
 	trackIDMap map[int]uint64
 }
 
@@ -28,42 +33,115 @@ func NewLoader() *Loader {
 	}
 }
 
+func (l *Loader) Abort() {
+	quitCh := l.quitCh
+	l.quitCh = nil
+	if quitCh != nil {
+		quitCh <- true
+		close(quitCh)
+		l.Drain()
+		for {
+			_, ok := <-quitCh
+			if !ok {
+				break
+			}
+		}
+	}
+}
+
+func (l *Loader) Drain() {
+	for {
+		_, ok := <-l.ErrorCh
+		if !ok {
+			break
+		}
+	}
+	for {
+		_, ok := <-l.PlaylistCh
+		if !ok {
+			break
+		}
+	}
+	for {
+		_, ok := <-l.TrackCh
+		if !ok {
+			break
+		}
+	}
+	for {
+		_, ok := <-l.LibraryCh
+		if !ok {
+			break
+		}
+	}
+}
+
+func (l *Loader) shutdown(err error) {
+	l.ErrorCh <- err
+	close(l.ErrorCh)
+	close(l.PlaylistCh)
+	close(l.TrackCh)
+	close(l.LibraryCh)
+}
+
 func (l *Loader) Load(fn string) {
+	if l.quitCh != nil {
+		l.ErrorCh <- AlreadyLoading
+		return
+	}
+	quitCh := make(chan bool, 2)
+	l.quitCh = quitCh
 	f, err := os.Open(fn)
 	if err != nil {
-		l.ErrorCh <- err
 		log.Println("loader errored (1)")
+		l.shutdown(err)
 		return
 	}
 	defer f.Close()
 	lib := &Library{
 		FileName: &fn,
 	}
-	l.LibraryCh <- lib
+	select {
+	case <-quitCh:
+		l.shutdown(AbortError)
+		return
+	default:
+		l.LibraryCh <- lib
+	}
 	l.trackIDMap = map[int]uint64{}
 	dec := xml.NewDecoder(f)
 	err = l.parseLibrary(lib, dec)
 	if err != nil {
-		l.ErrorCh <- err
 		log.Println("loader errored (2)")
+		l.shutdown(err)
 		return
 	}
 	if lib.Date == nil {
 		st, err := os.Stat(fn)
 		if err != nil {
-			l.ErrorCh <- err
 			log.Println("loader errored (3)")
+			l.shutdown(err)
 			return
 		}
 		t := st.ModTime()
 		lib.Date = &t
-		l.LibraryCh <- lib
+		select {
+		case <-quitCh:
+			l.shutdown(AbortError)
+			return
+		default:
+			l.LibraryCh <- lib
+		}
 	}
 	l.ErrorCh <- io.EOF
 	log.Println("loader finished")
 }
 
 func (l *Loader) parseLibrary(lib *Library, dec *xml.Decoder) error {
+	quitCh := l.quitCh
+	if quitCh == nil {
+		return nil
+	}
 	tagStack := make([]string, 0, 10)
 	tagStackSize := -1
 	key := make([]byte, 0)
@@ -125,7 +203,13 @@ func (l *Loader) parseLibrary(lib *Library, dec *xml.Decoder) error {
 					if track.PersistentID != nil {
 						l.trackIDMap[id] = *track.PersistentID
 					}
-					l.TrackCh <- track
+					select {
+					case <-quitCh:
+						l.ErrorCh <- AbortError
+						return nil
+					default:
+						l.TrackCh <- track
+					}
 					trackCount += 1
 					keyStackSize--
 					tagStackSize--
@@ -137,7 +221,12 @@ func (l *Loader) parseLibrary(lib *Library, dec *xml.Decoder) error {
 					if err != nil {
 						return err
 					}
-					l.PlaylistCh <- playlist
+					select {
+					case <-quitCh:
+						return AbortError
+					default:
+						l.PlaylistCh <- playlist
+					}
 					playlistCount += 1
 					keyStackSize--
 					tagStackSize--
@@ -154,7 +243,12 @@ func (l *Loader) parseLibrary(lib *Library, dec *xml.Decoder) error {
 				default:
 					setField(lib, string(key), se.Name.Local, val)
 				}
-				l.LibraryCh <- lib
+				select {
+				case <-quitCh:
+					return AbortError
+				default:
+					l.LibraryCh <- lib
+				}
 			}
 			if se.Name.Local == "key" {
 				keyStack[keyStackSize] = string(key)

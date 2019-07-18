@@ -37,7 +37,7 @@ func M3U(pl *musicdb.Playlist) ([]string, error) {
 		if track.Name != nil {
 			song = *track.Name
 		}
-		u := cfg.GetRootURL()
+		u := cfg.Bind.RootURL(cfg.Sonos, false)
 		u.Path = fmt.Sprintf("/api/track/%s%s", track.PersistentID.String(), track.GetExt())
 		lines[i * 2 + 1] = fmt.Sprintf("#EXTINF:%d,<%s><%s><%s>", t, m3uEscape(artist), m3uEscape(album), m3uEscape(song))
 		lines[i * 2 + 2] = u.String()

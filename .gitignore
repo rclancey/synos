@@ -1,0 +1,6 @@
+var
+build
+venv
+.htpasswd
+config.json
+*.swp
