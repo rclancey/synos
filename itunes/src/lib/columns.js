@@ -135,7 +135,7 @@ export const displayTime = (t) => {
     const m = Math.floor(((sign * t) % 3600000) / 60000);
     const s = Math.floor(((sign * t) % 60000) / 1000);
     let d = '';
-    if (sign == -1) {
+    if (sign === -1) {
       d += '-';
     }
     if (h > 0) {

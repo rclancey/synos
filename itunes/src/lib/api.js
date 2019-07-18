@@ -7,7 +7,7 @@ export class API {
     args.credientials = 'include';
     return fetch(url, args)
       .then(resp => {
-        if (resp.status == 401) {
+        if (resp.status === 401) {
           this.onLoginRequired();
           throw new Error(resp.status.toString());
         }
@@ -39,7 +39,7 @@ export class API {
   }
 
   addToPlaylist(dst, tracks) {
-    const playlist = Object.assign({}, dst);
+    //const playlist = Object.assign({}, dst);
     const url = `/api/playlist/${dst.persistent_id}`;
     const args = {
       method: 'PATCH',

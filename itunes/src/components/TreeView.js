@@ -118,7 +118,7 @@ class PlainTreeView extends React.Component {
   }
 
   renderLabel() {
-    const { connectDropTarget, connectDragSource, isOver, isOverShallow, node } = this.props;
+    const { /*connectDropTarget, connectDragSource, isOver, isOverShallow,*/ node } = this.props;
     const open = this.state.hoverOpen || this.props.openFolders[node.persistent_id];
     const cls = this.props.node.kind === 'folder' ? [
       'folderToggle',

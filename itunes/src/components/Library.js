@@ -1,7 +1,7 @@
 import React, { Fragment } from 'react';
 import _ from 'lodash';
 import { trackDB } from '../lib/trackdb';
-import { Controls } from './Desktop/Controls';
+//import { Controls } from './Desktop/Controls';
 import { PlaylistBrowser } from './PlaylistBrowser';
 import { TrackBrowser } from './TrackBrowser';
 import { ProgressBar } from './ProgressBar';

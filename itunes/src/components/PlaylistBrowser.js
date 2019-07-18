@@ -1,6 +1,6 @@
 import React from 'react';
-import SortableTree from 'react-sortable-tree';
-import FolderTheme from 'react-sortable-tree-theme-file-explorer';
+//import SortableTree from 'react-sortable-tree';
+//import FolderTheme from 'react-sortable-tree-theme-file-explorer';
 import { TreeView } from './TreeView';
 
 export class PlaylistBrowser extends React.Component {
@@ -78,7 +78,7 @@ export class PlaylistBrowser extends React.Component {
           { this.props.playlists.filter(pl => !!pl.distinguished_kind).map(pl => (
             <div
               key={pl.persistent_id}
-              className={'label' + (this.props.selected == pl.persistent_id ? ' selected' : '')}
+              className={'label' + (this.props.selected === pl.persistent_id ? ' selected' : '')}
               onClick={event => this.props.onSelect(pl, event)}
             >
               <div className={`icon ${pl.kind}`} />

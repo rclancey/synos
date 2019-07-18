@@ -1,5 +1,5 @@
 import React from 'react';
-import { displayTime } from '../lib/columns';
+//import { displayTime } from '../lib/columns';
 import { CoverArt } from './CoverArt';
 import { TrackInfo, TrackTime } from './TrackInfo';
 
@@ -53,7 +53,7 @@ export class DesktopQueue extends React.Component {
         { this.props.tracks.slice(this.props.index+1).map(track => (
           <QueueItem
             track={track}
-            selected={track.persistent_id == this.state.selected}
+            selected={track.persistent_id === this.state.selected}
             onSelect={() => this.setState({ selected: track.persistent_id })}
           />
         )) }
@@ -77,8 +77,8 @@ export const MobileQueue = ({ tracks, index, onSelect, onClose }) => (
       { tracks.map((track, i) => (
         <QueueItem
           track={track}
-          selected={i == index}
-          current={i == index}
+          selected={i === index}
+          current={i === index}
           onSelect={() => onSelect(track, i)}
         />
       )) }

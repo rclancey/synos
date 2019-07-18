@@ -75,7 +75,7 @@ export const trackDB = {
           const cur = evt.target.result;
           if (cur) {
             tracks.push(cur.value);
-            if (progressCallback && tracks.length % batchCount == 0) {
+            if (progressCallback && tracks.length % batchCount === 0) {
               progressCallback(tracks);
             }
             cur.continue();

@@ -42,7 +42,7 @@ class App extends Component {
       });
     }
     const query = {}
-    document.location.search.substr(1).split('&').map(param => {
+    document.location.search.substr(1).split('&').forEach(param => {
       const pair = param.split(/=/);
       const key = unescape(pair.shift());
       const val = unescape(pair.join('='));
@@ -53,7 +53,6 @@ class App extends Component {
       loading: true,
       mobile: mobile,
       theme: 'dark',
-      loading: true,
       installPrompt: null,
       loggedIn: false,
       standalone,

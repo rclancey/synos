@@ -7,7 +7,7 @@ export const ProgressBar = ({ total, complete }) => {
   }
   return (
     <div id="loading">
-      <img src={logo} className="App-logo" />
+      <img src={logo} alt="loading..." className="App-logo" />
       <div className="progress">
         <div className="complete" style={{ width: (100 * complete / total)+'%' }} />
       </div>

@@ -16,8 +16,8 @@ export const Queue = ({ tracks, index, onSelect, onClose }) => (
       { tracks.map((track, i) => (
         <QueueItem
           track={track}
-          selected={i == index}
-          current={i == index}
+          selected={i === index}
+          current={i === index}
           onSelect={() => onSelect(track, i)}
         />
       )) }

@@ -9,7 +9,7 @@ const orientations = {
 };
 
 const root3 = Math.sqrt(3);
-  let sizeV, sizeU;
+//let sizeV, sizeU;
 
 const parseSize = (size, dflt) => {
   if (size === null || size === undefined) {
@@ -18,7 +18,7 @@ const parseSize = (size, dflt) => {
   if (typeof size === 'number') {
     return { v: size, u: 'px' };
   }
-  const m = size.match(/^([0-9\.]+)(px|pt|pc|q|mm|cm|in|em|rem|ex|ch|vw|vh)?$/);
+  const m = size.match(/^([0-9.]+)(px|pt|pc|q|mm|cm|in|em|rem|ex|ch|vw|vh)?$/);
   if (m) {
     return { v: parseFloat(m[1]), u: m[2] || 'px' };
   }
@@ -96,9 +96,9 @@ export class Seeker extends React.Component {
       clearInterval(this.interval);
       this.interval = null;
     }
-    if (evt.type == 'mousedown') {
+    if (evt.type === 'mousedown') {
       document.addEventListener('mouseup', () => this.setState({ seeking: false }), { once: true });
-    } else if (evt.type == 'touchstart') { 
+    } else if (evt.type === 'touchstart') { 
       document.addEventListener('touchend', () => this.setState({ seeking: false }), { once: true });
     } 
     this.setState({ seeking: true }, () => {
@@ -186,7 +186,7 @@ export const Progress = ({ currentTime, duration, onSeekTo, height, background, 
       l += node.offsetLeft;
       node = node.offsetParent;
     }
-    const xevt = Object.assign({}, evt);
+    //const xevt = Object.assign({}, evt);
     const x = evt.pageX - l;
     const w = evt.target.offsetWidth;
     const t = duration * x / w;

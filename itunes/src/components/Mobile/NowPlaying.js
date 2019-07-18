@@ -1,8 +1,8 @@
 import React from 'react';
-import { TrackInfo, TrackTime } from '../TrackInfo';
+import { TrackInfo } from '../TrackInfo';
 import { Queue } from './Queue';
 import { CoverArt } from '../CoverArt';
-import { PlayPauseSkip, Volume, Progress, Timers, ProgressTimer } from '../Controls';
+import { PlayPauseSkip, Volume, Progress, Timers } from '../Controls';
 import { Switch } from '../Switch';
 
 export class NowPlaying extends React.Component {
@@ -101,9 +101,9 @@ export class NowPlaying extends React.Component {
     if (this.state.expanded) {
       return this.renderExpanded(track);
     }
-    const dur = track.total_time;
-    const cur = this.props.currentTime;
-    const pct = (dur > 0 ? 100 * cur / dur : 0);
+    //const dur = track.total_time;
+    //const cur = this.props.currentTime;
+    //const pct = (dur > 0 ? 100 * cur / dur : 0);
     return (
       <div className="nowplaying">
         <div className="fas fa-angle-up" style={{ padding: '1em 1em 1em 0' }} onClick={() => this.setState({ expanded: true })} />

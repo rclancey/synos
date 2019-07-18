@@ -58,10 +58,10 @@ export class PlaylistList extends React.Component {
   }
 
   onClose() {
-    if (this.state.path.length == 0) {
+    if (this.state.path.length === 0) {
       this.props.onClose();
     } else {
-      const t = this.state.scrollTop[this.state.scrollTop.length - 1];
+      //const t = this.state.scrollTop[this.state.scrollTop.length - 1];
       this.setState({
         scrollTop: this.state.scrollTop.slice(0, this.state.scrollTop.length - 1),
         path: this.state.path.slice(0, this.state.path.length - 1),
@@ -77,7 +77,7 @@ export class PlaylistList extends React.Component {
   }
 
   folder() {
-    if (this.state.path.length == 0) {
+    if (this.state.path.length === 0) {
       return this.state.playlists;
     }
     return this.state.path[this.state.path.length - 1].children || [];

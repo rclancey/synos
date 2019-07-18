@@ -28,7 +28,7 @@ export const DesktopSkin = ({
 }) => {
   const [search, setSearch] = useState({});
   const [playlist, setPlaylist] = useState(null);
-  const [progress, setProgress] = useState({ complete: 0, total: 0 });
+  //const [progress, setProgress] = useState({ complete: 0, total: 0 });
   const track = queue[queueIndex];
   return (
     <div id="app" className={`desktop ${theme}`}>

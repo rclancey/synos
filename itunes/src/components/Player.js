@@ -1,4 +1,5 @@
 import React, { Fragment } from 'react';
+/*
 import {
   playSonos,
   pauseSonos,
@@ -14,6 +15,7 @@ import {
   setSonosVolumeTo,
   changeSonosVolumeBy,
 } from '../lib/sonos';
+*/
 
 import { MobileSkin } from './Mobile/Skin';
 import { DesktopSkin } from './Desktop/Skin';
@@ -140,7 +142,7 @@ export class Player extends React.Component {
   }
 
   sonosUri() {
-    let uri = '';
+    //let uri = '';
     const loc = document.location
     const proto = loc.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${proto}//${loc.host}/api/sonos/ws`;
@@ -325,7 +327,7 @@ export class Player extends React.Component {
     if (this.state.sonos) {
       this.props.api.insertIntoSonosQueue(tracks);
     } else {
-      if (this.state.queue.length == 0) {
+      if (this.state.queue.length === 0) {
         this.onReplaceQueue(tracks);
       } else {
         const before = this.state.queue.slice(0, this.state.queueIndex + 1);
@@ -586,8 +588,6 @@ export class Player extends React.Component {
       currentTime: this.state.currentTime,
       volume: this.state.volume,
       sonos: this.state.sonos,
-      onPlay: this.onPlay,
-      onPause: this.onPause,
       onPlay: this.onPlay,
       onPause: this.onPause,
       onSeekTo: this.onSeekTo,

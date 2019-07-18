@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect, useContext } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import base64 from 'base-64';
-import { LoginContext } from './LoginContext';
 
 const doLogin = (username, password) => {
   const headers = new Headers();
@@ -59,6 +58,10 @@ export const Login = ({ mobile, theme, onLogin }) => {
           <div><input type="text" value={username} onChange={evt => setUsername(evt.target.value)} /></div>
           <div>Password:</div>
           <div><input type="password" value={password} onChange={evt => setPassword(evt.target.value)} /></div>
+          { error !== null ? (<>
+            <div />
+            <div className="error">{error}</div>
+          </>) : null }
           <div />
           <div>
             <input

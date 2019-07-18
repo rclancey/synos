@@ -50,32 +50,32 @@ export class MobileSkin extends React.Component {
       onTrackMenu: this.onTrackMenu,
       onPlaylistMenu: this.onPlaylistMenu,
     };
-    if (this.state.screen == 'playlists') {
+    if (this.state.screen === 'playlists') {
       return (
         <PlaylistList prev="Library" {...props} />
       );
     }
-    if (this.state.screen == 'artists') {
+    if (this.state.screen === 'artists') {
       return (
         <ArtistList prev="Library" {...props} />
       );
     }
-    if (this.state.screen == 'albums') {
+    if (this.state.screen === 'albums') {
       return (
         <AlbumList prev="Library" {...props} />
       );
     }
-    if (this.state.screen == 'genres') {
+    if (this.state.screen === 'genres') {
       return (
         <GenreList prev="Library" {...props} />
       );
     }
-    if (this.state.screen == 'podcasts') {
+    if (this.state.screen === 'podcasts') {
       return (
         <PodcastList prev="Library" {...props} />
       );
     }
-    if (this.state.screen == 'audiobooks') {
+    if (this.state.screen === 'audiobooks') {
       return (
         <AudiobookList prev="Library" {...props} />
       );

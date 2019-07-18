@@ -103,7 +103,7 @@ export class TrackBrowser extends React.Component {
     if (this.node) {
       const totalWidth = this.node.offsetWidth;
       const totalHeight = this.node.offsetHeight;
-      if (totalWidth == this.state.totalWidth) {
+      if (totalWidth === this.state.totalWidth) {
         this.setState({ totalHeight });
       } else {
         this.setState({
@@ -174,7 +174,7 @@ export class TrackBrowser extends React.Component {
     let sorting = this.state.sorting;
     if (sorting === null || sorting === undefined || sorting === '') {
       // noop
-    } else if (sorting.substr(0, 1) == '-') {
+    } else if (sorting.substr(0, 1) === '-') {
       sorting = sorting.substr(1);
       _.reverse(tracks);
       tracks = _.sortBy(tracks, [track => stringSorter(track[sorting])]);
@@ -186,9 +186,9 @@ export class TrackBrowser extends React.Component {
   }
 
   limitFilters(tracks, name) {
-    const genreSet = {};
-    const albumSet = {};
-    const artistSet = {};
+    //const genreSet = {};
+    //const albumSet = {};
+    //const artistSet = {};
     const filterSet = {};
     if (name === 'Genres') {
       tracks.forEach(track => {
@@ -306,7 +306,7 @@ export class TrackBrowser extends React.Component {
   onTrackDown(shiftKey) {
     if (shiftKey) {
       const start = this.state.lastSelection;
-      const index = this.state.filtered.findIndex(track => track.persistent_id == start);
+      const index = this.state.filtered.findIndex(track => track.persistent_id === start);
       if (index >= 0 && index < this.state.filtered.length - 1) {
         const selected = Object.assign({}, this.state.selected);
         const pid = this.state.filtered[index + 1].persistent_id;

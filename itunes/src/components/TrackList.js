@@ -1,5 +1,5 @@
 import React from "react";
-import { Column, Table, defaultTableRowRenderer } from "react-virtualized";
+import { Column, Table/*, defaultTableRowRenderer*/ } from "react-virtualized";
 import Draggable from "react-draggable";
 import { DragSource, DropTarget } from 'react-dnd';
 
@@ -37,10 +37,12 @@ function dropCollect(connect, monitor) {
   };
 }
 
+/*
 const PlainRow = (props) => {
   //console.debug('<PlainRow %o>', props);
   return defaultTableRowRenderer(props);
 };
+*/
 
 const Row = ({ connectDragSource, connectDropTarget, isOver, isDragging, ...props }) => {
   const { index, rowData } = props;
@@ -125,7 +127,7 @@ export class TrackList extends React.Component {
 
   resizeCol({ dataKey, deltaX }) {
     const oldCols = this.props.columns;
-    const pctDelta = deltaX / this.props.totalWidth;
+    //const pctDelta = deltaX / this.props.totalWidth;
     let smaller = -1;
     const newCols = oldCols.map((col, i) => {
       if (col.key === dataKey) {
@@ -161,7 +163,7 @@ export class TrackList extends React.Component {
     if (this.props.selected && this.props.selected[this.props.list[index].persistent_id]) {
       return 'selected';
     }
-    return index % 2 == 0 ? 'even' : 'odd';
+    return index % 2 === 0 ? 'even' : 'odd';
   }
 
   onKeyPress(event) {
