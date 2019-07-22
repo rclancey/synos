@@ -1,7 +1,7 @@
 import React from 'react';
 import _ from 'lodash';
 import { List, AutoSizer } from "react-virtualized";
-import { DISTINGUISHED_KINDS, PLAYLIST_ORDER } from '../../lib/distinguished_kinds';
+import { PLAYLIST_ORDER } from '../../lib/distinguished_kinds';
 import { Playlist } from './SongList';
 
 export class PlaylistList extends React.Component {
@@ -22,6 +22,7 @@ export class PlaylistList extends React.Component {
   }
 
   loadPlaylists() {
+    /*
     const restructure = playlist => {
       const pl = Object.assign({}, playlist);
       pl.title = pl.name;
@@ -40,14 +41,17 @@ export class PlaylistList extends React.Component {
       }
       return pl;
     };
+    */
     //const url = '/jsonlib/playlists.json';
     const url = '/api/playlists';
     return fetch(url, { method: 'GET' })
-      .then(resp => resp.json())
+      .then(resp => resp.json());
+      /*
       .then(data => {
         const playlists = _.sortBy(data.map(restructure).filter(x => PLAYLIST_ORDER[x.kind] !== -1), [(x => PLAYLIST_ORDER[x.kind] || 999), (x => x.title.toLowerCase())]);
         this.setState({ playlists });
       });
+      */
   }
 
   onOpen(pl) {

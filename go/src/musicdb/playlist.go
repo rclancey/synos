@@ -3,12 +3,13 @@ package musicdb
 import (
 	"bytes"
 	"encoding/gob"
-	"errors"
 	"io"
 	"log"
 	"sort"
 	//"strings"
 	//"time"
+
+	"github.com/pkg/errors"
 
 	"itunes"
 	"itunes/loader"
@@ -52,7 +53,7 @@ func (p *Playlist) Serialize(w io.Writer) error {
 	xp.Children = nil
 	xp.PlaylistItems = nil
 	enc := gob.NewEncoder(w)
-	return enc.Encode(&xp)
+	return errors.Wrap(enc.Encode(&xp), "can't serialize playlist")
 }
 
 func (p *Playlist) SerializeBytes() ([]byte, error) {
@@ -66,7 +67,7 @@ func (p *Playlist) SerializeBytes() ([]byte, error) {
 
 func (p *Playlist) Deserialize(r io.Reader) error {
 	dec := gob.NewDecoder(r)
-	return dec.Decode(p)
+	return errors.Wrap(dec.Decode(p), "can't deserialize playlist")
 }
 
 func (p *Playlist) DeserializeBytes(data []byte) error {
@@ -92,224 +93,23 @@ func DeserializePlaylistBytes(data []byte) (*Playlist, error) {
 	return pl, nil
 }
 
-/*
-func (p *Playlist) Populate(lib *Library) *Playlist {
-	clone := *p
-	if p.Smart != nil {
-		tl, err := lib.TrackList().SmartFilter(p.Smart, lib)
-		if err == nil {
-			clone.PlaylistItems = []*Track(*tl)
-		}
-	} else {
-		items := make([]*Track, len(p.TrackIDs))
-		for i, id := range p.TrackIDs {
-			items[i] = lib.GetTrack(id)
-		}
-		clone.PlaylistItems = items
-	}
-	return &clone
-}
-
-func (p *Playlist) Nest(lib *Library) {
-	if p.ParentPersistentID != nil {
-		parent, ok := lib.Playlists[*p.ParentPersistentID]
-		if ok {
-			parent.Children = append(parent.Children, p)
-			return
-		}
-	}
-	lib.PlaylistTree = append(lib.PlaylistTree, p)
-}
-
-func (p *Playlist) Unnest(lib *Library) {
-	var orig []*Playlist
-	var ppl *Playlist
-	var ok bool
-	if p.ParentPersistentID == nil {
-		orig = lib.PlaylistTree
-	} else {
-		ppl, ok = lib.Playlists[*p.ParentPersistentID]
-		if ok {
-			orig = ppl.Children
-		} else {
-			orig = lib.PlaylistTree
-		}
-	}
-	if orig != nil && len(orig) > 0 {
-		children := make([]*Playlist, 0, len(orig) - 1)
-		for _, child := range orig {
-			if child.PersistentID != p.PersistentID {
-				children = append(children, child)
-			}
-		}
-		if ok {
-			ppl.Children = children
-		} else {
-			lib.PlaylistTree = children
-		}
-	}
-}
-
-func (p *Playlist) Move(lib *Library, parentId *PersistentID) error {
-	if p.ParentPersistentID == nil && parentId == nil {
-		return nil
-	}
-	if p.ParentPersistentID != nil && parentId != nil && *p.ParentPersistentID == *parentId {
-		return nil
-	}
-	p.Unnest(lib)
-	p.ParentPersistentID = parentId
-	p.Nest(lib)
-	return nil
-}
-
-func (p *Playlist) Dedup() {
-	if p.Folder || p.GeniusTrackID != nil || p.Smart != nil {
-		return
-	}
-	seen := map[PersistentID]bool{}
-	for _, id := range p.TrackIDs {
-		if _, ok := seen[id]; ok {
-			seen[id] = true
-		} else {
-			seen[id] = false
-		}
-	}
-	ids := make([]PersistentID, len(seen))
-	i := 0
-	seen = map[PersistentID]bool{}
-	for _, id := range p.TrackIDs {
-		if _, ok := seen[id]; !ok {
-			ids[i] = id
-			i += 1
-			seen[id] = true
-		}
-	}
-	p.TrackIDs = ids
-}
-
-func (p *Playlist) Prune() *Playlist {
-	clone := *p
-	clone.PlaylistItems = nil
-	clone.TrackIDs = nil
-	clone.Children = make([]*Playlist, len(p.Children))
-	for i, child := range p.Children {
-		clone.Children[i] = child.Prune()
-	}
-	sort.Sort(SortablePlaylistList(clone.Children))
-	return &clone
-}
-
-func (p *Playlist) AddTrack(t *Track) {
-	p.TrackIDs = append(p.TrackIDs, t.PersistentID)
-}
-
-func (p *Playlist) DescendantCount() int {
-	i := 0
-	if p.Folder == false {
-		i++
-	}
-	for _, c := range p.Children {
-		i += c.DescendantCount()
-	}
-	return i
-}
-
-func (p *Playlist) TotalTime() time.Duration {
-	var t time.Duration
-	t = 0
-	for _, track := range p.PlaylistItems {
-		if track.TotalTime != 0 {
-			t += time.Duration(track.TotalTime) * time.Millisecond
-		}
-	}
-	return t
-}
-
-func (p *Playlist) GetByName(name string) *Playlist {
-	for _, c := range p.Children {
-		if c.Name == name {
-			return c
-		}
-	}
-	return nil
-}
-
-func (p *Playlist) FindByName(name string) []*Playlist {
-	matches := make([]*Playlist, 0)
-	for _, c := range p.Children {
-		if c.Name == name {
-			matches = append(matches, c)
-		}
-		matches = append(matches, c.FindByName(name)...)
-	}
-	return matches
-}
-
-func (p *Playlist) GetByPath(path string) *Playlist {
-	parts := strings.Split(path, "/")
-	f := p.GetByName(parts[0])
-	if f == nil {
-		return nil
-	}
-	if len(parts) == 1 {
-		return f
-	}
-	return f.GetByPath(strings.Join(parts[1:], "/"))
-}
-
-func (p *Playlist) Kind() string {
-	if p.Folder {
-		return "folder"
-	}
-	if p.GeniusTrackID != nil {
-		return "genius"
-	}
-	if p.Smart != nil {
-		return "smart"
-	}
-	return "playlist"
-}
-
-func (p *Playlist) Priority() int {
-	switch p.Kind() {
-	case "folder":
-		return 100
-	case "genius":
-		return 103
-	case "smart":
-		return 104
-	default:
-		return 199
-	}
-	return 200
-}
-*/
-
 type SortablePlaylistList []*Playlist
 func (spl SortablePlaylistList) Len() int { return len(spl) }
 func (spl SortablePlaylistList) Swap(i, j int) {
-	log.Printf("swapping %d (%s / %d) and %d (%s / %d)", i, spl[i].Kind, int(spl[i].Kind), j, spl[j].Kind, int(spl[j].Kind))
 	spl[i], spl[j] = spl[j], spl[i]
 }
 func (spl SortablePlaylistList) Less(i, j int) bool {
 	ap := int(spl[i].Kind)
 	bp := int(spl[j].Kind)
 	if ap < bp {
-		//log.Printf("%s: %s (%d) < %s: %s (%d)", spl[i].Name, spl[i].Kind, ap, spl[j].Name, spl[j].Kind, bp)
-		log.Printf("comparing %d (%s / %s / %d) and %d (%s / %s / %d): true (kind)", i, spl[i].Name, spl[i].Kind, int(spl[i].Kind), j, spl[j].Name, spl[j].Kind, int(spl[j].Kind))
 		return true
 	}
 	if bp > ap {
-		//log.Printf("%s: %s (%d) > %s: %s (%d)", spl[i].Name, spl[i].Kind, ap, spl[j].Name, spl[j].Kind, bp)
-		log.Printf("comparing %d (%s / %s / %d) and %d (%s / %s / %d): false (kind)", i, spl[i].Name, spl[i].Kind, int(spl[i].Kind), j, spl[j].Name, spl[j].Kind, int(spl[j].Kind))
 		return false
 	}
 	if spl[i].Name < spl[j].Name {
-		log.Printf("comparing %d (%s / %s / %d) and %d (%s / %s / %d): true (name)", i, spl[i].Name, spl[i].Kind, int(spl[i].Kind), j, spl[j].Name, spl[j].Kind, int(spl[j].Kind))
 		return true
 	}
-	log.Printf("comparing %d (%s / %s / %d) and %d (%s / %s / %d): false (name)", i, spl[i].Name, spl[i].Kind, int(spl[i].Kind), j, spl[j].Name, spl[j].Kind, int(spl[j].Kind))
 	return false
 }
 

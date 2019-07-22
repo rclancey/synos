@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/gob"
-	"errors"
+	builtinErrors "errors"
 	"fmt"
 	"log"
 	"math"
@@ -15,14 +15,15 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 
 	"itunes/loader"
 )
 
-var CircularPlaylistFolder = errors.New("playlist can't be a descendant of itself")
-var NoSuchPlaylistFolder = errors.New("playlist folder does not exist")
-var ParentNotAFolder = errors.New("parent playlist is not a folder")
-var PlaylistFolderNotEmpty = errors.New("Playlist folder not empty")
+var CircularPlaylistFolder = builtinErrors.New("playlist can't be a descendant of itself")
+var NoSuchPlaylistFolder = builtinErrors.New("playlist folder does not exist")
+var ParentNotAFolder = builtinErrors.New("parent playlist is not a folder")
+var PlaylistFolderNotEmpty = builtinErrors.New("Playlist folder not empty")
 
 func serializeGob(obj interface{}) []byte {
 	var buf bytes.Buffer
@@ -34,7 +35,7 @@ func serializeGob(obj interface{}) []byte {
 func deserializeGob(data []byte, obj interface{}) error {
 	buf := bytes.NewBuffer(data)
 	dec := gob.NewDecoder(buf)
-	return dec.Decode(obj)
+	return errors.Wrap(dec.Decode(obj), "can't decode gob")
 }
 
 type DB struct {
@@ -44,7 +45,7 @@ type DB struct {
 func Open(connstr string) (*DB, error) {
 	conn, err := sqlx.Connect("postgres", connstr)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't connect to postgres with " + connstr)
 	}
 	return &DB{ conn: conn }, nil
 }
@@ -95,7 +96,7 @@ func (db *DB) SearchTracks(s Search) ([]*Track, error) {
 		var track Track
 		err = rows.StructScan(&track)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan row into track")
 		}
 		track.db = db
 		tracks = append(tracks, &track)
@@ -129,7 +130,7 @@ func (db *DB) TracksSince(t Time, page, count int) ([]*Track, error) {
 		var t Track
 		err = rows.StructScan(&t)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan row into track")
 		}
 		t.db = db
 		tracks = append(tracks, &t)
@@ -161,7 +162,7 @@ func (db *DB) Tracks(page, count int, order []string) ([]*Track, error) {
 		var t Track
 		err = rows.StructScan(&t)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan row into track")
 		}
 		t.db = db
 		tracks = append(tracks, &t)
@@ -175,10 +176,10 @@ func (db *DB) GetTrack(pid PersistentID) (*Track, error) {
 	var track Track
 	err := row.StructScan(&track)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Cause(err) == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, err
+		return nil, errors.Wrap(err, "can't query track " + pid.String())
 	}
 	return &track, nil
 }
@@ -189,10 +190,10 @@ func (db *DB) GetPlaylist(pid PersistentID) (*Playlist, error) {
 	var pl Playlist
 	err := row.StructScan(&pl)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Cause(err) == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, err
+		return nil, errors.Wrap(err, "can't query playlist " + pid.String())
 	}
 	return &pl, nil
 }
@@ -210,7 +211,7 @@ func (db *DB) GetPlaylistTree(root *PersistentID) ([]*Playlist, error) {
 		var pl Playlist
 		err = rows.StructScan(&pl)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan row into playlist")
 		}
 		plm[pl.PersistentID] = &pl
 		pls = append(pls, &pl)
@@ -255,7 +256,7 @@ func (db *DB) GetPlaylistTree(root *PersistentID) ([]*Playlist, error) {
 	if ok {
 		return parent.Children, nil
 	}
-	return nil, NoSuchPlaylistFolder
+	return nil, errors.WithStack(NoSuchPlaylistFolder)
 }
 
 func (db *DB) Genres() ([]*Genre, error) {
@@ -272,7 +273,7 @@ func (db *DB) Genres() ([]*Genre, error) {
 		var c int
 		err = rows.Scan(&g, &sg, &c)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan genre info")
 		}
 		if g == nil || *g == "" {
 			continue
@@ -322,7 +323,7 @@ func (db *DB) getArtists(col string, genre *Genre) (map[string]*Artist, error) {
 		var c int
 		err = rows.Scan(&a, &sa, &c)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan artist info")
 		}
 		artist, ok := amap[sa]
 		if ok {
@@ -371,7 +372,7 @@ func (db *DB) searchArtist(col string, name string, s Search) (*Artist, error) {
 		var c int
 		err = rows.Scan(&a, &c)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan artist info")
 		}
 		artist.Names[a] = c
 	}
@@ -389,7 +390,7 @@ func (db *DB) SearchArtist(name string, s Search) (*Artist, error) {
 	for _, col := range cols {
 		art, err := db.searchArtist(col, sort_name, s)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "can't search %s %s", col, sort_name)
 		}
 		if art != nil {
 			if artist == nil {
@@ -437,7 +438,7 @@ func (db *DB) ArtistGenres(name string, s Search) ([]*Genre, error) {
 		var c int
 		err = rows.Scan(&g, &sg, &c)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan genre info")
 		}
 		genre, ok := gmap[sg]
 		if ok {
@@ -483,7 +484,7 @@ func (db *DB) GenreArtists(genre *Genre) ([]*Artist, error) {
 		var c int
 		err = rows.Scan(&a, &sa, &c)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan artist info")
 		}
 		if a == nil || *a == "" {
 			continue
@@ -538,7 +539,7 @@ func (db *DB) GetAlbums(artist *Artist, genre *Genre) ([]*Album, error) {
 		var c int
 		err = rows.Scan(&aart, &saart, &art, &sart, &alb, &salb, &c)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan album info")
 		}
 		if alb == nil || *alb == "" {
 			continue
@@ -630,7 +631,7 @@ func (db *DB) AlbumTracks(album *Album) ([]*Track, error) {
 		var track Track
 		err = rows.StructScan(&track)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan row into track")
 		}
 		tracks = append(tracks, &track)
 	}
@@ -649,7 +650,7 @@ func (db *DB) ArtistTracks(artist *Artist) ([]*Track, error) {
 		var track Track
 		err = rows.StructScan(&track)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't scan row into track")
 		}
 		track.db = db
 		tracks = append(tracks, &track)

@@ -1,9 +1,10 @@
 package sonos
 
 import (
-	"errors"
 	"net"
 	"strconv"
+
+	"github.com/pkg/errors"
 )
 
 func portIsAvailable(port int) bool {

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io"
+	//"io"
 	//"log"
 	"time"
 
@@ -19,10 +19,12 @@ func WatchITunes() (chan bool, error) {
 	finder := musicdb.GetGlobalFinder()
 	fn, err := finder.FindFile(cfg.ITunes.Library)
 	if err != nil {
+		errlog.Warn("can't find itunes library")
 		return nil, err
 	}
 	quit := make(chan bool)
 	go func() {
+		errlog.Info("monitoring itunes library", fn)
 		mon := monitor.NewFileMonitor(fn, 10 * time.Second, 5 * time.Second)
 		for {
 			select {
@@ -48,44 +50,59 @@ func updateItunes(fn string, errlog *logging.Logger) error {
 	go l.Load(fn)
 	tracks := -1
 	playlists := -1
+	//count := 0
+	errlog.Info("begin itunes library update")
 	for {
-		select {
-		case update := <-l.LibraryCh:
-			if tracks == -1 && update.Tracks != nil && *update.Tracks > 0 {
-				tracks = *update.Tracks
+		update, ok := <-l.C
+		if !ok {
+			//errlog.("loader channel closed")
+			return nil
+		}
+		/*
+		if count % 1000 == 0 {
+			errlog.Debug(count, "messages")
+		}
+		count += 1
+		*/
+		switch tupdate := update.(type) {
+		case *loader.Library:
+			//errlog.Debug("library update")
+			if tracks == -1 && tupdate.Tracks != nil && *tupdate.Tracks > 0 {
+				tracks = *tupdate.Tracks
 				errlog.Infof("%d itunes tracks updated", tracks)
 			}
-			if playlists == -1 && update.Playlists != nil && *update.Playlists > 0 {
-				tracks = *update.Playlists
+			if playlists == -1 && tupdate.Playlists != nil && *tupdate.Playlists > 0 {
+				playlists = *tupdate.Playlists
 				errlog.Infof("%d itunes playlists updated", playlists)
 			}
-		case track := <-l.TrackCh:
-			if track.GetDisabled() {
-				continue
+		case *loader.Track:
+			if tupdate.GetDisabled() {
+				// noop
+			} else if tupdate.Location == nil {
+				// noop
+			} else {
+				err := db.UpdateITunesTrack(tupdate)
+				if err != nil {
+					errlog.Error("error updating track:", err)
+					l.Abort()
+					return err
+				}
 			}
-			if track.Location == nil {
-				continue
-			}
-			err := db.UpdateITunesTrack(track)
+		case *loader.Playlist:
+			err := db.UpdateITunesPlaylist(tupdate)
 			if err != nil {
+				errlog.Error("error updating playlist:", err)
 				l.Abort()
 				return err
 			}
-		case playlist := <-l.PlaylistCh:
-			err := db.UpdateITunesPlaylist(playlist)
-			if err != nil {
-				l.Abort()
-				return err
-			}
-		case err := <-l.ErrorCh:
-			if err == nil || err == io.EOF {
-				l.Drain()
-				return err
-			}
-			l.Drain()
-			return err
+		case error:
+			errlog.Error("error in loader:", tupdate)
+			l.Abort()
+			return tupdate
+		default:
+			errlog.Errorf("unexpected type on loader channel: %T", update)
 		}
 	}
-	l.Drain()
+	errlog.Debug("don't know how we got here, but returning")
 	return nil
 }

@@ -1,11 +1,12 @@
 package argparse
 
 import (
-	"fmt"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 func makeArgMap(rv reflect.Value) map[string]reflect.Value {
@@ -48,7 +49,7 @@ func ParseArgs(recv interface{}) error {
 		flag := strings.Trim(parts[0], "-")
 		rf, ok := m[flag]
 		if !ok {
-			return fmt.Errorf("Unknown arg '%s'", os.Args[i])
+			return errors.Errorf("Unknown arg '%s'", os.Args[i])
 		}
 		i += 1
 		switch rf.Kind() {
@@ -71,7 +72,7 @@ func ParseArgs(recv interface{}) error {
 			}
 			iv, err := strconv.ParseInt(v, 10, 64)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "can't parse arg %s %s into an integer", parts[0], v)
 			}
 			rf.SetInt(iv)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -84,7 +85,7 @@ func ParseArgs(recv interface{}) error {
 			}
 			iv, err := strconv.ParseUint(v, 10, 64)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "can't parse arg %s into an unsigned integer", parts[0], v)
 			}
 			rf.SetUint(iv)
 		case reflect.Slice:
@@ -106,7 +107,7 @@ func ParseArgs(recv interface{}) error {
 				for i, sv := range vals {
 					iv, err := strconv.ParseInt(sv, 10, 64)
 					if err != nil {
-						return err
+						return errors.Wrapf(err, "can't parse arg %s (%d) %s into an integer", parts[0], i, sv)
 					}
 					s.Index(i).SetInt(iv)
 				}
@@ -114,12 +115,16 @@ func ParseArgs(recv interface{}) error {
 				for i, sv := range vals {
 					iv, err := strconv.ParseUint(sv, 10, 64)
 					if err != nil {
-						return err
+						return errors.Wrapf(err, "can't parse arg %s (%d) %s into an unsigned integer", parts[0], i, sv)
 					}
 					s.Index(i).SetUint(iv)
 				}
+			default:
+				return errors.Errorf("don't know how to parse arg %s (%T)", parts[0], rf.Interface())
 			}
 			rf.Set(s)
+		default:
+			return errors.Errorf("don't know how to parse arg %s (%T)", parts[0], rf.Interface())
 		}
 	}
 	return nil

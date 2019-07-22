@@ -5,16 +5,16 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 type Authenticator interface {
@@ -77,7 +77,7 @@ type APIClient struct {
 func NewAPIClient(baseUrl string, cacheDir string, maxCacheTime time.Duration, maxReqsPerSec float64, auth Authenticator) (*APIClient, error) {
 	u, err := url.Parse(baseUrl)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't parse base url " + baseUrl)
 	}
 	c := &APIClient{
 		BaseURL: u,
@@ -113,12 +113,12 @@ func ensureDir(dn string) error {
 		if st.IsDir() {
 			return nil
 		}
-		return fmt.Errorf("%s exists but is not a directory", dn)
+		return errors.Errorf("%s exists but is not a directory", dn)
 	}
 	if !os.IsNotExist(err) {
-		return err
+		return errors.Wrap(err, "can't stat " + dn)
 	}
-	return os.MkdirAll(dn, os.FileMode(0775))
+	return errors.Wrap(os.MkdirAll(dn, os.FileMode(0775)), "can't create directory " + dn)
 }
 
 func (c *APIClient) cacheFile(req *http.Request) (dn, fn string) {
@@ -139,11 +139,9 @@ func (c *APIClient) loadFromCache(req *http.Request) (*http.Response, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		log.Println("error checking cache:", err)
-		return nil, err
+		return nil, errors.Wrap(err, "can't stat cache file " + fn)
 	}
 	if time.Now().Sub(st.ModTime()) > c.MaxCacheTime {
-		//log.Println("cache file expired")
 		return nil, nil
 	}
 	f, err := os.Open(fn)
@@ -151,16 +149,13 @@ func (c *APIClient) loadFromCache(req *http.Request) (*http.Response, error) {
 		defer f.Close()
 	}
 	if err != nil {
-		log.Println("error opening cache file:", err)
-		return nil, err
+		return nil, errors.Wrap(err, "can't open cache file " + fn)
 	}
 	rd := bufio.NewReader(f)
 	res, err := http.ReadResponse(rd, req)
 	if err != nil {
-		log.Println("error reading cached response:", err)
-		return nil, err
+		return nil, errors.Wrap(err, "can't read cached response from " + fn)
 	}
-	//log.Printf("using cached response from %s for %s\n", fn, req.URL.String())
 	return res, nil
 }
 
@@ -174,18 +169,15 @@ func (c *APIClient) saveToCache(res *http.Response) error {
 	dn, fn := c.cacheFile(res.Request)
 	err := ensureDir(dn)
 	if err != nil {
-		log.Println("error creating cache directory:", err)
-		return err
+		return errors.Wrap(err, "can't create cache directory for " + fn)
 	}
 	resdata, err := httputil.DumpResponse(res, true)
 	if err != nil {
-		log.Println("error serializing response for cache:", err)
-		return err
+		return errors.Wrap(err, "can't serialize response for caching")
 	}
 	err = ioutil.WriteFile(fn, resdata, os.FileMode(0644))
 	if err != nil {
-		log.Println("error writing cache file:", err)
-		return err
+		return errors.Wrap(err, "can't write to cache file " + fn)
 	}
 	return nil
 }
@@ -197,7 +189,7 @@ func (c *APIClient) RateLimit(req *http.Request) (*http.Response, error) {
 	}
 	res, err := c.client.Do(req)
 	c.lastFetch = time.Now()
-	return res, err
+	return res, errors.Wrap(err, "can't execute api request")
 }
 
 func (c *APIClient) Do(req *http.Request) (*http.Response, error) {
@@ -207,28 +199,28 @@ func (c *APIClient) Do(req *http.Request) (*http.Response, error) {
 	}
 	res, err = c.RateLimit(req)
 	if err != nil {
-		return res, err
+		return res, errors.Wrap(err, "can't rate limit api request")
 	}
 	err = c.saveToCache(res)
-	return res, err
+	return res, errors.Wrap(err, "can't cache api response")
 }
 
 func (c *APIClient) Get(rsrc string, args url.Values) (*http.Response, error) {
 	u, err := c.BaseURL.Parse(rsrc)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't parse api request uri " + rsrc)
 	}
 	if args != nil {
 		u.RawQuery = args.Encode()
 	}
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't create api get request")
 	}
 	if c.Authenticator != nil {
 		err = c.Authenticator.AuthenticateRequest(req)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't auth api get request")
 		}
 	}
 	return c.Do(req)
@@ -237,22 +229,22 @@ func (c *APIClient) Get(rsrc string, args url.Values) (*http.Response, error) {
 func (c *APIClient) GetObj(rsrc string, args url.Values, obj interface{}) error {
 	res, err := c.Get(rsrc, args)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't execute api get request")
 	}
 	if res.StatusCode != http.StatusOK {
 		return errors.New(res.Status)
 	}
 	ct := res.Header.Get("Content-Type")
 	if ct != "application/json" {
-		return fmt.Errorf("not a json response (%s)", ct)
+		return errors.Errorf("not a json response (%s)", ct)
 	}
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't read api response")
 	}
 	err = json.Unmarshal(data, obj)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "can't unmarshal api response into %T", obj)
 	}
 	return nil
 }

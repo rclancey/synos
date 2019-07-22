@@ -1,11 +1,12 @@
 package httpserver
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 var envre1 = regexp.MustCompile(`\$([A-Za-z0-9_]+)`)
@@ -52,14 +53,14 @@ func checkReadableFile(fn string) error {
 	}
 	st, err := os.Stat(fn)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't stat file " + fn)
 	}
 	if st.IsDir() {
-		return fmt.Errorf("filename %s points to a directory", fn)
+		return errors.Errorf("filename %s points to a directory", fn)
 	}
 	f, err := os.Open(fn)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't open file " + fn)
 	}
 	f.Close()
 	return nil
@@ -74,15 +75,15 @@ func checkWritableDir(dn string) error {
 		if os.IsNotExist(err) {
 			err = os.MkdirAll(dn, 0775)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "can't make dirs " + dn)
 			}
 			return nil
 		} else {
-			return err
+			return errors.Wrap(err, "can't stat dir " + dn)
 		}
 	}
 	if !st.IsDir() {
-		return fmt.Errorf("filename %s doesn't point to a directory", dn)
+		return errors.Errorf("filename %s doesn't point to a directory", dn)
 	}
 	return nil
 }

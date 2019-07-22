@@ -5,7 +5,7 @@ import { trackDB } from '../lib/trackdb';
 import { PlaylistBrowser } from './PlaylistBrowser';
 import { TrackBrowser } from './TrackBrowser';
 import { ProgressBar } from './ProgressBar';
-import { DISTINGUISHED_KINDS, PLAYLIST_ORDER } from '../lib/distinguished_kinds';
+import { PLAYLIST_ORDER } from '../lib/distinguished_kinds';
 
 export class Library extends React.Component {
   constructor(props) {
@@ -80,6 +80,7 @@ export class Library extends React.Component {
   }
 
   loadPlaylists() {
+    /*
     const restructure = playlist => {
       const pl = Object.assign({}, playlist);
       pl.title = pl.name;
@@ -98,10 +99,14 @@ export class Library extends React.Component {
       }
       return pl;
     };
+    */
     return this.props.api.loadPlaylists()
       .then(data => {
+        /*
         const playlists = _.sortBy(data.map(restructure).filter(x => PLAYLIST_ORDER[x.kind] !== -1), [(x => PLAYLIST_ORDER[x.kind] || 999), (x => x.name.toLowerCase())]);
         this.setState({ playlists });
+        */
+        this.setState({ playlists: data });
       });
   }
 

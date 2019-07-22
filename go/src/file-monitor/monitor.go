@@ -40,7 +40,7 @@ func (fm *FileMonitor) Start() {
 		for {
 			select {
 			case <-quit:
-				break
+				return
 			case <-tick.C:
 				st, err := os.Stat(fm.FileName)
 				if err == nil {

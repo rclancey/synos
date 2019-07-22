@@ -1,7 +1,7 @@
 {
     "server_root": ".",
     "document_root": "htdocs",
-    "logging": {
+    "log": {
         "directory": "var/log",
         "access": "access.log",
         "error": "error.log",

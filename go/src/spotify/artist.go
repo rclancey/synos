@@ -1,9 +1,10 @@
 package spotify
 
 import (
-	"errors"
 	//"log"
 	"sort"
+
+	"github.com/pkg/errors"
 )
 
 
@@ -31,13 +32,13 @@ func (art *Artist) GetImage(c *SpotifyClient) (img []byte, ct string, err error)
 			return img, ct, nil
 		}
 	}
-	return nil, "", err
+	return nil, "", errors.Wrap(err, "can't get artist image")
 }
 
 func (c *SpotifyClient) SearchArtist(name string) ([]*Artist, error) {
 	res, err := c.Search(name, "artist")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't search spotify for artist " + name)
 	}
 	return res.Artists, nil
 }
@@ -45,7 +46,7 @@ func (c *SpotifyClient) SearchArtist(name string) ([]*Artist, error) {
 func (c *SpotifyClient) GetArtistImage(name string) (img []byte, ct string, err error) {
 	arts, err := c.SearchArtist(name)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "can't find artist " + name)
 	}
 	if len(arts) == 0 {
 		return nil, "", errors.New("no such artist")
@@ -56,5 +57,5 @@ func (c *SpotifyClient) GetArtistImage(name string) (img []byte, ct string, err 
 			return img, ct, nil
 		}
 	}
-	return nil, "", err
+	return nil, "", errors.Wrap(err, "can't get artist image")
 }

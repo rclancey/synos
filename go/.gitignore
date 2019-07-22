@@ -1,8 +1,8 @@
-pkg
-bin
-macos
-synology
+./pkg
+./bin
+./macos
+./synology
 junk
-server
-make_enums
+./server
+./make_enums
 *.xgo

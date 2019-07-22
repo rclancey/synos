@@ -3,7 +3,6 @@ package httpserver
 import (
 	"bufio"
 	"encoding/hex"
-	"fmt"
 	"io"
 	//"log"
 	"math/rand"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,7 +34,7 @@ type AuthConfig struct {
 func (cfg *AuthConfig) Init(serverRoot string) error {
 	fn, err := makeRootAbs(serverRoot, cfg.PasswordFile)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't get abs path for " + cfg.PasswordFile)
 	}
 	cfg.PasswordFile = fn
 	return nil
@@ -75,7 +75,7 @@ func (cfg *AuthConfig) Authorize(req *http.Request, username string) bool {
 func (cfg *AuthConfig) Authenticate(w http.ResponseWriter, req *http.Request) (string, error) {
 	username, err := cfg.GetUsername(req)
 	if err != nil {
-		return username, err
+		return username, errors.WithStack(err)
 	}
 	if username != "" {
 		cfg.SetCookie(w, username)
@@ -102,7 +102,7 @@ func (cfg *AuthConfig) GetUsername(req *http.Request) (string, error) {
 func (cfg *AuthConfig) CheckPasswd(username, password string) (bool, error) {
 	f, err := os.Open(cfg.PasswordFile)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "can't open password file " + cfg.PasswordFile)
 	}
 	buf := bufio.NewReader(f)
 	for {
@@ -111,7 +111,7 @@ func (cfg *AuthConfig) CheckPasswd(username, password string) (bool, error) {
 			if err == io.EOF {
 				return false, nil
 			}
-			return false, err
+			return false, errors.Wrap(err, "can't read password file " + cfg.PasswordFile)
 		}
 		parts := strings.Split(strings.TrimSpace(line), ":")
 		if len(parts) == 2 && parts[0] == username {
@@ -122,7 +122,7 @@ func (cfg *AuthConfig) CheckPasswd(username, password string) (bool, error) {
 			if err == bcrypt.ErrMismatchedHashAndPassword {
 				return false, nil
 			}
-			return false, err
+			return false, errors.Wrap(err, "can't compare hashed passwords")
 		}
 	}
 	return false, nil
@@ -138,7 +138,7 @@ func (cfg *AuthConfig) CheckCookie(req *http.Request) (string, bool) {
 	token, err := jwt.ParseWithClaims(cookie.Value, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			//log.Printf("Unexpected signing method: %v", token.Header["alg"])
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			return nil, errors.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
 		return cfg.GetAuthKey(), nil
 	})
@@ -197,7 +197,7 @@ func (cfg *AuthConfig) LoginHandler() HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		username, err := cfg.Authenticate(w, req)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 		return map[string]string{
 			"status": "OK",

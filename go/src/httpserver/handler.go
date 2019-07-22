@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 type Redirect string
@@ -50,7 +52,7 @@ type Server struct {
 func NewServer(cfg *ServerConfig) (*Server, error) {
 	err := checkRunning(cfg)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "server already running")
 	}
 	return &Server{
 		cfg: cfg,
@@ -66,15 +68,15 @@ func (srv *Server) ListenAndServe() error {
 	srv.mux.Handle("/", http.FileServer(http.Dir(srv.cfg.DocumentRoot)))
 	al, err := srv.cfg.Logging.AccessLogger(srv.mux)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't get access logger")
 	}
 	err = checkRunning(srv.cfg)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "server already running")
 	}
 	err = writePidfile(srv.cfg)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't write pid file")
 	}
 	defer removePidfile(srv.cfg)
 	errch := make(chan error, 2)

@@ -2,35 +2,27 @@ package loader
 
 import (
 	"encoding/xml"
-	"errors"
-	"log"
+	builtinErrors "errors"
 	"io"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
-var AbortError = errors.New("abort")
-var AlreadyLoading = errors.New("already loading")
+var AbortError = builtinErrors.New("abort")
 
 type Loader struct {
-	LibraryCh chan *Library
-	TrackCh chan *Track
-	PlaylistCh chan *Playlist
-	ErrorCh chan error
+	C chan interface{}
 	quitCh chan bool
 	trackIDMap map[int]uint64
 }
 
 func NewLoader() *Loader {
-	return &Loader{
-		LibraryCh: make(chan *Library, 20),
-		TrackCh: make(chan *Track, 10),
-		PlaylistCh: make(chan *Playlist, 10),
-		ErrorCh: make(chan error, 10),
-	}
+	return &Loader{}
 }
 
 func (l *Loader) Abort() {
@@ -51,25 +43,7 @@ func (l *Loader) Abort() {
 
 func (l *Loader) Drain() {
 	for {
-		_, ok := <-l.ErrorCh
-		if !ok {
-			break
-		}
-	}
-	for {
-		_, ok := <-l.PlaylistCh
-		if !ok {
-			break
-		}
-	}
-	for {
-		_, ok := <-l.TrackCh
-		if !ok {
-			break
-		}
-	}
-	for {
-		_, ok := <-l.LibraryCh
+		_, ok := <-l.C
 		if !ok {
 			break
 		}
@@ -77,24 +51,22 @@ func (l *Loader) Drain() {
 }
 
 func (l *Loader) shutdown(err error) {
-	l.ErrorCh <- err
-	close(l.ErrorCh)
-	close(l.PlaylistCh)
-	close(l.TrackCh)
-	close(l.LibraryCh)
+	if err != nil {
+		l.C <- err
+	}
+	close(l.C)
 }
 
 func (l *Loader) Load(fn string) {
-	if l.quitCh != nil {
-		l.ErrorCh <- AlreadyLoading
+	if l.C != nil {
 		return
 	}
+	l.C = make(chan interface{}, 10)
 	quitCh := make(chan bool, 2)
 	l.quitCh = quitCh
 	f, err := os.Open(fn)
 	if err != nil {
-		log.Println("loader errored (1)")
-		l.shutdown(err)
+		l.shutdown(errors.Wrap(err, "can't open library file " + fn))
 		return
 	}
 	defer f.Close()
@@ -103,38 +75,35 @@ func (l *Loader) Load(fn string) {
 	}
 	select {
 	case <-quitCh:
-		l.shutdown(AbortError)
+		l.shutdown(errors.WithStack(AbortError))
 		return
 	default:
-		l.LibraryCh <- lib
+		l.C <- lib
 	}
 	l.trackIDMap = map[int]uint64{}
 	dec := xml.NewDecoder(f)
 	err = l.parseLibrary(lib, dec)
 	if err != nil {
-		log.Println("loader errored (2)")
-		l.shutdown(err)
+		l.shutdown(errors.Wrap(err, "can't parse library"))
 		return
 	}
 	if lib.Date == nil {
 		st, err := os.Stat(fn)
 		if err != nil {
-			log.Println("loader errored (3)")
-			l.shutdown(err)
+			l.shutdown(errors.Wrap(err, "can't get library modification date"))
 			return
 		}
 		t := st.ModTime()
 		lib.Date = &t
 		select {
 		case <-quitCh:
-			l.shutdown(AbortError)
+			l.shutdown(errors.WithStack(AbortError))
 			return
 		default:
-			l.LibraryCh <- lib
+			l.C <- lib
 		}
 	}
-	l.ErrorCh <- io.EOF
-	log.Println("loader finished")
+	l.shutdown(nil)
 }
 
 func (l *Loader) parseLibrary(lib *Library, dec *xml.Decoder) error {
@@ -158,7 +127,7 @@ func (l *Loader) parseLibrary(lib *Library, dec *xml.Decoder) error {
 			if err == io.EOF {
 				return nil
 			}
-			return err
+			return errors.Wrap(err, "can't get xml token")
 		}
 		switch se := t.(type) {
 		case xml.StartElement:
@@ -194,21 +163,21 @@ func (l *Loader) parseLibrary(lib *Library, dec *xml.Decoder) error {
 					track := &Track{}
 					err := l.parseTrack(track, dec)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "can't parse track")
 					}
 					id, err := strconv.Atoi(string(key))
 					if err != nil {
-						return err
+						return errors.Wrap(err, "can't parse track id " + string(key))
 					}
 					if track.PersistentID != nil {
 						l.trackIDMap[id] = *track.PersistentID
 					}
 					select {
 					case <-quitCh:
-						l.ErrorCh <- AbortError
+						l.C <- errors.WithStack(AbortError)
 						return nil
 					default:
-						l.TrackCh <- track
+						l.C <- track
 					}
 					trackCount += 1
 					keyStackSize--
@@ -219,13 +188,13 @@ func (l *Loader) parseLibrary(lib *Library, dec *xml.Decoder) error {
 					playlist := &Playlist{}
 					err := l.parsePlaylist(playlist, dec)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "can't parse playlist")
 					}
 					select {
 					case <-quitCh:
-						return AbortError
+						return errors.WithStack(AbortError)
 					default:
-						l.PlaylistCh <- playlist
+						l.C <- playlist
 					}
 					playlistCount += 1
 					keyStackSize--
@@ -234,7 +203,19 @@ func (l *Loader) parseLibrary(lib *Library, dec *xml.Decoder) error {
 			}
 		case xml.EndElement:
 			tagStackSize--
-			if tagStackSize == 1 && tagStack[0] == "plist" && tagStack[1] == "dict" {
+			if se.Name.Local == "key" {
+				keyStack[keyStackSize] = string(key)
+				isKey = false
+			} else if se.Name.Local == "plist" {
+				return nil
+			} else {
+				isVal = false
+				if(se.Name.Local == "dict") {
+					keyStackSize--
+					if keyStackSize >= 0 && keyStackSize < len(keyStack) {
+						key = []byte(keyStack[keyStackSize])
+					}
+				}
 				switch string(key) {
 				case "Tracks":
 					lib.Tracks = &trackCount
@@ -245,25 +226,10 @@ func (l *Loader) parseLibrary(lib *Library, dec *xml.Decoder) error {
 				}
 				select {
 				case <-quitCh:
-					return AbortError
+					return errors.WithStack(AbortError)
 				default:
-					l.LibraryCh <- lib
+					l.C <- lib
 				}
-			}
-			if se.Name.Local == "key" {
-				keyStack[keyStackSize] = string(key)
-				isKey = false
-			} else if(se.Name.Local == "dict") {
-				keyStackSize--
-				if keyStackSize == 0 && keyStack[0] == "Playlists" {
-					return nil
-				}
-			} else if se.Name.Local == "integer" {
-				isVal = false
-			} else if se.Name.Local == "string" {
-				isVal = false
-			} else if se.Name.Local == "date" {
-				isVal = false
 			}
 		case xml.CharData:
 			if isKey {
@@ -283,7 +249,7 @@ func (l *Loader) parseTrack(tr *Track, dec *xml.Decoder) error {
 	for {
 		tk, err := dec.Token()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "can't get xml token")
 		}
 		switch se := tk.(type) {
 		case xml.StartElement:
@@ -326,7 +292,7 @@ func (l *Loader) parsePlaylist(pl *Playlist, dec *xml.Decoder) error {
 	for {
 		t, err := dec.Token()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "can't get xml token")
 		}
 		switch se := t.(type) {
 		case xml.StartElement:
@@ -354,6 +320,9 @@ func (l *Loader) parsePlaylist(pl *Playlist, dec *xml.Decoder) error {
 				keyStackSize--
 				if keyStackSize < 0 {
 					return nil
+				}
+				if keyStackSize < len(keyStack) {
+					key = []byte(keyStack[keyStackSize])
 				}
 			} else {
 				if isArray {
