@@ -1,22 +1,16 @@
 import React, { Component } from 'react';
-import { DragDropContextProvider } from 'react-dnd'
-import HTML5Backend from 'react-dnd-html5-backend'
-import 'react-virtualized/styles.css';
-import 'react-sortable-tree/style.css';
 import '@fortawesome/fontawesome-free/css/all.css';
 import './themes/animations.css';
-import './themes/desktop/layout.css';
-import './themes/desktop/light.css';
-import './themes/desktop/dark.css';
-import './themes/mobile/layout.css';
-import './themes/mobile/light.css';
-import './themes/mobile/dark.css';
+//import './themes/common/light.css';
+//import './themes/common/dark.css';
 //import './App.css';
 //import { Library } from './components/Library';
 //import { HomeList } from './components/HomeList';
 import { CheckLogin } from './components/Login';
 import { API } from './lib/api';
 import { Player } from './components/Player';
+
+const importedThemes = {};
 
 const InstallAppButton = ({ onInstall }) => (
   <div className="installApp" onClick={onInstall}>
@@ -85,21 +79,23 @@ class App extends Component {
   }
 
   render() {
+    if (importedThemes[this.state.theme] === undefined || importedThemes[this.state.theme] === null) {
+      importedThemes[this.state.theme] = true;
+      import(`./themes/common/${this.state.theme}.css`).then(css => importedThemes[this.state.theme] = css);
+    }
     return (
       <div className="App">
         { this.state.installPrompt ? (
           <InstallAppButton onInstall={this.onInstall} />
         ) : null }
-        <DragDropContextProvider backend={HTML5Backend}>
-          <CheckLogin
-            mobile={this.state.mobile}
-            theme={this.state.theme}
-            loggedIn={this.state.loggedIn}
-            onLogin={x => this.setState({ loggedIn: x })}
-          >
-            <Player mobile={this.state.mobile} theme={this.state.theme} api={this.api} />
-          </CheckLogin>
-        </DragDropContextProvider>
+        <CheckLogin
+          mobile={this.state.mobile}
+          theme={this.state.theme}
+          loggedIn={this.state.loggedIn}
+          onLogin={x => this.setState({ loggedIn: x })}
+        >
+          <Player mobile={this.state.mobile} theme={this.state.theme} api={this.api} />
+        </CheckLogin>
         {/*
         <HomeList />
         */}

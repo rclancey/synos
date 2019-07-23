@@ -39,6 +39,13 @@
   font-weight: bold;
 }
 
+#app.mobile.dark .artistList .index .disabled,
+#app.mobile.dark .albumList .index .disabled,
+#app.mobile.dark .genreList .index .disabled {
+  color: #999;
+  font-weight: bold;
+}
+
 #app.mobile.dark .artistList .item .artistImage,
 #app.mobile.dark .genreList .item .genreImage {
   background-color: #868b95;

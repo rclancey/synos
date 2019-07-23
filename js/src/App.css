@@ -411,6 +411,7 @@ body {
 }
 
 .icon.playlists,
+.icon.standard,
 .icon.playlist {
   background-image: url('icons/playlist.png');
 }

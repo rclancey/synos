@@ -1,4 +1,5 @@
 import React, { Fragment } from 'react';
+import Loadable from 'react-loadable';
 /*
 import {
   playSonos,
@@ -17,8 +18,18 @@ import {
 } from '../lib/sonos';
 */
 
-import { MobileSkin } from './Mobile/Skin';
-import { DesktopSkin } from './Desktop/Skin';
+//import { MobileSkin } from './Mobile/Skin';
+//import { DesktopSkin } from './Desktop/Skin';
+
+const MobileSkin = Loadable({
+  loader: () => import('./Mobile/Skin'),
+  loading: () => (<div>loading...</div>),
+});
+
+const DesktopSkin = Loadable({
+  loader: () => import('./Desktop/Skin'),
+  loading: () => (<div>loading...</div>),
+});
 
 export class Player extends React.Component {
   constructor(props) {

@@ -1,5 +1,5 @@
 import React, { Fragment, useRef, useState } from 'react';
-import { displayTime } from '../../lib/columns';
+import displayTime from '../../lib/displayTime';
 import { PlayPauseSkip, Progress } from '../Controls';
 import { CoverArt } from '../CoverArt';
 import { TrackInfo } from '../TrackInfo';

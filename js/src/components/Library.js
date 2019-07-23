@@ -1,11 +1,9 @@
 import React, { Fragment } from 'react';
-import _ from 'lodash';
+import sortBy from 'lodash.sortby';
 import { trackDB } from '../lib/trackdb';
-//import { Controls } from './Desktop/Controls';
 import { PlaylistBrowser } from './PlaylistBrowser';
 import { TrackBrowser } from './TrackBrowser';
 import { ProgressBar } from './ProgressBar';
-import { PLAYLIST_ORDER } from '../lib/distinguished_kinds';
 
 export class Library extends React.Component {
   constructor(props) {
@@ -43,7 +41,7 @@ export class Library extends React.Component {
             });*/
             music = this.state.tracks.concat(music);
             if (this.state.sorting) {
-              music = _.sortBy(music, [track => track[this.state.sorting]]);
+              music = sortBy(music, [track => track[this.state.sorting]]);
             }
             const loaded = this.state.loaded + tracks.length;
             return new Promise(resolve => {
@@ -89,7 +87,7 @@ export class Library extends React.Component {
         pl.kind = DISTINGUISHED_KINDS[pl.distinguished_kind]
       } else if (pl.folder) {
         pl.kind = 'folder';
-        pl.children = playlist.children ? _.sortBy(playlist.children.map(restructure), [(x => !x.folder), (x => x.name.toLowerCase())]) : [];
+        pl.children = playlist.children ? sortBy(playlist.children.map(restructure), [(x => !x.folder), (x => x.name.toLowerCase())]) : [];
       } else if (pl.genius_track_id) {
         pl.kind = 'genius';
       } else if (pl.smart) {
@@ -103,7 +101,7 @@ export class Library extends React.Component {
     return this.props.api.loadPlaylists()
       .then(data => {
         /*
-        const playlists = _.sortBy(data.map(restructure).filter(x => PLAYLIST_ORDER[x.kind] !== -1), [(x => PLAYLIST_ORDER[x.kind] || 999), (x => x.name.toLowerCase())]);
+        const playlists = sortBy(data.map(restructure).filter(x => PLAYLIST_ORDER[x.kind] !== -1), [(x => PLAYLIST_ORDER[x.kind] || 999), (x => x.name.toLowerCase())]);
         this.setState({ playlists });
         */
         this.setState({ playlists: data });
@@ -213,7 +211,7 @@ export class Library extends React.Component {
         children = recurse(children);
         if (dst !== null && pl.persistent_id === dst.persistent_id) {
           children = children.concat([src]);
-          children = _.sortBy(children, [(x => !x.folder), (x => x.name.toLowerCase())]);
+          children = sortBy(children, [(x => !x.folder), (x => x.name.toLowerCase())]);
         }
         return Object.assign({}, pl, { children });
       });
@@ -224,7 +222,7 @@ export class Library extends React.Component {
     root = recurse(root);
     if (dst === null) {
       root = root.concat([src]);
-      root = _.sortBy(root, [(x => !x.folder), (x => x.name.toLowerCase())]);
+      root = sortBy(root, [(x => !x.folder), (x => x.name.toLowerCase())]);
     }
     console.debug('playlists now %o', root);
     this.setState({ playlists: root });

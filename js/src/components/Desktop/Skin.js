@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
+import { DragDropContextProvider } from 'react-dnd'
+import HTML5Backend from 'react-dnd-html5-backend'
 import { Controls } from './Controls';
 import { Library } from '../Library';
+
+import 'react-virtualized/styles.css';
+import 'react-sortable-tree/style.css';
+import '../../themes/desktop/layout.css';
+//import '../../themes/desktop/light.css';
+//import '../../themes/desktop/dark.css';
+const importedThemes = {};
 
 export const DesktopSkin = ({
   api,
@@ -26,6 +35,9 @@ export const DesktopSkin = ({
   onEnableSonos,
   onDisableSonos,
 }) => {
+  if (importedThemes[theme] === undefined || importedThemes[theme] === null) {
+    import(`../../themes/desktop/${theme}.css`);
+  }
   const [search, setSearch] = useState({});
   const [playlist, setPlaylist] = useState(null);
   //const [progress, setProgress] = useState({ complete: 0, total: 0 });
@@ -52,15 +64,17 @@ export const DesktopSkin = ({
         onDisableSonos={onDisableSonos}
         onSearch={(query) => { const s = Object.assign({}, search); s[playlist] = query; setSearch(s); }}
       />
-      <Library 
-        api={api}
-        search={search[playlist]}
-        currentTrack={track}
-        onInsertIntoQueue={onInsertIntoQueue}
-        onAppendToQueue={onAppendToQueue}
-        onReplaceQueue={onReplaceQueue}
-        onViewPlaylist={setPlaylist}
-      />
+      <DragDropContextProvider backend={HTML5Backend}>
+        <Library 
+          api={api}
+          search={search[playlist]}
+          currentTrack={track}
+          onInsertIntoQueue={onInsertIntoQueue}
+          onAppendToQueue={onAppendToQueue}
+          onReplaceQueue={onReplaceQueue}
+          onViewPlaylist={setPlaylist}
+        />
+      </DragDropContextProvider>
       {/*
         onProgress={(complete, total) => setProgress({ complete, total: total || progress.total })}
       />
@@ -69,3 +83,5 @@ export const DesktopSkin = ({
     </div>
   );
 };
+
+export default DesktopSkin;

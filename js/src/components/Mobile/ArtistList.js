@@ -1,5 +1,7 @@
 import React from 'react';
-import { List, AutoSizer } from "react-virtualized";
+import { FixedSizeList as List } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+//import { List, AutoSizer } from "react-virtualized";
 import { AlbumList } from './AlbumList';
 
 export class ArtistList extends React.Component {
@@ -81,6 +83,7 @@ export class ArtistList extends React.Component {
   }
 
   rowRenderer({ key, index, style }) {
+    console.debug('ArtistList.rowRenderer({ %o, %o, %o })', key, index, style);
     const artist = this.state.artists[index];
     return (
       <div key={key} className="item" style={style} onClick={() => this.onOpen(artist)}>
@@ -110,21 +113,24 @@ export class ArtistList extends React.Component {
         </div>
         <div className="index">
           {this.state.index.map(idx => (
-            <div key={idx.name} onClick={() => this.setState({ scrollTop: idx.scrollTop })}>{idx.name}</div>
+            <div key={idx.name} onClick={() => this.ref.scrollTo(idx.scrollTop)}>{idx.name}</div>
           ))}
         </div>
         <div className="items">
           <AutoSizer>
             {({width, height}) => (
               <List
+                ref={ref => this.ref = ref}
                 width={width}
                 height={height}
-                rowCount={this.state.artists.length}
-                rowHeight={58}
-                rowRenderer={this.rowRenderer}
-                scrollTop={this.state.scrollTop}
+                itemCount={this.state.artists.length}
+                itemSize={58}
+                overscanCount={Math.ceil(height / 58)}
+                initialScrollOffset={this.state.scrollTop}
                 onScroll={this.onScroll}
-              />
+              >
+                {this.rowRenderer}
+              </List>
             )}
           </AutoSizer>
         </div>

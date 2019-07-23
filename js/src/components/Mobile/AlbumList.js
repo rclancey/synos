@@ -1,5 +1,7 @@
 import React from 'react';
-import { List, AutoSizer } from "react-virtualized";
+import { FixedSizeList as List } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+//import { List, AutoSizer } from "react-virtualized";
 import { Album } from './SongList';
 
 export class AlbumList extends React.Component {
@@ -8,6 +10,7 @@ export class AlbumList extends React.Component {
     this.state = {
       scrollTop: 0,
       albums: [],
+      index: [],
       album: null,
     };
     this.onClose = this.onClose.bind(this);
@@ -39,8 +42,33 @@ export class AlbumList extends React.Component {
           album.name = Object.keys(album.names).sort((a, b) => album.names[a] < album.names[b] ? 1 : album.names[a] > album.names[b] ? -1 : 0)[0];
           album.artist.name = Object.keys(album.artist.names).sort((a, b) => album.artist.names[a] < album.artist.names[b] ? 1 : album.artist.names[a] > album.artist.names[b] ? -1 : 0)[0];
         });
-        this.setState({ albums });
+        if (this.props.artist) {
+          albums.sort((a, b) => a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : 0)
+        }
+        const index = this.makeIndex(albums || []);
+        this.setState({ albums, index });
       });
+  }
+
+  makeIndex(albums) {
+    const index = [];
+    let prev = null;
+    albums.forEach((album, i) => {
+      let first = (this.props.artist ? album : album.artist).sort.substr(0, 1);
+      if (!first.match(/^[a-z]/)) {
+        first = '#';
+      }
+      if (prev !== first) {
+        const n = prev ? prev.charCodeAt(0) + 1 : 'a'.charCodeAt(0);
+        const m = first === '#' ? 'z'.charCodeAt(0) : first.charCodeAt(0) - 1;
+        for (let j = n; j <= m; j++) {
+          index.push({ name: String.fromCharCode(j).toUpperCase(), scrollTop: -1 });
+        }
+        index.push({ name: first.toUpperCase(), scrollTop: Math.floor(i / 2) * 195 });
+        prev = first;
+      }
+    });
+    return index;
   }
 
   onOpen(album) {
@@ -115,18 +143,26 @@ export class AlbumList extends React.Component {
         <div className="header">
           <div className="title">{this.props.artist ? this.props.artist.name : "Albums"}</div>
         </div>
+        <div className="index">
+          {this.state.index.map(idx => (
+            <div key={idx.name} className={idx.scrollTop < 0 ? 'disabled' : ''} onClick={() => idx.scrollTop >= 0 && this.ref.scrollTo(idx.scrollTop)}>{idx.name}</div>
+          ))}
+        </div>
         <div className="items">
           <AutoSizer>
             {({width, height}) => (
               <List
+                ref={ref => this.ref = ref}
                 width={width}
                 height={height}
-                rowCount={Math.ceil(this.state.albums.length / 2)}
-                rowHeight={195}
-                rowRenderer={this.rowRenderer}
-                scrollTop={this.state.scrollTop}
+                itemCount={Math.ceil(this.state.albums.length / 2)}
+                itemSize={195}
+                overscanCount={Math.ceil(height / 195)}
+                initialScrollOffset={this.state.scrollTop}
                 onScroll={this.onScroll}
-              />
+              >
+                {this.rowRenderer}
+              </List>
             )}
           </AutoSizer>
         </div>

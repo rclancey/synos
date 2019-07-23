@@ -1,5 +1,6 @@
 import React from 'react';
-import { List, AutoSizer } from "react-virtualized";
+import { FixedSizeList as List } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
 import { DotsMenu } from './TrackMenu';
 
 export class Playlist extends React.Component {
@@ -61,10 +62,10 @@ export class Playlist extends React.Component {
     );
   }
 
-  rowRenderer({ key, index, style }) {
+  rowRenderer({ index, style }) {
     const track = this.state.tracks[index];
     return (
-      <div key={key} className="item" style={style}>
+      <div className="item" style={style}>
         <div className="cover" style={{ backgroundImage: `url(/api/art/track/${track.persistent_id})` }} />
         <div className="title">
           <div className="song">{track.name}</div>
@@ -89,10 +90,12 @@ export class Playlist extends React.Component {
               <List
                 width={width}
                 height={height}
-                rowCount={this.state.tracks.length}
-                rowHeight={63}
-                rowRenderer={this.rowRenderer}
-              />
+                itemCount={this.state.tracks.length}
+                itemSize={63}
+                overscanCount={Math.ceil(height / 58)}
+              >
+                {this.rowRenderer}
+              </List>
             )}
           </AutoSizer>
         </div>
@@ -144,10 +147,10 @@ export class Album extends React.Component {
     );
   }
 
-  rowRenderer({ key, index, style }) {
+  rowRenderer({ index, style }) {
     const track = this.state.tracks[index];
     return (
-      <div key={key} className="item" style={style}>
+      <div className="item" style={style}>
         <div className="tracknum">{track.track_number}</div>
         <div className="title">
           <div className="song">{track.name}</div>
@@ -174,10 +177,12 @@ export class Album extends React.Component {
               <List
                 width={width}
                 height={height}
-                rowCount={this.state.tracks.length}
-                rowHeight={63}
-                rowRenderer={this.rowRenderer}
-              />
+                itemCount={this.state.tracks.length}
+                itemSize={63}
+                overscanCount={Math.ceil(height / 63)}
+              >
+                {this.rowRenderer}
+              </List>
             )}
           </AutoSizer>
         </div>

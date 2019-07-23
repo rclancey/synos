@@ -29,6 +29,12 @@
   color: #ff2d55;
 }
 
+#app.mobile.light .artistList .index .disabled,
+#app.mobile.light .albumList .index .disabled,
+#app.mobile.light .genreList .index .disabled {
+  color: #999;
+}
+
 #app.mobile.light .artistList .item .artistImage,
 #app.mobile.light .genreList .item .genreImage {
   background-color: #868b95;

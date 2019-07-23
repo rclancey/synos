@@ -8,6 +8,12 @@ import { AudiobookList } from './AudiobookList';
 import { TrackMenu, PlaylistMenu } from './TrackMenu';
 import { NowPlaying } from './NowPlaying';
 
+import '../../themes/mobile/layout.css';
+//import '../../themes/mobile/light.css';
+//import '../../themes/mobile/dark.css';
+
+const importedThemes = {};
+
 export class MobileSkin extends React.Component {
   constructor(props) {
     super(props);
@@ -124,6 +130,10 @@ export class MobileSkin extends React.Component {
   }
 
   render() {
+    if (importedThemes[this.props.theme] === undefined || importedThemes[this.props.theme] === null) {
+      importedThemes[this.props.theme] = true;
+      import(`../../themes/mobile/${this.props.theme}.css`).then(css => importedThemes[this.props.theme] = css);
+    }
     return (
       <div id="app" className={`mobile ${this.props.theme}`}>
         {this.renderScreen()}
@@ -175,3 +185,4 @@ export class MobileSkin extends React.Component {
   }
 }
 
+export default MobileSkin;
