@@ -310,7 +310,7 @@ func (l *Logger) Close() error {
 }
 
 func (l *Logger) Write(data []byte) (int, error) {
-	return l.writeRaw(3, LOG, data), nil
+	return l.writeRaw(4, LOG, data), nil
 }
 
 func (l *Logger) writeRaw(skip int, level LogLevel, msg []byte) int {

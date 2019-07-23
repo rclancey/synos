@@ -55,7 +55,7 @@ func (l *AccessLogger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rl.r.Referer(),
 		rl.r.UserAgent(),
 	}
-	l.Logger.Write([]byte(fmt.Sprintf(f, args...)))
+	l.Logger.file.Write([]byte(fmt.Sprintf(f, args...)))
 }
 
 type ResponseLogger struct {
