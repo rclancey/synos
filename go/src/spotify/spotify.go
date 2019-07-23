@@ -46,6 +46,7 @@ func (img *Image) Get(c *SpotifyClient) ([]byte, string, error) {
 	if err != nil {
 		return nil, "", errors.Wrap(err, "can't get spotify image")
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return nil, "", errors.New(res.Status)
 	}

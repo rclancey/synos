@@ -71,6 +71,7 @@ func (c *ClientAuth) AuthIfNecessary() error {
 	if err != nil {
 		return errors.Wrap(err, "can't execute spotify auth request")
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		log.Println("error in auth response:", res.Status)
 		data, _ := ioutil.ReadAll(res.Body)

@@ -145,9 +145,11 @@ func (c *APIClient) loadFromCache(req *http.Request) (*http.Response, error) {
 		return nil, nil
 	}
 	f, err := os.Open(fn)
+	/*
 	if f != nil {
 		defer f.Close()
 	}
+	*/
 	if err != nil {
 		return nil, errors.Wrap(err, "can't open cache file " + fn)
 	}
@@ -231,6 +233,7 @@ func (c *APIClient) GetObj(rsrc string, args url.Values, obj interface{}) error 
 	if err != nil {
 		return errors.Wrap(err, "can't execute api get request")
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return errors.New(res.Status)
 	}
