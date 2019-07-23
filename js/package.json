@@ -7,19 +7,23 @@
     "base-64": "^0.1.0",
     "fontawesome": "^5.6.3",
     "lodash": "^4.17.13",
+    "lodash.reverse": "^4.0.1",
+    "lodash.sortby": "^4.7.0",
     "moment": "^2.24.0",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-draggable": "^3.2.1",
+    "react-loadable": "^5.5.0",
     "react-scripts": "2.1.8",
     "react-sortable-tree": "^2.6.2",
     "react-sortable-tree-theme-file-explorer": "^2.0.0",
     "react-virtualized": "^9.21.0",
     "react-virtualized-auto-sizer": "^1.0.2",
-    "react-window": "^1.7.1",
+    "react-window": "^1.8.5",
     "styled-jsx": "^3.2.1"
   },
   "scripts": {
+    "analyze": "source-map-explorer 'build/static/js/*.js'",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -33,5 +37,9 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "devDependencies": {
+    "source-map-explorer": "^2.0.1",
+    "webpack-bundle-analyzer": "^3.3.2"
+  }
 }

@@ -2,10 +2,9 @@ package musicdb
 
 import (
 	"database/sql/driver"
-	"fmt"
-	//"reflect"
-	//"strconv"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 type Time int64
@@ -36,7 +35,7 @@ func (t *Time) Scan(value interface{}) error {
 	case string:
 		tm, err := time.ParseInLocation(v, "2006-01-02 15:04:05", time.UTC)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "can't parse time value " + v)
 		}
 		t.Set(tm)
 		return nil
@@ -45,11 +44,11 @@ func (t *Time) Scan(value interface{}) error {
 		return nil
 	case *time.Time:
 		if v == nil {
-			return fmt.Errorf("can't set nil time")
+			return errors.Errorf("can't set nil time")
 		}
 		t.Set(*v)
 		return nil
 	}
-	return fmt.Errorf("can't convert %T to a time", value)
+	return errors.Errorf("can't convert %T to a time", value)
 }
 

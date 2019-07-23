@@ -2,12 +2,12 @@ package spotify
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io/ioutil"
 	//"log"
 	"net/http"
 	"net/url"
+
+	"github.com/pkg/errors"
 )
 
 type PagingObject struct {
@@ -30,14 +30,14 @@ func (tis *TypedItems) UnmarshalJSON(data []byte) error {
 	rawItems := []json.RawMessage{}
 	err := json.Unmarshal(data, &rawItems)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't unmarshal typed items into raw message")
 	}
 	items := make([]interface{}, len(rawItems))
 	for i, rawItem := range rawItems {
 		ti := &TypedItem{}
 		err := json.Unmarshal(rawItem, ti)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "can't unmarshal typed item")
 		}
 		switch ti.Type {
 		case "artist":
@@ -47,11 +47,11 @@ func (tis *TypedItems) UnmarshalJSON(data []byte) error {
 		case "track":
 			items[i] = &Track{}
 		default:
-			return fmt.Errorf("unknown item type: %s", ti.Type)
+			return errors.Errorf("unknown item type: %s", ti.Type)
 		}
 		err = json.Unmarshal(rawItem, items[i])
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "can't unmarshal item into %T", items[i])
 		}
 	}
 	*tis = items
@@ -79,19 +79,20 @@ func (c *SpotifyClient) Search(name, kind string) (*SearchResult, error) {
 	for {
 		res, err := c.client.Get(rsrc, q)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't execute spotify search")
 		}
+		defer res.Body.Close()
 		if res.StatusCode != http.StatusOK {
 			return nil, errors.New(res.Status)
 		}
 		data, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't read spotify search response")
 		}
 		sr := &SearchResultPage{}
 		err = json.Unmarshal(data, sr)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't unmarshal spotify search response")
 		}
 		itemsets := []TypedItems{
 			sr.Artists.Items,

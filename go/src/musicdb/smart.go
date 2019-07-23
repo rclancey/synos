@@ -5,9 +5,10 @@ import (
 	"database/sql/driver"
 	"encoding/gob"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
+
+	"github.com/pkg/errors"
 
 	"itunes"
 )
@@ -303,7 +304,7 @@ func (spl *Smart) Value() (driver.Value, error) {
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(spl)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't serialize smart playlist")
 	}
 	return buf.Bytes(), nil
 }
@@ -316,11 +317,11 @@ func (spl *Smart) Scan(value interface{}) error {
 	case []byte:
 		buf := bytes.NewBuffer(v)
 		dec := gob.NewDecoder(buf)
-		return dec.Decode(spl)
+		return errors.Wrap(dec.Decode(spl), "can't deserialize smart playlist")
 	case string:
-		return json.Unmarshal([]byte(v), spl)
+		return errors.Wrap(json.Unmarshal([]byte(v), spl), "can't json unmarshal smart playlist")
 	}
-	return fmt.Errorf("don't know how to decode %T into smart playlist", value)
+	return errors.Errorf("don't know how to decode %T into smart playlist", value)
 }
 
 func (rs *RuleSet) Where() (string, []interface{}) {

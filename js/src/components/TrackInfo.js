@@ -1,5 +1,5 @@
 import React from 'react';
-import { displayTime } from '../lib/columns';
+import displayTime from '../lib/displayTime';
 
 export const TrackInfo = ({ track }) => (
   <div className="trackInfo">

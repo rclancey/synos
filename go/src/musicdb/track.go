@@ -1,10 +1,7 @@
 package musicdb
 
 import (
-	//"bytes"
-	//"encoding/gob"
 	"fmt"
-	//"io"
 	"net/url"
 	"os"
 	"path"
@@ -17,6 +14,7 @@ import (
 	"github.com/dhowden/tag"
 	"github.com/goulash/audio"
 	"github.com/hajimehoshi/go-mp3"
+	"github.com/pkg/errors"
 
 	"itunes/loader"
 )
@@ -104,60 +102,6 @@ func (t *Track) String() string {
 	return s
 }
 
-/*
-func (t *Track) Serialize(w io.Writer) error {
-	if t == nil {
-		return errors.New("can't serialize nil track")
-	}
-	enc := gob.NewEncoder(w)
-	return enc.Encode(t)
-}
-
-func (t *Track) SerializeBytes() ([]byte, error) {
-	var buf bytes.Buffer
-	err := t.Serialize(&buf)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func (t *Track) Deserialize(r io.Reader) error {
-	dec := gob.NewDecoder(r)
-	return dec.Decode(t)
-}
-
-func (t *Track) DeserializeBytes(data []byte) error {
-	buf := bytes.NewBuffer(data)
-	return t.Deserialize(buf)
-}
-
-func DeserializeTrack(r io.Reader) (*Track, error) {
-	tr := &Track{}
-	err := tr.Deserialize(r)
-	if err != nil {
-		return nil, err
-	}
-	return tr, nil
-}
-
-func DeserializeTrackBytes(data []byte) (*Track, error) {
-	tr := &Track{}
-	err := tr.DeserializeBytes(data)
-	if err != nil {
-		return nil, err
-	}
-	return tr, nil
-}
-*/
-
-
-/*
-func (t *Track) MediaKind() MediaKind {
-	return MediaKind_MUSIC
-}
-*/
-
 type stimes []Time
 func (s stimes) Len() int { return len(s) }
 func (s stimes) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
@@ -205,11 +149,11 @@ func (t *Track) getTag() (tag.Metadata, error) {
 		defer f.Close()
 	}
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't open track file " + fn)
 	}
 	m, err := tag.ReadFrom(f)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't read tag data from " + fn)
 	}
 	return m, nil
 }
@@ -232,7 +176,7 @@ func (t *Track) GetPurchaseDate() (*Time, error) {
 	}
 	tm, err := time.Parse("2006-01-02 15:04:05", v.(string))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't parse time value " + v.(string))
 	}
 	ms := Time(tm.Unix() * 1000 + int64((tm.Nanosecond() / 1e6)))
 	t.PurchaseDate = &ms
@@ -373,7 +317,7 @@ func (t *Track) GetTrack() (uint8, uint8, error) {
 	}
 	m, err := t.getTag()
 	if err != nil {
-		return tn, tc, nil
+		return tn, tc, err
 	}
 	n, c := m.Track()
 	if t.TrackNumber == nil && n != 0 {
@@ -400,7 +344,7 @@ func (t *Track) GetDisc() (uint8, uint8, error) {
 	}
 	m, err := t.getTag()
 	if err != nil {
-		return dn, dc, nil
+		return dn, dc, err
 	}
 	n, c := m.Disc()
 	if t.DiscNumber == nil && n != 0 {
@@ -420,7 +364,7 @@ func (t *Track) GetSize() (uint64, error) {
 	}
 	st, err := os.Stat(t.Path())
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "can't stat " + t.Path())
 	}
 	t.Size = uint64p(uint64(st.Size()))
 	return *t.Size, nil
@@ -432,7 +376,7 @@ func (t *Track) GetTotalTime() (uint, error) {
 	}
 	md, err := audio.ReadMetadata(t.Path())
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "can't read audio metadata from " + t.Path())
 	}
 	t.TotalTime = uintp(uint(md.Length().Seconds() * 1000))
 	return *t.TotalTime, nil
@@ -445,21 +389,21 @@ func (t *Track) GetSampleRate() (uint, error) {
 	fn := t.Path()
 	codec, err := audio.Identify(fn)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "can't identify audio type from " + fn)
 	}
 	switch codec {
 	case audio.MP3:
 		f, err := os.Open(fn)
 		if err != nil {
-			return 0, err
+			return 0, errors.Wrap(err, "can't open audio file " + fn)
 		}
 		dec, err := mp3.NewDecoder(f)
 		if err != nil {
-			return 0, err
+			return 0, errors.Wrap(err, "can't decode mp3 audio file " + fn)
 		}
 		t.SampleRate = uintp(uint(dec.SampleRate()))
 	default:
-		return 0, fmt.Errorf("don't know how to get sample rate from %s", codec)
+		return 0, errors.Errorf("don't know how to get sample rate from %s", codec)
 	}
 	return *t.SampleRate, nil
 }
@@ -470,7 +414,7 @@ func (t *Track) GetBitRate() (uint, error) {
 	}
 	md, err := audio.ReadMetadata(t.Path())
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "can't read audio metadata from " + t.Path())
 	}
 	t.BitRate = uintp(uint(md.EncodingBitrate()))
 	return *t.BitRate, nil
@@ -886,14 +830,14 @@ func TrackFromITunes(itr *loader.Track) *Track {
 func TrackFromAudioFile(fn string) (*Track, error) {
 	st, err := os.Stat(fn)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't stat " + fn)
 	}
 	md, err := audio.ReadMetadata(fn)
 	if err != nil {
 		return &Track{
 			Location: &fn,
 			Size: uint64p(uint64(st.Size())),
-		}, err
+		}, errors.Wrap(err, "cant read audio metadata from file " + fn)
 	}
 	tn, tc := md.Track()
 	dn, dc := md.Disc()

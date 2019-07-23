@@ -1,5 +1,6 @@
 import React from 'react';
-import _ from 'lodash';
+import sortBy from 'lodash.sortby';
+import reverse from 'lodash.reverse';
 import { TrackList } from './TrackList';
 import { ColumnBrowser } from './ColumnBrowser';
 import * as COLUMNS from '../lib/columns';
@@ -176,11 +177,11 @@ export class TrackBrowser extends React.Component {
       // noop
     } else if (sorting.substr(0, 1) === '-') {
       sorting = sorting.substr(1);
-      _.reverse(tracks);
-      tracks = _.sortBy(tracks, [track => stringSorter(track[sorting])]);
-      _.reverse(tracks);
+      reverse(tracks);
+      tracks = sortBy(tracks, [track => stringSorter(track[sorting])]);
+      reverse(tracks);
     } else {
-      tracks = _.sortBy(tracks, [track => stringSorter(track[sorting])]);
+      tracks = sortBy(tracks, [track => stringSorter(track[sorting])]);
     }
     return new Promise(resolve => this.setState({ tracks }, resolve));
   }
@@ -218,7 +219,7 @@ export class TrackBrowser extends React.Component {
       });
     }
     const setToFilter = (set, name) => {
-      const rows = _.sortBy(
+      const rows = sortBy(
           Object.keys(set).filter(v => !!v && v.trim() !== ''),
           [stringSorter]
         )

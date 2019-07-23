@@ -2,7 +2,6 @@ package logging
 
 import (
 	"compress/gzip"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 type watcher struct {
@@ -57,22 +58,27 @@ func NewLogger(fn string, level LogLevel, rotate time.Duration, retain int) (*Lo
 		if l.file != nil && l.file.Name() != "/dev/stdout" && l.file.Name() != "/dev/stdin" {
 			l.file.Close()
 		}
-		return nil, err
+		return nil, errors.Wrap(err, "can't open logger")
 	}
 	return l, nil
 }
 
 func (l *Logger) MakeDefault() {
+	log.SetPrefix("")
+	log.SetFlags(0)
 	log.SetOutput(l)
 }
 
 func (l *Logger) Reopen() error {
 	orig := l.file
+	if orig != nil {
+		l.Info("reopening")
+	}
 	var err error
 	if l.FileName != "" {
 		l.file, err = os.OpenFile(l.FileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "can't open log file " + l.FileName)
 		}
 		if orig != nil {
 			orig.Close()
@@ -92,38 +98,38 @@ func (l *Logger) Rotate() error {
 	if l.start == nil {
 		return nil
 	}
-	l.Println("rotating", l.FileName)
+	l.Info("rotating", l.FileName)
 	_, err := os.Stat(l.FileName)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return err
+		return errors.Wrap(err, "can't stat log file " + l.FileName)
 	}
 	dt := l.start.In(time.Local).Format("20060102.1504")
 	rfn := l.FileName + "." + dt
 	_, err = os.Stat(rfn)
 	if err == nil {
-		return fmt.Errorf("rotated log file %s already exists", rfn)
+		return errors.Errorf("rotated log file %s already exists", rfn)
 	}
 	if !os.IsNotExist(err) {
-		return err
+		return errors.Wrap(err, "can't stat rotation file " + rfn)
 	}
 	err = os.Rename(l.FileName, rfn)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "can't rename log file %s to %s", l.FileName, rfn)
 	}
 	err = l.Reopen()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't reopen log")
 	}
 	err = l.compress(rfn)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't compress rotated log file")
 	}
 	err = l.cleanup(now)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't clean up rotated log files")
 	}
 	return nil
 }
@@ -214,19 +220,19 @@ func (l *Logger) compress(fn string) error {
 	gfn := fn + ".gz"
 	_, err := os.Stat(gfn)
 	if err == nil {
-		return fmt.Errorf("compressed file %s already exists", gfn)
+		return errors.Errorf("compressed file %s already exists", gfn)
 	}
 	if !os.IsNotExist(err) {
-		return err
+		return errors.Wrap(err, "can't stat compressed log file " + gfn)
 	}
 	r, err := os.Open(fn)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't open rotated log file " + fn)
 	}
 	defer r.Close()
 	gf, err := os.Create(gfn)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't create compressed log file " + gfn)
 	}
 	zw := gzip.NewWriter(gf)
 	buf := make([]byte, 8192)
@@ -239,7 +245,7 @@ func (l *Logger) compress(fn string) error {
 			zw.Close()
 			gf.Close()
 			os.Remove(gfn)
-			return err
+			return errors.Wrap(err, "can't read from rotated log file " + fn)
 		}
 		if n == 0 {
 			break
@@ -249,20 +255,21 @@ func (l *Logger) compress(fn string) error {
 			zw.Close()
 			gf.Close()
 			os.Remove(gfn)
-			return err
+			return errors.Wrap(err, "can't write to compressed log file " + gfn)
 		}
 	}
 	err = zw.Close()
 	if err != nil {
 		gf.Close()
 		os.Remove(gfn)
-		return err
+		return errors.Wrap(err, "can't close compressor for log file " + gfn)
 	}
 	err = gf.Close()
 	if err != nil {
 		os.Remove(gfn)
+		return errors.Wrap(err, "can't close compressed log file " + gfn)
 	}
-	return os.Remove(fn)
+	return errors.Wrap(os.Remove(fn), "can't remove uncompressed log file " + fn)
 }
 
 var dtRe = regexp.MustCompile(`(\d{8}\.\d{4})\.gz$`)
@@ -273,7 +280,7 @@ func (l *Logger) cleanup(asof time.Time) error {
 	}
 	fns, err := filepath.Glob(l.FileName + ".*.gz")
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "can't find files matching pattern %s.*.gz", l.FileName)
 	}
 	earliest := asof.Add(-1 * l.RotateDuration * time.Duration(l.RetainCount))
 	for _, fn := range fns {
@@ -284,7 +291,7 @@ func (l *Logger) cleanup(asof time.Time) error {
 				if t.Before(earliest) {
 					err = os.Remove(fn)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "can't remove old log file " + fn)
 					}
 				}
 			}
@@ -297,53 +304,54 @@ func (l *Logger) Close() error {
 	if l.file != nil {
 		err := l.file.Close()
 		l.file = nil
-		return err
+		return errors.Wrap(err, "can't close logger")
 	}
 	return nil
 }
 
 func (l *Logger) Write(data []byte) (int, error) {
+	return l.writeRaw(4, LOG, data), nil
+}
+
+func (l *Logger) writeRaw(skip int, level LogLevel, msg []byte) int {
 	if l.file == nil {
-		return 0, errors.New("logger not open")
+		panic("logger not open")
 	}
+	t := time.Now()
 	if l.start == nil {
-		t := time.Now()
 		l.start = &t
 	}
-	n, err := l.file.Write(data)
+	data := t.In(time.Local).Format("2006/01/02 15:04:05")
+	data += " " + level.PaddedString(8)
+	_, fn, line, _ := runtime.Caller(skip)
+	data += " " + filepath.Base(fn) + ":" + strconv.Itoa(line) + ":"
+	data += " " + string(msg)
+	if !strings.HasSuffix(data, "\n") {
+		data += "\n"
+	}
+	n, err := l.file.Write([]byte(data))
 	if err != nil {
-		return n, err
+		panic("write failed: " + err.Error())
 	}
 	err = l.file.Sync()
 	if err != nil {
-		return n, err
+		panic("sync failed: " + err.Error())
 	}
-	return n, nil
+	return n
 }
 
 func (l *Logger) log(level LogLevel, args ...interface{}) {
 	if level > l.Level {
 		return
 	}
-	t := time.Now().In(time.Local).Format("2006/01/02 15:04:05")
-	_, fn, line, _ := runtime.Caller(2)
-	lineref := filepath.Base(fn) + ":" + strconv.Itoa(line) + ":"
-	xargs := append([]interface{}{t, level.PaddedString(8), lineref}, args...)
-	l.Write([]byte(fmt.Sprintln(xargs...)))
+	l.writeRaw(3, level, []byte(fmt.Sprintln(args...)))
 }
 
 func (l *Logger) logf(level LogLevel, f string, args ...interface{}) {
 	if level > l.Level {
 		return
 	}
-	t := time.Now().In(time.Local).Format("2006/01/02 15:04:05")
-	_, fn, line, _ := runtime.Caller(2)
-	xargs := append([]interface{}{t, level.PaddedString(8), filepath.Base(fn), line}, args...)
-	out := fmt.Sprintf("%s %s %s:%d: " + f, xargs...)
-	if !strings.HasSuffix(out, "\n") {
-		out += "\n"
-	}
-	l.Write([]byte(out))
+	l.writeRaw(3, level, []byte(fmt.Sprintf(f, args...)))
 }
 
 func (l *Logger) Println(args ...interface{}) {
@@ -387,9 +395,13 @@ func (l *Logger) Errorf(f string, args ...interface{}) {
 }
 
 func (l *Logger) Trace() {
+	if l.file == nil {
+		panic("logger not open")
+	}
 	skip := 0
+	padding := time.Now().In(time.Local).Format("2006/01/02 15:04:05") + " " + strings.Repeat(" ", 8)
 	for {
-		pc, fn, line, ok := runtime.Caller(skip)
+		pc, fn, lineNum, ok := runtime.Caller(skip)
 		if !ok {
 			break
 		}
@@ -406,7 +418,12 @@ func (l *Logger) Trace() {
 			name = name[period+1:]
 		}
 		name = strings.Replace(name, "·", ".", -1)
-		l.Write([]byte(fmt.Sprintf("%s.%s()\n    %s:%s\n", pkg, name, fn, line)))
+		line := fmt.Sprintf("%s %s.%s()\n%s     %s:%d\n", padding, pkg, name, padding, fn, lineNum)
+		padding = strings.Repeat(" ", len(padding))
+		_, err := l.file.Write([]byte(line))
+		if err != nil {
+			panic("error writing stack trace: " + err.Error())
+		}
 		skip += 1
 	}
 }

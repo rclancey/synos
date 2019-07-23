@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/goulash/audio"
+	"github.com/pkg/errors"
 )
 
 type FileType audio.Codec
@@ -111,7 +112,7 @@ func (ft *FileType) UnmarshalJSON(data []byte) error {
 	}
 	v, ok := fileTypeValues[s]
 	if !ok {
-		return fmt.Errorf("Unknown file type '%s'", s)
+		return errors.Errorf("Unknown file type '%s'", s)
 	}
 	*ft = v
 	return nil
@@ -135,9 +136,9 @@ func (ft *FileType) Scan(value interface{}) error {
 			*ft = x
 			return nil
 		}
-		return fmt.Errorf("Unknown file type '%s'", v)
+		return errors.Errorf("Unknown file type '%s'", v)
 	}
-	return fmt.Errorf("don't know how to convert %T into file type", value)
+	return errors.Errorf("don't know how to convert %T into file type", value)
 }
 
 type PlaylistKind int
@@ -219,7 +220,7 @@ func (pk *PlaylistKind) UnmarshalJSON(data []byte) error {
 	}
 	v, ok := playlistKindValues[s]
 	if !ok {
-		return fmt.Errorf("Unknown playlist kind '%s'", s)
+		return errors.Errorf("Unknown playlist kind '%s'", s)
 	}
 	*pk = v
 	return nil
@@ -243,9 +244,9 @@ func (pk *PlaylistKind) Scan(value interface{}) error {
 			*pk = x
 			return nil
 		}
-		return fmt.Errorf("Unknown playlist kind '%s'", v)
+		return errors.Errorf("Unknown playlist kind '%s'", v)
 	}
-	return fmt.Errorf("don't know how to convert %T into playlist kind", value)
+	return errors.Errorf("don't know how to convert %T into playlist kind", value)
 }
 
 type MediaKind uint
@@ -315,7 +316,7 @@ func (mk *MediaKind) UnmarshalJSON(data []byte) error {
 	}
 	v, ok := mediaKindValues[s]
 	if !ok {
-		return fmt.Errorf("Unknown media kind '%s'", s)
+		return errors.Errorf("Unknown media kind '%s'", s)
 	}
 	*mk = v
 	return nil
@@ -339,9 +340,9 @@ func (mk *MediaKind) Scan(value interface{}) error {
 			*mk = x
 			return nil
 		}
-		return fmt.Errorf("Unknown media kind '%s'", v)
+		return errors.Errorf("Unknown media kind '%s'", v)
 	}
-	return fmt.Errorf("don't know how to convert %T into media kind", value)
+	return errors.Errorf("don't know how to convert %T into media kind", value)
 }
 
 type Conjunction uint8
@@ -381,7 +382,7 @@ func (c *Conjunction) UnmarshalJSON(data []byte) error {
 	}
 	v, ok := conjunctionValues[s]
 	if !ok {
-		return fmt.Errorf("Unknown conjunction '%s'", s)
+		return errors.Errorf("Unknown conjunction '%s'", s)
 	}
 	*c = v
 	return nil
@@ -433,7 +434,7 @@ func (u *Unit) UnmarshalJSON(data []byte) error {
 	}
 	v, ok := unitValues[s]
 	if !ok {
-		return fmt.Errorf("Unknown unit '%s'", s)
+		return errors.Errorf("Unknown unit '%s'", s)
 	}
 	*u = v
 	return nil
@@ -482,7 +483,7 @@ func (ls *LogicSign) UnmarshalJSON(data []byte) error {
 	}
 	v, ok := logicSignValues[s]
 	if !ok {
-		return fmt.Errorf("Unknown logic sign '%s'", s)
+		return errors.Errorf("Unknown logic sign '%s'", s)
 	}
 	*ls = v
 	return nil
@@ -546,7 +547,7 @@ func (o *Operator) UnmarshalJSON(data []byte) error {
 	}
 	v, ok := operatorValues[s]
 	if !ok {
-		return fmt.Errorf("Unknown operator '%s'", s)
+		return errors.Errorf("Unknown operator '%s'", s)
 	}
 	*o = v
 	return nil
@@ -613,7 +614,7 @@ func (rt *RuleType) UnmarshalJSON(data []byte) error {
 	}
 	v, ok := ruleTypeValues[s]
 	if !ok {
-		return fmt.Errorf("Unknown rule type '%s'", s)
+		return errors.Errorf("Unknown rule type '%s'", s)
 	}
 	*rt = v
 	return nil
@@ -712,7 +713,7 @@ func (lf *LimitField) UnmarshalJSON(data []byte) error {
 	}
 	v, ok := limitFieldValues[s]
 	if !ok {
-		return fmt.Errorf("Unknown limit field '%s'", s)
+		return errors.Errorf("Unknown limit field '%s'", s)
 	}
 	*lf = v
 	return nil
@@ -922,7 +923,7 @@ func (f *Field) UnmarshalJSON(data []byte) error {
 	}
 	v, ok := fieldValues[s]
 	if !ok {
-		return fmt.Errorf("Unknown field '%s'", s)
+		return errors.Errorf("Unknown field '%s'", s)
 	}
 	*f = v
 	return nil

@@ -130,7 +130,7 @@ class PlainTreeView extends React.Component {
           <div className={cls.join(' ')} onClick={this.toggle} />
         ) : null }
         <div className={`icon ${node.kind}`} />
-        <div className="title">{node.title}</div>
+        <div className="title">{node.name}</div>
       </div>
     );
   }

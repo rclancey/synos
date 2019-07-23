@@ -1,4 +1,4 @@
-import moment from 'moment';
+import displayTime from './displayTime';
 
 export const PLAYLIST_POSITION = {
   key: 'index',
@@ -123,44 +123,39 @@ export const RELEASE_YEAR = {
 
 export const displayDate = (t) => {
   if (t) {
-    return moment(t).format('M/D/YYYY');
+    const dt = new Date(t);
+    return (dt.getMonth() + 1) + '/' + dt.getDate() + '/' + dt.getFullYear();
+    //return moment(t).format('M/D/YYYY');
   }
   return '';
 };
 
-export const displayTime = (t) => {
-  if (t) {
-    const sign = t < 0 ? -1 : 1;
-    const h = Math.floor(sign * t / 3600000);
-    const m = Math.floor(((sign * t) % 3600000) / 60000);
-    const s = Math.floor(((sign * t) % 60000) / 1000);
-    let d = '';
-    if (sign === -1) {
-      d += '-';
-    }
-    if (h > 0) {
-      d += `${h}:`;
-      if (m >= 10) {
-        d += `${m}:`;
-      } else {
-        d += `0${m}:`;
-      }
-    } else {
-      d += `${m}:`;
-    }
-    if (s >= 10) {
-      d += `${s}`;
-    } else {
-      d += `0${s}`;
-    }
-    return d;
-  }
-  return '0:00';
-};
-
 export const displayDateTime = (t) => {
   if (t) {
-    return moment(t).format('M/D/YYYY, h:mm A');
+    const dt = new Date(t);
+    let ap = '';
+    let h = dt.getHours();
+    if (h === 0) {
+      h = '12';
+      ap = 'AM';
+    } else if (h < 12) {
+      h = h.toString();
+      ap = 'PM';
+    } else if (h === 12) {
+      h = '12';
+      ap = 'PM';
+    } else {
+      h = (h - 12).toString();
+      ap = 'PM';
+    }
+    let m = dt.getMinutes().toString();
+    if (m < 10) {
+      m = '0' + m.toString();
+    } else {
+      m = m.toString();
+    }
+    return (dt.getMonth() + 1) + '/' + dt.getDate() + '/' + dt.getFullYear() + ', ' + h + ':' + m + ' ' + ap;
+    //return moment(t).format('M/D/YYYY, h:mm A');
   }
   return '';
 };

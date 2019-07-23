@@ -69,6 +69,7 @@
 #app.mobile .playlistList .item {
   display: flex;
   padding: 9px 9px 0px 9px;
+  box-sizing: border-box;
 }
 
 #app.mobile .playlistList .item .icon {
@@ -623,6 +624,7 @@
 
 #app.mobile .queue .items {
   margin-top: 33px;
+  height: calc(100vh - 33px);
 }
 
 #app.mobile .queue .item {

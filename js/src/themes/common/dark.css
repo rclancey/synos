@@ -1,0 +1,88 @@
+#app.dark .icon.airplay {
+  background-image: url(../../icons/airplay-dark.png);
+}
+
+#app.dark .icon.albums {
+  background-image: url(../../icons/albums-dark.png);
+}
+
+#app.dark .icon.appletv {
+  background-image: url(../../icons/appletv-dark.png);
+}
+
+#app.dark .icon.artists {
+  background-image: url(../../icons/artists-dark.png);
+}
+
+#app.dark .icon.audiobooks {
+  background-image: url(../../icons/audiobooks-dark.png);
+}
+
+#app.dark .icon.books {
+  background-image: url(../../icons/books-dark.png);
+}
+
+#app.dark .icon.computer {
+  background-image: url(../../icons/computer-dark.png);
+}
+
+#app.dark .icon.downloaded_music,
+#app.dark .icon.downloaded_tvshows,
+#app.dark .icon.downloaded_movies {
+  background-image: url(../../icons/downloaded-dark.png);
+}
+
+#app.dark .icon.folder {
+  background-image: url('../../icons/folder-dark.png');
+}
+
+#app.dark .icon.genius {
+  background-image: url(../../icons/genius-dark.png);
+}
+
+#app.dark .icon.genres {
+  background-image: url(../../icons/genres-dark.png);
+}
+
+#app.dark .icon.movies {
+  background-image: url(../../icons/movies-dark.png);
+}
+
+#app.dark .icon.music {
+  background-image: url(../../icons/music-dark.png);
+}
+
+#app.dark .icon.playlists,
+#app.dark .icon.standard,
+#app.dark .icon.playlist {
+  background-image: url(../../icons/playlist-dark.png);
+}
+
+#app.dark .icon.podcasts {
+  background-image: url(../../icons/podcasts-dark.png);
+}
+
+#app.dark .icon.purchased {
+  background-image: url(../../icons/purchased-dark.png);
+}
+
+#app.dark .icon.recent {
+  background-image: url(../../icons/recent-dark.png);
+}
+
+#app.dark .icon.smart {
+  background-image: url(../../icons/smart-dark.png);
+}
+
+#app.dark .icon.songs {
+  background-image: url(../../icons/songs-dark.png);
+}
+
+#app.dark .icon.tvshows {
+  background-image: url(../../icons/tvshows-dark.png);
+}
+
+#app.desktop.dark .playlistBrowser .folder .folderToggle {
+  border-left-color: #999;
+}
+

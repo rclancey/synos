@@ -2,13 +2,14 @@ package logging
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 var addrRe = regexp.MustCompile("^(.*):([0-9]+)$")
@@ -21,7 +22,7 @@ type AccessLogger struct {
 func NewAccessLogger(server http.Handler, fn string, level LogLevel, rotate time.Duration, retain int) (*AccessLogger, error) {
 	logger, err := NewLogger(fn, level, rotate, retain)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't create base logger")
 	}
 	return &AccessLogger{logger, server}, nil
 }
@@ -54,7 +55,7 @@ func (l *AccessLogger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rl.r.Referer(),
 		rl.r.UserAgent(),
 	}
-	l.Logger.Write([]byte(fmt.Sprintf(f, args...)))
+	l.Logger.file.Write([]byte(fmt.Sprintf(f, args...)))
 }
 
 type ResponseLogger struct {

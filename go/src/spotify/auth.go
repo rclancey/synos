@@ -3,13 +3,14 @@ package spotify
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 type ClientAuth struct {
@@ -38,7 +39,7 @@ func NewClientAuth(clientId, clientSecret string) (*ClientAuth, error) {
 	}
 	err := c.AuthIfNecessary()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "spotify auth failed")
 	}
 	return c, nil
 }
@@ -46,7 +47,7 @@ func NewClientAuth(clientId, clientSecret string) (*ClientAuth, error) {
 func (c *ClientAuth) AuthenticateRequest(req *http.Request) error {
 	err := c.AuthIfNecessary()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "spotify auth failed")
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
 	return nil
@@ -54,7 +55,6 @@ func (c *ClientAuth) AuthenticateRequest(req *http.Request) error {
 
 func (c *ClientAuth) AuthIfNecessary() error {
 	if c.expires.After(time.Now().Add(time.Second)) {
-		//log.Println("auth still valid until", c.expires.String())
 		return nil
 	}
 	q := url.Values{}
@@ -62,17 +62,16 @@ func (c *ClientAuth) AuthIfNecessary() error {
 	body := bytes.NewBufferString(q.Encode())
 	req, err := http.NewRequest(http.MethodPost, "https://accounts.spotify.com/api/token", body)
 	if err != nil {
-		log.Println("error creating auth request:", err)
-		return err
+		return errors.Wrap(err, "can't create spotify auth request")
 	}
 	req.SetBasicAuth(c.clientId, c.clientSecret)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	now := time.Now()
 	res, err := c.client.Do(req)
 	if err != nil {
-		log.Println("error submitting auth request:", err)
-		return err
+		return errors.Wrap(err, "can't execute spotify auth request")
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		log.Println("error in auth response:", res.Status)
 		data, _ := ioutil.ReadAll(res.Body)
@@ -81,17 +80,14 @@ func (c *ClientAuth) AuthIfNecessary() error {
 	}
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading auth response:", err)
-		return err
+		return errors.Wrap(err, "can't read spotify auth response")
 	}
 	auth := &SpotifyAuthData{}
 	err = json.Unmarshal(data, auth)
 	if err != nil {
-		log.Println("error parsing auth response:", err)
-		return err
+		return errors.Wrap(err, "can't json unmarshal spotify auth response")
 	}
 	c.token = auth.AccessToken
 	c.expires = now.Add(time.Duration(auth.TTL - 1) * time.Second)
-	//log.Println("auth token", c.token, "expires at", c.expires.String())
 	return nil
 }

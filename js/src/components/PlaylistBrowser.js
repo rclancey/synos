@@ -1,6 +1,7 @@
 import React from 'react';
 //import SortableTree from 'react-sortable-tree';
 //import FolderTheme from 'react-sortable-tree-theme-file-explorer';
+import { PLAYLIST_ORDER } from '../lib/distinguished_kinds';
 import { TreeView } from './TreeView';
 
 export class PlaylistBrowser extends React.Component {
@@ -58,6 +59,7 @@ export class PlaylistBrowser extends React.Component {
             })
           }
     */
+    console.debug("playlists = %o, order = %o", this.props.playlists, PLAYLIST_ORDER);
     return (
       <div
         ref={node => this.node = node}
@@ -75,32 +77,46 @@ export class PlaylistBrowser extends React.Component {
             <div className="icon songs" />
             Everything
           </div>
-          { this.props.playlists.filter(pl => !!pl.distinguished_kind).map(pl => (
-            <div
-              key={pl.persistent_id}
-              className={'label' + (this.props.selected === pl.persistent_id ? ' selected' : '')}
-              onClick={event => this.props.onSelect(pl, event)}
-            >
-              <div className={`icon ${pl.kind}`} />
-              {pl.name}
-            </div>
-          )) }
+          { this.props.playlists
+            .filter(pl => {
+              const o = PLAYLIST_ORDER[pl.kind];
+              if (o === null || o === undefined || o < 0 || o >= 100) {
+                return false;
+              }
+              return true;
+            }).map(pl => (
+              <div
+                key={pl.persistent_id}
+                className={'label' + (this.props.selected === pl.persistent_id ? ' selected' : '')}
+                onClick={event => this.props.onSelect(pl, event)}
+              >
+                <div className={`icon ${pl.kind}`} />
+                {pl.name}
+              </div>
+            )) }
         </div>
         <h1>Music Playlists</h1>
-        { this.props.playlists.filter(pl => !pl.distinguished_kind).map(item => (
-          <TreeView
-            key={item.persistent_id}
-            root={item}
-            node={item}
-            selected={this.props.selected}
-            indentPixels={12}
-            openFolders={this.props.openFolders}
-            onToggle={this.props.onToggle}
-            onSelect={node => { this.node.focus(); this.props.onSelect(node); }}
-            onMovePlaylist={this.props.onMovePlaylist}
-            onAddToPlaylist={this.props.onAddToPlaylist}
-          />
-        )) }
+        { this.props.playlists
+          .filter(pl => {
+            const o = PLAYLIST_ORDER[pl.kind];
+            if (o === null || o === undefined || o >= 100) {
+              return true;
+            }
+            return false;
+          }).map(item => (
+            <TreeView
+              key={item.persistent_id}
+              root={item}
+              node={item}
+              selected={this.props.selected}
+              indentPixels={12}
+              openFolders={this.props.openFolders}
+              onToggle={this.props.onToggle}
+              onSelect={node => { this.node.focus(); this.props.onSelect(node); }}
+              onMovePlaylist={this.props.onMovePlaylist}
+              onAddToPlaylist={this.props.onAddToPlaylist}
+            />
+          )) }
         {/*
         <SortableTree
           treeData={this.props.playlists}

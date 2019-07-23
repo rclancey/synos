@@ -3,10 +3,11 @@ package musicdb
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type PersistentID uint64
@@ -23,21 +24,22 @@ func (pid PersistentID) String() string {
 func (pid *PersistentID) Decode(s string) error {
 	v, err := strconv.ParseUint(s, 16, 64)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't parse persistent id " + s)
 	}
 	*pid = PersistentID(v)
 	return nil
 }
 
 func (pid PersistentID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(pid.String())
+	data, err := json.Marshal(pid.String())
+	return data, errors.Wrapf(err, "can't json marshal perstent id %d", pid)
 }
 
 func (pid *PersistentID) UnmarshalJSON(data []byte) error {
 	var s string
 	err := json.Unmarshal(data, &s)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't json unmarshal persistent id " + string(data))
 	}
 	return pid.Decode(s)
 }
@@ -66,6 +68,6 @@ func (pid *PersistentID) Scan(value interface{}) error {
 	case string:
 		return pid.Decode(v)
 	}
-	return fmt.Errorf("don't know how to convert %T into persistent id")
+	return errors.Errorf("don't know how to convert %T into persistent id", value)
 }
 

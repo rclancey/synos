@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"io/ioutil"
 	"log"
 	"mime"
@@ -9,6 +8,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"musicdb"
 )
@@ -118,7 +119,7 @@ func GetArtistImageFilename(name string) (string, error) {
 	}
 	img, ct, err := spot.GetArtistImage(name)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "can't get spotify artist image for " + name)
 	}
 	var ext string
 	if ct == "image/jpeg" {
@@ -140,7 +141,7 @@ func GetArtistImageFilename(name string) (string, error) {
 	log.Printf("saving %s image to %s\n", ct, fn)
 	err = ioutil.WriteFile(fn, img, os.FileMode(0644))
 	if err != nil {
-		return fn, err
+		return fn, errors.Wrap(err, "can't write to " + fn)
 	}
 	return fn, nil
 }
@@ -170,7 +171,7 @@ func GetAlbumArtFilename(tr *musicdb.Track) (string, error) {
 	}
 	img, ct, err := lastFm.GetAlbumImage(art, alb)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "can't get lastfm album image for %s / %s", art, alb)
 	}
 	var fn string
 	if ct == "image/jpeg" {
@@ -191,7 +192,7 @@ func GetAlbumArtFilename(tr *musicdb.Track) (string, error) {
 	log.Printf("saving %s image to %s\n", ct, fn)
 	err = ioutil.WriteFile(fn, img, os.FileMode(0644))
 	if err != nil {
-		return fn, err
+		return fn, errors.Wrap(err, "can't write to " + fn)
 	}
 	return fn, nil
 }

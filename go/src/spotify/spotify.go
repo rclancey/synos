@@ -1,11 +1,12 @@
 package spotify
 
 import (
-	"errors"
 	"io/ioutil"
 	//"log"
 	"net/http"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"apiclient"
 )
@@ -17,11 +18,11 @@ type SpotifyClient struct {
 func NewSpotifyClient(clientId, clientSecret, cacheDir string, cacheTime time.Duration) (*SpotifyClient, error) {
 	auth, err := NewClientAuth(clientId, clientSecret)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't create spotify auth")
 	}
 	api, err := apiclient.NewAPIClient("https://api.spotify.com/v1/", cacheDir, cacheTime, 4.0, auth)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't create spotify api client")
 	}
 	client := &SpotifyClient{
 		client: api,
@@ -43,14 +44,15 @@ type Image struct {
 func (img *Image) Get(c *SpotifyClient) ([]byte, string, error) {
 	res, err := c.client.Client().Get(img.URL)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "can't get spotify image")
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return nil, "", errors.New(res.Status)
 	}
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "can't read spotify image response")
 	}
 	ct := res.Header.Get("Content-Type")
 	return data, ct, nil

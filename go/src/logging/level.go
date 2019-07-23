@@ -3,25 +3,31 @@ package logging
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/pkg/errors"
 )
 
 type LogLevel int
 
 const (
 	NONE     LogLevel = 0
-	CRITICAL LogLevel = 1
-	ERROR    LogLevel = 2
-	WARNING  LogLevel = 3
-	INFO     LogLevel = 4
-	DEBUG    LogLevel = 5
+	LOG      LogLevel = 1
+	CRITICAL LogLevel = 2
+	ERROR    LogLevel = 3
+	WARNING  LogLevel = 4
+	INFO     LogLevel = 5
+	DEBUG    LogLevel = 6
+	IGNORED  LogLevel = 100
 )
 
 var llNames = map[LogLevel]string{
+	LOG:      "LOG",
 	CRITICAL: "CRITICAL",
 	ERROR:    "ERROR",
 	WARNING:  "WARNING",
 	INFO:     "INFO",
 	DEBUG:    "DEBUG",
+	IGNORED:  "IGNORED",
 }
 
 func (ll LogLevel) String() string {
@@ -44,7 +50,7 @@ func (ll *LogLevel) UnmarshalJSON(data []byte) error {
 	var s string
 	err := json.Unmarshal(data, &s)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "can't unmarshal log level %s", string(data))
 	}
 	return ll.UnmarshalText(s)
 }
@@ -56,6 +62,6 @@ func (ll *LogLevel) UnmarshalText(data string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("unknown log level %s", data)
+	return errors.Errorf("unknown log level %s", data)
 }
 

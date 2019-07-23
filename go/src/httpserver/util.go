@@ -2,7 +2,6 @@ package httpserver
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -13,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 func SendJSON(w http.ResponseWriter, obj interface{}) {
@@ -44,10 +45,10 @@ func EnsureDir(fn string) error {
 	dn := filepath.Dir(fn)
 	st, err := os.Stat(dn)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			return os.MkdirAll(dn, 0775)
 		}
-		return err
+		return errors.Wrap(err, "can't stat directory " + dn)
 	}
 	if !st.IsDir() {
 		return os.ErrExist
@@ -61,13 +62,13 @@ func CopyToFile(src io.Reader, fn string, overwrite bool) (string, error) {
 	if strings.HasPrefix(fn, "*.") {
 		dst, err = ioutil.TempFile("", fn)
 		if err != nil {
-			return "", err
+			return "", errors.Wrap(err, "can't create tempfile " + fn)
 		}
 		fn = dst.Name()
 	} else {
 		err := EnsureDir(fn)
 		if err != nil {
-			return "", err
+			return "", errors.Wrap(err, "can't ensure directory for " + fn)
 		}
 		st, err := os.Stat(fn)
 		if err == nil {
@@ -80,7 +81,7 @@ func CopyToFile(src io.Reader, fn string, overwrite bool) (string, error) {
 		}
 		dst, err = os.Create(fn)
 		if err != nil {
-			return "", err
+			return "", errors.Wrap(err, "can't create destination file " + fn)
 		}
 	}
 	defer dst.Close()
@@ -92,13 +93,13 @@ func CopyToFile(src io.Reader, fn string, overwrite bool) (string, error) {
 			if err == io.EOF {
 				return fn, nil
 			}
-			return fn, err
+			return fn, errors.Wrap(err, "can't read source")
 		}
 		start = 0
 		for start < rn {
 			wn, err = dst.Write(chunk[start:rn])
 			if err != nil {
-				return fn, err
+				return fn, errors.Wrap(err, "can't write to destination")
 			}
 			start += wn
 		}

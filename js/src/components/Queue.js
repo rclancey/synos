@@ -1,5 +1,4 @@
 import React from 'react';
-//import { displayTime } from '../lib/columns';
 import { CoverArt } from './CoverArt';
 import { TrackInfo, TrackTime } from './TrackInfo';
 

@@ -3,7 +3,6 @@ package sonos
 import (
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	//"log"
 	"net/url"
@@ -17,6 +16,7 @@ import (
 	"github.com/ianr0bkny/go-sonos/didl"
 	"github.com/ianr0bkny/go-sonos/ssdp"
 	"github.com/ianr0bkny/go-sonos/upnp"
+	"github.com/pkg/errors"
 
 	"musicdb"
 )
@@ -88,13 +88,13 @@ func parseTime(timestr string, layouts ...string) (int, error) {
 			return int(t.Sub(refTime).Nanoseconds() / 1000000), nil
 		}
 	}
-	return -1, err
+	return -1, errors.Wrap(err, "can't parse time " + timestr)
 }
 
 func (s *Sonos) GetPlaybackStatus() (*Queue, error) {
 	info, err := s.player.GetTransportInfo(0)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't get player transport info")
 	}
 	q := &Queue{
 		State: info.CurrentTransportState,
@@ -103,11 +103,11 @@ func (s *Sonos) GetPlaybackStatus() (*Queue, error) {
 		parts := strings.SplitN(info.CurrentSpeed, "/", 2)
 		num, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't parse floating point numerator value " + parts[0])
 		}
 		den, err := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't parse floating point denominator value " + parts[1])
 		}
 		if den != 0 {
 			q.Speed = num / den
@@ -117,7 +117,7 @@ func (s *Sonos) GetPlaybackStatus() (*Queue, error) {
 	} else {
 		s, err := strconv.ParseFloat(strings.TrimSpace(info.CurrentSpeed), 64)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't parse floating point current speed value " + info.CurrentSpeed)
 		}
 		q.Speed = s
 	}
@@ -127,7 +127,7 @@ func (s *Sonos) GetPlaybackStatus() (*Queue, error) {
 func (s *Sonos) GetQueuePos() (*Queue, error) {
 	pos, err := s.player.GetPositionInfo(0)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't get player current posistion")
 	}
 	q := &Queue{
 		Index: int(pos.Track) - 1,
@@ -168,19 +168,19 @@ func (s *Sonos) GetQueue() (*Queue, error) {
 	}
 	q, err := s.GetPlaybackStatus()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't get playback status")
 	}
 	q.Tracks = tracks
 	pos, err := s.GetQueuePos()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't get queue position")
 	}
 	q.Index = pos.Index
 	q.Duration = pos.Duration
 	q.Time = pos.Time
 	vol, err := s.GetVolume()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't get volume")
 	}
 	q.Volume = vol
 	return q, nil
@@ -250,11 +250,11 @@ func (s *Sonos) didlLitePl(pl *musicdb.Playlist) string {
 func (s *Sonos) ClearQueue() error {
 	err := s.player.Stop(0)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't stop player")
 	}
 	err = s.player.RemoveAllTracksFromQueue(0)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't remove tracks from player queue")
 	}
 	return nil
 }
@@ -262,13 +262,13 @@ func (s *Sonos) ClearQueue() error {
 func (s *Sonos) ReplaceQueue(tracks []*musicdb.Track) error {
 	err := s.ClearQueue()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't clear queue")
 	}
 	return s.AppendToQueue(tracks)
 }
 
 func (s *Sonos) ReplaceQueueWithPlaylist(pl *musicdb.Playlist) error {
-	err := s.ClearQueue()
+	err := errors.Wrap(s.ClearQueue(), "can't clear queue")
 	if err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func (s *Sonos) AppendToQueue(tracks []*musicdb.Track) error {
 		}
 		_, err := s.player.AddURIToQueue(0, req)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "can't add track %s to player queue", uri)
 		}
 	}
 	return nil
@@ -298,7 +298,7 @@ func (s *Sonos) AppendPlaylistToQueue(pl *musicdb.Playlist) error {
 	}
 	_, err := s.player.AddURIToQueue(0, req)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "can't add playlist %s to player queue", uri)
 	}
 	return nil
 }
@@ -313,7 +313,7 @@ func (s *Sonos) InsertIntoQueue(tracks []*musicdb.Track, pos int) error {
 		}
 		_, err := s.player.AddURIToQueue(0, req)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "can't insert track %s into player queue at %d", uri, pos + i + 1)
 		}
 	}
 	return nil
@@ -328,21 +328,21 @@ func (s *Sonos) InsertPlaylistIntoQueue(pl *musicdb.Playlist, pos int) error {
 	}
 	_, err := s.player.AddURIToQueue(0, req)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "can't insert playlist %s into player queue at %d", uri, pos + 1)
 	}
 	return nil
 }
 
 func (s *Sonos) Play() error {
-	return s.player.Play(0, "1")
+	return errors.Wrap(s.player.Play(0, "1"), "can't start player")
 }
 
 func (s *Sonos) Pause() error {
-	return s.player.Pause(0)
+	return errors.Wrap(s.player.Pause(0), "can't pause player")
 }
 
 func (s *Sonos) SetQueuePosition(pos int) error {
-	return s.player.Seek(0, "TRACK_NR", strconv.Itoa(pos + 1))
+	return errors.Wrapf(s.player.Seek(0, "TRACK_NR", strconv.Itoa(pos + 1)), "can't skip player to %d", pos + 1)
 }
 
 func (s *Sonos) SeekTo(ms int) error {
@@ -350,44 +350,44 @@ func (s *Sonos) SeekTo(ms int) error {
 	min := (ms % 3600000) / 60000
 	sec := (ms % 60000) / 1000
 	ts := fmt.Sprintf("%d:%02d:%02d", hr, min, sec)
-	return s.player.Seek(0, "REL_TIME", ts)
+	return errors.Wrap(s.player.Seek(0, "REL_TIME", ts), "can't seek player to " + ts)
 }
 
 func (s *Sonos) SkipForward() error {
-	return s.Skip(1)
+	return errors.Wrap(s.Skip(1), "can't skip player forward 1")
 }
 
 func (s *Sonos) SkipBackward() error {
-	return s.Skip(-1)
+	return errors.Wrap(s.Skip(-1), "can't skip player backward 1")
 }
 
 func (s *Sonos) Skip(n int) error {
 	q, err := s.GetQueuePos()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't get queue position for skip")
 	}
-	return s.SetQueuePosition(q.Index + n)
+	return errors.Wrapf(s.SetQueuePosition(q.Index + n), "can't skip queue to position %d", q.Index + 1)
 }
 
 func (s *Sonos) Seek(ms int) error {
 	q, err := s.GetQueuePos()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't get queue position for seek")
 	}
 	t := q.Time + ms
 	if t >= q.Duration {
-		return s.Skip(1)
+		return errors.Wrap(s.Skip(1), "can't seek to next track")
 	}
 	if t < 0 {
 		t = 0
 	}
-	return s.SeekTo(t)
+	return errors.Wrapf(s.SeekTo(t), "can't seek to %d ms", t)
 }
 
 func (s *Sonos) GetVolume() (int, error) {
 	vol, err := s.player.GetVolume(0, "Master")
 	if err != nil {
-		return -1, err
+		return -1, errors.Wrap(err, "can't get player volume")
 	}
 	return int(vol), nil
 }
@@ -398,15 +398,15 @@ func (s *Sonos) SetVolume(vol int) error {
 	} else if vol < 0 {
 		vol = 0
 	}
-	return s.player.SetVolume(0, "Master", uint16(vol))
+	return errors.Wrapf(s.player.SetVolume(0, "Master", uint16(vol)), "can't set player volume to %d", vol)
 }
 
 func (s *Sonos) AlterVolume(delta int) error {
 	vol, err := s.GetVolume()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't get current volume")
 	}
-	return s.SetVolume(vol + delta)
+	return errors.Wrapf(s.SetVolume(vol + delta), "can't add %d to current volume %d", delta, vol)
 }
 
 /*
@@ -464,13 +464,14 @@ type JSONURL url.URL
 
 func (u *JSONURL) MarshalJSON() ([]byte, error) {
 	nu := url.URL(*u)
-	return json.Marshal(nu.String())
+	data, err := json.Marshal(nu.String())
+	return data, errors.Wrap(err, "can't json marshal url")
 }
 
 func ParseJSONURL(val string) (*JSONURL, error) {
 	u, err := url.Parse(val)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't parse url " + val)
 	}
 	ju := JSONURL(*u)
 	return &ju, nil

@@ -1,11 +1,11 @@
 package musicdb
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -146,7 +146,7 @@ func (ff *FileFinder) FindFile(fn string) (string, error) {
 		if ex {
 			return xfn, nil
 		}
-		return fn, fmt.Errorf("absolute path %s doesn't exist", fn)
+		return fn, errors.Errorf("absolute path %s doesn't exist", fn)
 	}
 	for _, mp := range ff.SourcePath {
 		for _, f := range ff.MediaFolder {
@@ -157,7 +157,7 @@ func (ff *FileFinder) FindFile(fn string) (string, error) {
 			}
 		}
 	}
-	return fn, fmt.Errorf("can't find %s in a media folder", fn)
+	return fn, errors.Errorf("can't find %s in a media folder", fn)
 }
 
 func (ff *FileFinder) GetMediaFolder() string {

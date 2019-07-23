@@ -64,6 +64,7 @@ func main() {
 	if err != nil {
 		errlog.Error(err)
 	}
+
 	srv.Handle("/api/login", cfg.Auth.LoginHandler())
 	srv.Handle("/api/track/", TrackHandler)
 	srv.Handle("/api/tracks", TracksHandler)

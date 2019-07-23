@@ -2,10 +2,11 @@ package httpserver
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 type HTTPError struct {
@@ -34,7 +35,7 @@ func (e *HTTPError) Raise(err error, message string, args ...interface{}) *HTTPE
 	}
 	return &HTTPError{
 		Status: e.Status,
-		Err: err,
+		Err: errors.WithStack(err),
 		Message: msg,
 	}
 }

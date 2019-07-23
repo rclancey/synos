@@ -1,7 +1,8 @@
 import React from 'react';
-import _ from 'lodash';
-import { List, AutoSizer } from "react-virtualized";
-import { DISTINGUISHED_KINDS, PLAYLIST_ORDER } from '../../lib/distinguished_kinds';
+import { FixedSizeList as List } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+//import { List, AutoSizer } from "react-virtualized";
+import { PLAYLIST_ORDER } from '../../lib/distinguished_kinds';
 import { Playlist } from './SongList';
 
 export class PlaylistList extends React.Component {
@@ -22,32 +23,20 @@ export class PlaylistList extends React.Component {
   }
 
   loadPlaylists() {
-    const restructure = playlist => {
-      const pl = Object.assign({}, playlist);
-      pl.title = pl.name;
-      delete(pl.children);
-      if (pl.distinguished_kind) {
-        pl.kind = DISTINGUISHED_KINDS[pl.distinguished_kind]
-      } else if (pl.folder) {
-        pl.kind = 'folder';
-        pl.children = playlist.children ? _.sortBy(playlist.children.map(restructure), [(x => !x.folder), (x => x.title.toLowerCase())]) : [];
-      } else if (pl.genius_track_id) {
-        pl.kind = 'genius';
-      } else if (pl.smart) {
-        pl.kind = 'smart';
-      } else {
-        pl.kind = 'playlist';
-      }
-      return pl;
-    };
-    //const url = '/jsonlib/playlists.json';
     const url = '/api/playlists';
     return fetch(url, { method: 'GET' })
       .then(resp => resp.json())
-      .then(data => {
-        const playlists = _.sortBy(data.map(restructure).filter(x => PLAYLIST_ORDER[x.kind] !== -1), [(x => PLAYLIST_ORDER[x.kind] || 999), (x => x.title.toLowerCase())]);
-        this.setState({ playlists });
-      });
+      .then(playlists => playlists.filter(pl => {
+        const o = PLAYLIST_ORDER[pl.kind];
+        if (o === null || o === undefined) {
+          return true;
+        }
+        if (o >= 100) {
+          return true;
+        }
+        return false;
+      }))
+      .then(playlists => this.setState({ playlists }));
   }
 
   onOpen(pl) {
@@ -130,12 +119,14 @@ export class PlaylistList extends React.Component {
               <List
                 width={width}
                 height={height}
-                rowCount={this.folder().length}
-                rowHeight={58}
-                rowRenderer={this.rowRenderer}
-                scrollTop={this.state.scrollTop[this.state.scrollTop.length - 1]}
+                itemCount={this.folder().length}
+                itemSize={58}
+                overscanCount={Math.ceil(height / 58)}
+                initialScrollOffset={this.state.scrollTop[this.state.scrollTop.length - 1]}
                 onScroll={this.onScroll}
-              />
+              >
+                {this.rowRenderer}
+              </List>
             )}
           </AutoSizer>
         </div>

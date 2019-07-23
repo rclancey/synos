@@ -5,6 +5,8 @@ import (
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type NetCfg interface {
@@ -215,7 +217,7 @@ func (cfg *NetworkConfig) Init() error {
 func interfaceIps(iface *net.Interface) ([]net.IP, error) {
 	addrs, err := iface.Addrs()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't get addresses for interface " + iface.Name)
 	}
 	ips := []net.IP{}
 	for _, addr := range addrs {

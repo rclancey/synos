@@ -5,7 +5,16 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
+
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
+
+func isMn(r rune) bool {
+    return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
+}
+var deaccent = transform.Chain(norm.NFD, transform.RemoveFunc(isMn), norm.NFC)
 
 var aAnThe = regexp.MustCompile(`^(a|an|the) `)
 var nonAlpha = regexp.MustCompile(`[^a-z0-9]+`)
@@ -26,7 +35,11 @@ func MakeSort(v string) string {
 	if v == "" {
 		return ""
 	}
-	s := strings.ToLower(v)
+	s, _, err := transform.String(deaccent, v)
+	if err != nil {
+		s = v
+	}
+	s = strings.ToLower(s)
 	s = numCan.ReplaceAllStringFunc(s, numReplFunc)
 	s = nonAlpha.ReplaceAllString(s, " ")
 	s = aAnThe.ReplaceAllString(s, " ")

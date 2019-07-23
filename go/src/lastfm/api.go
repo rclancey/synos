@@ -5,8 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -16,6 +14,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 var lastFMRoot = url.URL{
@@ -62,7 +62,8 @@ func (c *LastFM) cacheGet(url string) (*http.Response, error) {
 			if err == nil {
 				rd := bufio.NewReader(f)
 				//log.Printf("using cached response from %s for %s\n", fn, url)
-				return http.ReadResponse(rd, req)
+				res, err := http.ReadResponse(rd, req)
+				return res, errors.Wrap(err, "can't read cached response from " + fn)
 			}
 		}
 	}
@@ -73,26 +74,25 @@ func (c *LastFM) cacheGet(url string) (*http.Response, error) {
 	res, err := c.client.Do(req)
 	c.lastFetch = time.Now()
 	if err != nil {
-		return res, err
+		return res, errors.Wrap(err, "can't execute lastfm request")
 	}
 	if _, err := os.Stat(dn); err != nil {
 		if os.IsNotExist(err) {
 			err = os.MkdirAll(dn, os.FileMode(0775))
 			if err != nil {
-				log.Printf("error creating cache directory %s: %s\n", dn, err.Error())
-				return res, err
+				return res, errors.Wrap(err, "can't create cache directory for " + fn)
 			}
 		} else {
-			return res, err
+			return res, errors.Wrap(err, "can't stat cache directory " + dn)
 		}
 	}
 	resdata, err := httputil.DumpResponse(res, true)
 	if err != nil {
-		return res, err
+		return res, errors.Wrap(err, "can't serialize lastfm response")
 	}
 	err = ioutil.WriteFile(fn, resdata, os.FileMode(0644))
 	if err != nil {
-		return res, err
+		return res, errors.Wrap(err, "can't write to cache file " + fn)
 	}
 	//log.Printf("cached %s to %s\n", url, fn)
 	return res, nil
@@ -115,17 +115,16 @@ func (c *LastFM) Get(method string, args map[string]string, obj interface{}) err
 	//log.Println("GET", u.String())
 	resp, err := c.cacheGet(u.String())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't get lastfm cached response")
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "can't read lastfm response")
 	}
-	//fmt.Println(string(body))
 	err = json.Unmarshal(body, obj)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "can't unmarshal lastfm response into %T", obj)
 	}
 	return nil
 }
@@ -139,7 +138,7 @@ func (c *LastFM) GetArtistInfo(artist string) (*Artist, error) {
 	}
 	err := c.Get("artist.getInfo", args, &obj)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't get lastfm artist " + artist)
 	}
 	return obj.Artist, nil
 }
@@ -147,7 +146,7 @@ func (c *LastFM) GetArtistInfo(artist string) (*Artist, error) {
 func (c *LastFM) GetArtistImage(artist string) ([]byte, string, error) {
 	art, err := c.GetArtistInfo(artist)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "can't get lastfm artist info")
 	}
 	sized := map[string]string{}
 	for _, img := range art.Image {
@@ -171,7 +170,7 @@ func (c *LastFM) GetArtistImage(artist string) ([]byte, string, error) {
 			}
 		}
 	}
-	return nil, "", fmt.Errorf("no useful images for artist %s", artist)
+	return nil, "", errors.Errorf("no useful images for artist %s", artist)
 }
 
 func (c *LastFM) GetSimilarArtists(artist string) ([]*Artist, error) {
@@ -185,7 +184,7 @@ func (c *LastFM) GetSimilarArtists(artist string) ([]*Artist, error) {
 	}
 	err := c.Get("artist.getSimilar", args, &obj)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't get lastfm similar artists for " + artist)
 	}
 	return obj.SimilarArtists.Artists, nil
 }
@@ -200,7 +199,7 @@ func (c *LastFM) GetAlbumInfo(artist, title string) (*Album, error) {
 	}
 	err := c.Get("album.getInfo", args, &obj)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "can't get lastfm album info for %s / %s", artist, title)
 	}
 	if obj.Album == nil {
 		return nil, errors.New("no album info available")
@@ -211,7 +210,7 @@ func (c *LastFM) GetAlbumInfo(artist, title string) (*Album, error) {
 func (c *LastFM) GetAlbumImage(artist, title string) ([]byte, string, error) {
 	alb, err := c.GetAlbumInfo(artist, title)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "can't get album info")
 	}
 	if alb.Image == nil {
 		return nil, "", errors.New("album info contained no images")
@@ -239,7 +238,7 @@ func (c *LastFM) GetAlbumImage(artist, title string) ([]byte, string, error) {
 			}
 		}
 	}
-	return nil, "", fmt.Errorf("no useful images for album %s - %s", artist, title)
+	return nil, "", errors.Errorf("no useful images for album %s - %s", artist, title)
 }
 
 func (c *LastFM) GetTrackInfo(artist, title string) (*Track, error) {
@@ -252,7 +251,7 @@ func (c *LastFM) GetTrackInfo(artist, title string) (*Track, error) {
 	}
 	err := c.Get("track.getInfo", args, &obj)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "can't get lastfm track info for %s / %s", artist, title)
 	}
 	return obj.Track, nil
 }
@@ -269,7 +268,7 @@ func (c *LastFM) GetSimilarTracks(artist, title string) ([]*Track, error) {
 	}
 	err := c.Get("track.getSimilar", args, &obj)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "can't get lastfm similar tracks for %s / %s", artist, title)
 	}
 	return obj.SimilarTracks.Tracks, nil
 }
@@ -288,7 +287,7 @@ func (c *LastFM) GetTopTags(n int) ([]*Tag, error) {
 		}{}
 		err := c.Get("tag.getTopTags", args, &obj)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't get lastfm top tags")
 		}
 		tags = append(tags, obj.TopTags.Tags...)
 		args["offset"] = strconv.Itoa(len(tags))
@@ -313,7 +312,7 @@ func (c *LastFM) GetTagTracks(tag string, n int) ([]*Track, error) {
 		}{}
 		err := c.Get("tag.getTopTracks", args, &obj)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "can't get lastfm top tracks for tag " + tag)
 		}
 		tracks = append(tracks, obj.Tracks.Tracks...)
 		page += 1

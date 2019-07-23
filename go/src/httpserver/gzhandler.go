@@ -3,10 +3,11 @@ package httpserver
 import (
 	"bufio"
 	"compress/gzip"
-	"errors"
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type GZipResponseWriter struct {
