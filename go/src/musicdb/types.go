@@ -1,9 +1,38 @@
 package musicdb
 
+import (
+	"sort"
+)
+
+type sortableNames struct {
+    m map[string]int
+    keys []string
+}
+
+func (sn *sortableNames) Len() int { return len(sn.keys) }
+func (sn *sortableNames) Swap(i, j int) { sn.keys[i], sn.keys[j] = sn.keys[j], sn.keys[i] }
+func (sn *sortableNames) Less(i, j int) bool { return sn.m[sn.keys[j]] < sn.m[sn.keys[i]] }
+
+func sortNames(names map[string]int) []string {
+	sn := &sortableNames{m: names}
+    sn.keys = make([]string, len(sn.m))
+    i := 0
+    for k := range sn.m {
+        sn.keys[i] = k
+        i += 1
+    }
+    sort.Sort(sn)
+    return sn.keys
+}
+
 type Genre struct {
 	SortName string `json:"sort"`
 	Names map[string]int `json:"names"`
 	db *DB
+}
+
+func (g *Genre) Sorted() []string {
+	return sortNames(g.Names)
 }
 
 type Artist struct {
@@ -12,11 +41,19 @@ type Artist struct {
 	db *DB
 }
 
+func (a *Artist) Sorted() []string {
+	return sortNames(a.Names)
+}
+
 type Album struct {
 	Artist *Artist `json:"artist"`
 	SortName string `json:"sort"`
 	Names map[string]int `json:"names"`
 	db *DB
+}
+
+func (a *Album) Sorted() []string {
+	return sortNames(a.Names)
 }
 
 func NewGenre(name string) *Genre {

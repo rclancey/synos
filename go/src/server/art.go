@@ -23,7 +23,7 @@ func TrackArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 func ArtistArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	q := req.URL.Query()
 	genre  := q.Get("genre")
-	artist := musicdb.MakeSortArtist(q.Get("artist"))
+	artist := q.Get("artist")
 	search := musicdb.Search{}
 	if genre != "" {
 		search.Genre = &genre
@@ -45,13 +45,16 @@ func ArtistArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		if err != nil {
 			return nil, DatabaseError.Raise(err, "")
 		}
+		if len(genres) == 0 {
+			return nil, H.NotFound.Raise(err, "no genre for single track artist")
+		}
 		img, err := GetGenreImageURL(genres[0].SortName)
 		if err != nil {
-			return nil, H.NotFound.Raise(err, "no genre for single track artist")
+			return nil, H.NotFound.Raise(err, "no genre image for single track artist")
 		}
 		return H.Redirect(img), nil
 	}
-	for aname := range art.Names {
+	for _, aname := range art.Sorted() {
 		fn, err := GetArtistImageFilename(aname)
 		if err == nil {
 			return H.StaticFile(fn), nil
@@ -63,9 +66,9 @@ func ArtistArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 
 func AlbumArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	q := req.URL.Query()
-	genre  := musicdb.MakeSort(q.Get("genre"))
-	artist := musicdb.MakeSortArtist(q.Get("artist"))
-	album  := musicdb.MakeSort(q.Get("album"))
+	genre  := q.Get("genre")
+	artist := q.Get("artist")
+	album  := q.Get("album")
 	search := musicdb.Search{
 		AlbumArtist: &artist,
 		Album: &album,

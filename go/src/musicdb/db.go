@@ -380,7 +380,6 @@ func (db *DB) searchArtist(col string, name string, s Search) (*Artist, error) {
 }
 
 func (db *DB) SearchArtist(name string, s Search) (*Artist, error) {
-	sort_name := MakeSortArtist(name)
 	cols := []string{
 		"artist",
 		"album_artist",
@@ -388,9 +387,9 @@ func (db *DB) SearchArtist(name string, s Search) (*Artist, error) {
 	}
 	var artist *Artist
 	for _, col := range cols {
-		art, err := db.searchArtist(col, sort_name, s)
+		art, err := db.searchArtist(col, name, s)
 		if err != nil {
-			return nil, errors.Wrapf(err, "can't search %s %s", col, sort_name)
+			return nil, errors.Wrapf(err, "can't search %s %s", col, name)
 		}
 		if art != nil {
 			if artist == nil {
@@ -434,23 +433,32 @@ func (db *DB) ArtistGenres(name string, s Search) ([]*Genre, error) {
 	gmap := map[string]*Genre{}
 	keys := []string{}
 	for rows.Next() {
-		var g, sg string
+		var g, sg *string
 		var c int
 		err = rows.Scan(&g, &sg, &c)
 		if err != nil {
 			return nil, errors.Wrap(err, "can't scan genre info")
 		}
-		genre, ok := gmap[sg]
+		if g == nil || *g == "" {
+			continue
+		}
+		if sg == nil {
+			sg = stringp(MakeSort(*g))
+			if sg == nil {
+				continue
+			}
+		}
+		genre, ok := gmap[*sg]
 		if ok {
-			genre.Names[g] += c
+			genre.Names[*g] += c
 		} else {
 			genre = &Genre{
-				SortName: sg,
-				Names: map[string]int{g: c},
+				SortName: *sg,
+				Names: map[string]int{*g: c},
 				db: db,
 			}
-			gmap[sg] = genre
-			keys = append(keys, sg)
+			gmap[*sg] = genre
+			keys = append(keys, *sg)
 		}
 	}
 	genres := make([]*Genre, len(keys))

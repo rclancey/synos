@@ -81,6 +81,7 @@ func (c *SpotifyClient) Search(name, kind string) (*SearchResult, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "can't execute spotify search")
 		}
+		defer res.Body.Close()
 		if res.StatusCode != http.StatusOK {
 			return nil, errors.New(res.Status)
 		}
