@@ -42,7 +42,7 @@ class App extends Component {
       const val = unescape(pair.join('='));
       query[key] = val;
     });
-    const mobile = navigator.userAgent.match(/iPhone/) || query.mobile;
+    const mobile = navigator.userAgent.match(/iPhone|iPad/) || query.mobile;
     this.state = {
       loading: true,
       mobile: mobile,

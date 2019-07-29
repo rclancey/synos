@@ -162,7 +162,7 @@ export const PlayPauseSkip = ({ size, paused, onPlay, onPause, onSkipBy, onSeekB
 
 export const Volume = ({ volume, onChange, style, ...props }) => (
   <div style={{ ...style, display: 'flex' }} {...props}>
-    <div className="fas fa-volume-down" style={{ flex: 1 }}  onClick={() => onChange(volume - 10)} />
+    <div className="fas fa-volume-down" style={{ flex: 1 }}  onClick={() => onChange(Math.round(Math.max(0, Math.min(volume - 1, volume  * 0.9))))} />
     <div style={{ flex: 10, paddingLeft: '1em', paddingRight: '1em' }}>
       <input
         type="range"
@@ -174,7 +174,7 @@ export const Volume = ({ volume, onChange, style, ...props }) => (
         onChange={evt => onChange(parseInt(evt.target.value))}
       />
     </div>
-    <div className="fas fa-volume-up" style={{ flex: 1 }} onClick={() => onChange(volume + 10)}/>
+    <div className="fas fa-volume-up" style={{ flex: 1 }} onClick={() => onChange(Math.round(Math.min(100, Math.max(volume + 1, volume * 1.1))))}/>
   </div>
 );
 

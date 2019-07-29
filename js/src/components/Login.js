@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import base64 from 'base-64';
 
+const importedThemes = {};
+
 const doLogin = (username, password) => {
   const headers = new Headers();
   if (username !== undefined && username !== null && username !== '' && password !== undefined && password !== null && password !== '') {
@@ -47,6 +49,15 @@ export const Login = ({ mobile, theme, onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const formFactor = mobile ? 'mobile' : 'desktop';
+  if (importedThemes[formFactor] === undefined || importedThemes[formFactor] === null) {
+    importedThemes[formFactor] = true;
+    import(`../themes/${formFactor}/layout.css`).then(css => importedThemes[formFactor] = css);
+  }
+  if (importedThemes[theme] === undefined || importedThemes[theme] === null) {
+    importedThemes[theme] = true;
+    import(`../themes/${formFactor}/${theme}.css`).then(css => importedThemes[theme] = css);
+  }
   return (
     <div id="app" className={`login ${mobile ? "mobile" : "desktop"} ${theme}`}>
       <div className="leftPad" />
