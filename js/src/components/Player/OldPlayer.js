@@ -18,18 +18,27 @@ import {
 } from '../lib/sonos';
 */
 
-//import { MobileSkin } from './Mobile/Skin';
-//import { DesktopSkin } from './Desktop/Skin';
+import { MobileSkin } from './Mobile/Skin';
+import { DesktopSkin } from './Desktop/Skin';
 
+/*
 const MobileSkin = Loadable({
   loader: () => import('./Mobile/Skin'),
   loading: () => (<div>loading...</div>),
 });
 
 const DesktopSkin = Loadable({
-  loader: () => import('./Desktop/Skin'),
+  loader: () => {
+    console.debug('loading ./Desktop/Skin');
+    return import('./Desktop/Skin')
+      .then(mod => {
+        console.debug('loaded ./Desktop/Skin = %o', mod);
+        return mod;
+      });
+  },
   loading: () => (<div>loading...</div>),
 });
+*/
 
 export class Player extends React.Component {
   constructor(props) {
@@ -133,137 +142,96 @@ export class Player extends React.Component {
   }
 
   onEnableSonos() {
+    WS.on('message', this.onSonosMessage);
+    WS.on('open', this.reloadSonos);
     if (this.state.queue.length === 0) {
-      this.setState({ sonos: true }, () => this.startupSonos());
+      this.setState({ sonos: true }, this.reloadSonos);
     } else {
       this.transferQueueToSonos(this.state);
     }
   }
 
   onDisableSonos() {
+    WS.off('message', this.onSonosMessage);
+    WS.off('open', this.reloadSonos);
     this.setState({ sonos: false }, () => this.shutdownSonos());
   }
 
   shutdownSonos() {
-    if (this.sonos) {
-      this.props.api.pauseSonos();
-      this.sonos.close();
-      this.sonos = null;
-    }
+    this.props.api.pauseSonos();
   }
 
-  sonosUri() {
-    //let uri = '';
-    const loc = document.location
-    const proto = loc.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${loc.host}/api/sonos/ws`;
-  }
-
-  onSonosMessage(evt) {
-    evt.data.split(/\n/)
-      .map(line => {
-        try {
-          return JSON.parse(line);
-        } catch (err) {
-          return line
+  onSonosMessage(msg) {
+    const update = {};
+    if (msg.queue) {
+      if (msg.queue.tracks) {
+        update.queue = msg.queue.tracks;
+      }
+      if (Object.hasOwnProperty.call(msg.queue, 'index')) {
+        update.queueIndex = msg.queue.index;
+        if (msg.queue.tracks) {
+          update.duration = msg.queue.tracks[msg.queue.index].total_time;
         }
-      })
-      .forEach(msg => {
-        const update = {};
-        if (msg.queue) {
-          if (msg.queue.tracks) {
-            update.queue = msg.queue.tracks;
-          }
-          if (Object.hasOwnProperty.call(msg.queue, 'index')) {
-            update.queueIndex = msg.queue.index;
-            if (msg.queue.tracks) {
-              update.duration = msg.queue.tracks[msg.queue.index].total_time;
-            }
-            update.currentTime = msg.queue.time;
-            update.currentTimeSet = msg.queue.time;
-            update.currentTimeSetAt = Date.now();
-          }
-          update.status = msg.state;
-        } else if (Object.hasOwnProperty.call(msg, 'queue_position')) {
-          if (msg.queue_position !== this.state.queueIndex) {
-            update.queueIndex = msg.queue_position
-            update.duration = msg.current_track.total_time;
-            update.currentTime = 0;
-            update.currentTimeSet = 0;
-            update.currentTimeSetAt = Date.now();
-          }
-          update.status = msg.state;
-        } else if (Object.hasOwnProperty.call(msg, 'tracks')) {
-          update.queue = msg.tracks;
-          if (Object.hasOwnProperty.call(msg, 'index')) {
-            update.queueIndex = msg.index;
-            update.duration = msg.tracks[msg.index].total_time;
-            update.currentTime = msg.time;
-            update.currentTimeSet = msg.time;
-            update.currentTimeSetAt = Date.now();
-          }
-        } else if (Object.hasOwnProperty.call(msg, 'volume')) {
-          update.volume = msg.volume;
-        }
-        if (Object.keys(update).length > 0) {
-          this.setState(update);
-        }
-      });
-  }
-
-  onSonosError() {
-    const sonos = this.sonos;
-    this.sonos = null;
-    if (sonos) {
-      sonos.close();
+        update.currentTime = msg.queue.time;
+        update.currentTimeSet = msg.queue.time;
+        update.currentTimeSetAt = Date.now();
+      }
+      update.status = msg.state;
+    } else if (Object.hasOwnProperty.call(msg, 'queue_position')) {
+      if (msg.queue_position !== this.state.queueIndex) {
+        update.queueIndex = msg.queue_position
+        update.duration = msg.current_track.total_time;
+        update.currentTime = 0;
+        update.currentTimeSet = 0;
+        update.currentTimeSetAt = Date.now();
+      }
+      update.status = msg.state;
+    } else if (Object.hasOwnProperty.call(msg, 'tracks')) {
+      update.queue = msg.tracks;
+      if (Object.hasOwnProperty.call(msg, 'index')) {
+        update.queueIndex = msg.index;
+        update.duration = msg.tracks[msg.index].total_time;
+        update.currentTime = msg.time;
+        update.currentTimeSet = msg.time;
+        update.currentTimeSetAt = Date.now();
+      }
+    } else if (Object.hasOwnProperty.call(msg, 'volume')) {
+      update.volume = msg.volume;
     }
-    setTimeout(() => this.startupSonos(), 1000);
-  }
-
-  onSonosClose() {
-    if (this.state.sonos) {
-      this.sonos = null;
-      this.startupSonos();
+    if (Object.keys(update).length > 0) {
+      this.setState(update);
     }
   }
 
-  startupSonos() {
-    if (this.sonos !== null) {
-      return Promise.resolve(this.sonos);
-    }
+  reloadSonos() {
     if (this.sonosTimeKeeper !== null) {
       clearInterval(this.sonosTimeKeeper);
       this.sonosTimeKeeper = null;
     }
-    const uri = this.sonosUri();
     return new Promise(resolve => {
-      this.sonos = new WebSocket(uri);
-      this.sonos.onopen = evt => {
-        this.props.api.getSonosQueue()
-          .then(queue => {
-            console.debug('updating with sonos queue info %o', queue);
-            this.setState({
-              status: queue.state,
-              queue: queue.tracks,
-              queueIndex: queue.index,
-              duration: queue.duration,
-              currentTime: queue.time,
-              currentTimeSet: queue.time,
-              currentTimeSetAt: Date.now(),
-              volume: queue.volume,
-            }, () => console.debug('set sonos state %o', this.state));
-          });
-        setInterval(() => {
-          if (this.state.status === 'PLAYING') {
-            let t = Math.min(this.state.duration, Math.max(0, this.state.currentTimeSet + (Date.now() - this.state.currentTimeSetAt)));
-            this.setState({ currentTime: t });
-          }
-        }, 250);
-        resolve(this.sonos);
-      };
-      this.sonos.onmessage = this.onSonosMessage;
-      this.sonos.onerror = this.onSonosError;
-      this.sonos.onclose = this.onSonosClose;
+      this.sonosTimeKeeper = setInterval(() => {
+        if (this.state.status === 'PLAYING') {
+          let t = Math.min(
+            this.state.duration,
+            Math.max(0, this.state.currentTimeSet + Date.now() - this.state.currentTimeSetAt)
+          );
+          this.setState({ currentTime: t });
+        }
+      }, 250);
+      this.props.api.getSonosQueue()
+        .then(queue => {
+          console.debug('updating with sonos queue info %o', queue);
+          this.setState({
+            status: queue.state,
+            queue: queue.tracks,
+            queueIndex: queue.index,
+            duration: queue.duration,
+            currentTime: queue.time,
+            currentTimeSet: queue.time,
+            currentTimeSetAt: Date.now(),
+            volume: queue.volume,
+          }, resolve);
+        });
     });
   }
 
@@ -278,7 +246,7 @@ export class Player extends React.Component {
     const ms = this.currentPlayer.current ? this.currentPlayer.current.currentTime * 1000 : 0;
     return new Promise(resolve => {
       this.setState({ sonos: true }, () => {
-        this.startupSonos()
+        this.reloadSonos()
           .then(() => this.props.api.pauseSonos())
           .then(() => this.props.api.replaceSonosQueue(tracks))
           .then(() => this.props.api.skipSonosTo(index))
@@ -523,7 +491,7 @@ export class Player extends React.Component {
       this.currentPlayer.current.currentTime = this.state.currentTime / 1000.0;
     }
     if (this.state.sonos) {
-      this.startupSonos();
+      this.reloadSonos();
     }
   }
 

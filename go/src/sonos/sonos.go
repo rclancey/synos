@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	//"log"
+	"log"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -28,6 +28,7 @@ type Sonos struct {
 	reactor upnp.Reactor
 	rootUrl *url.URL
 	db *musicdb.DB
+	closed bool
 	Events chan interface{}
 }
 
@@ -45,6 +46,7 @@ func NewSonos(iface string, rootUrl *url.URL, db *musicdb.DB) (*Sonos, error) {
 	s := &Sonos{
 		rootUrl: rootUrl,
 		db: db,
+		closed: false,
 		Events: make(chan interface{}, 1024),
 	}
 	if dev_list, has := result["schemas-upnp-org-MusicServices"]; has {
@@ -89,6 +91,10 @@ func parseTime(timestr string, layouts ...string) (int, error) {
 		}
 	}
 	return -1, errors.Wrap(err, "can't parse time " + timestr)
+}
+
+func (s *Sonos) Closed() bool {
+	return s.closed
 }
 
 func (s *Sonos) GetPlaybackStatus() (*Queue, error) {
@@ -163,7 +169,30 @@ func (s *Sonos) GetQueue() (*Queue, error) {
 		if tr != nil {
 			tracks[i] = tr
 		} else {
-			tracks[i] = &musicdb.Track{Location: &res}
+			tracks[i] = &musicdb.Track{
+				Location: &res,
+			}
+			name := item.Title()
+			artist := item.Creator()
+			album := item.Album()
+			tn := item.OriginalTrackNumber()
+			cover := item.AlbumArtURI()
+			if name != "" {
+				tracks[i].Name = &name
+			}
+			if artist != "" {
+				tracks[i].Artist = &artist
+			}
+			if album != "" {
+				tracks[i].Album = &album
+			}
+			if tn != "" {
+				// TODO
+				tracks[i].Work = &tn
+			}
+			if cover != "" {
+				tracks[i].ArtworkURL = &cover
+			}
 		}
 	}
 	q, err := s.GetPlaybackStatus()
@@ -195,7 +224,7 @@ func (s *Sonos) trackUri(track *musicdb.Track) string {
 }
 
 func (s *Sonos) playlistUri(pl *musicdb.Playlist) string {
-	path := "/api/playlist/" + pl.PersistentID.String() + ".m3u"
+	path := "/api/playlist/" + pl.PersistentID.String() + "/tracks.m3u"
 	u, _ := url.Parse(path)
 	ref := s.rootUrl.ResolveReference(u)
 	return ref.String()
@@ -593,6 +622,7 @@ func (s *Sonos) prettyEvent(event upnp.Event) (interface{}, error) {
 			}
 			return evt, nil
 		default:
+			log.Printf("sonos event: %T %#v", evt, evt)
 			return evt, nil
 	}
 	return nil, nil

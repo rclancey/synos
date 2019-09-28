@@ -1,7 +1,10 @@
+/*
 #app.mobile {
   height: 100vh;
 }
+*/
 
+/*
 #app.mobile .back {
   background-size: contain;
   background-repeat: no-repeat;
@@ -20,7 +23,9 @@
   padding: 0.5em;
   padding-top: 54px;
 }
+*/
 
+/*
 #app.mobile .header .icon {
   width: 18px;
   height: 18px;
@@ -28,13 +33,16 @@
   max-width: 18px;
   background-size: cover;
 }
+*/
 
+/*
 #app.mobile .header .title {
   font-size: 24pt;
   font-weight: bold;
   margin-top: 0.5em;
   padding-left: 0.5em;
 }
+*/
 
 #app.mobile .home .items {
   width: 100vw;
@@ -66,6 +74,7 @@
   text-overflow: hidden;
 }
 
+/*
 #app.mobile .playlistList .item {
   display: flex;
   padding: 9px 9px 0px 9px;
@@ -90,7 +99,9 @@
   border-bottom-style: solid;
   border-bottom-width: 1px;
 }
+*/
 
+/*
 #app.mobile .playlistList,
 #app.mobile .artistList,
 #app.mobile .albumList,
@@ -100,7 +111,9 @@
   box-sizing: border-box;
   overflow: hidden;
 }
+*/
 
+/*
 #app.mobile .artistList .index,
 #app.mobile .albumList .index,
 #app.mobile .genreList .index {
@@ -109,7 +122,9 @@
   right: 5px;
   font-size: 12px;
 }
+*/
 
+/*
 #app.mobile .playlistList .items,
 #app.mobile .artistList .items,
 #app.mobile .albumList .items,
@@ -160,7 +175,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+*/
 
+/*
 #app.mobile .albumList .row {
   display: flex;
   flex-direction: row;
@@ -195,6 +212,7 @@
   font-size: 11pt;
   padding-top: 5px;
 }
+*/
 
 #app.mobile .songList {
   width: 100vw;
@@ -203,6 +221,7 @@
   overflow: hidden;
 }
 
+/*
 #app.mobile .songList .header {
   display: flex;
   flex-direction: row;
@@ -232,7 +251,9 @@
   height: 70px;
   background-size: cover;
 }
+*/
 
+/*
 #app.mobile .songList .header .title {
   flex: 10;
   display: flex;
@@ -256,6 +277,7 @@
   flex: 10;
   font-size: 12pt;
 }
+*/
 
 #app.mobile .songList .header .dotsmenu {
   flex: 1;
@@ -271,6 +293,7 @@
   text-align: center;
 }
 
+/*
 #app.mobile .songList .items {
   height: calc(100vh - 273px);
 }
@@ -294,7 +317,9 @@
   border-radius: 4px;
   background-size: cover;
 }
+*/
 
+/*
 #app.mobile .songList .item .tracknum {
   flex: 1;
   width: 24px;
@@ -326,11 +351,14 @@
   text-overflow: ellipsis;
   font-size: 14px;
 }
+*/
 
+/*
 #app.mobile .songList .item .dotsmenu {
   flex: 1;
   padding-top: 12px;
 }
+*/
 
 #app.mobile .disabler {
   position: fixed;
@@ -404,6 +432,7 @@
   font-weight: bold;
 }
 
+/*
 #app.mobile .nowplaying {
   padding: 10px;
   position: fixed;
@@ -527,7 +556,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+*/
 
+/*
 #app.mobile .nowplaying .controls {
   padding-top: 5px;
 }
@@ -559,12 +590,15 @@
   margin-right: auto;
   touch-action: none;
 }
+*/
 
+/*
 #app.mobile .nowplaying.big .volume {
   display: flex;
   flex-direction: row;
   width: 100%;
 }
+*/
 
 #app.mobile .nowplaying .progressContainer {
   flex: 1;
@@ -579,6 +613,7 @@
   height: 4px;
 }
 
+/*
 #app.mobile .queue {
   position: fixed;
   top: 0;
@@ -626,7 +661,9 @@
   margin-top: 33px;
   height: calc(100vh - 33px);
 }
+*/
 
+/*
 #app.mobile .queue .item {
   display: flex;
   flex-direction: row;
@@ -641,7 +678,9 @@
   padding-bottom: 1px;
   margin-bottom: 1px;
 }
+*/
 
+/*
 #app.mobile .queue .item .info {
   flex: 10;
   display: flex;
@@ -653,12 +692,14 @@
   padding-right: 1em;
   margin-top: -2px;
 }
+*/
 
 #app.mobile .queue .item.selected .info,
 #app.mobile .queue .item.selected .time {
   border-top: none;
 }
 
+/*
 #app.mobile .queue .item .info .title {
   font-size: 14px;
   width: 100%;
@@ -684,7 +725,9 @@
   text-align: right;
   margin-top: -2px;
 }
+*/
 
+/*
 #app.mobile .queue .item .coverart {
   width: 44px;
   min-width: 44px;
@@ -694,7 +737,9 @@
   max-height: 44px;
   margin-right: 1em;
 }
+*/
 
+/*
 #app.mobile .queue .item .coverart .current {
   width: 30px;
   height: 30px;
@@ -725,7 +770,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
+*/
 
 #app.mobile .switch {
   width: 35px;
@@ -841,3 +886,86 @@
   font-weight: bold;
 }
 
+
+/*
+#app.mobile .calendar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+#app.mobile .calendar .day {
+  display: flex;
+  flex-direction: column;
+  margin: 0.5em;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 10px;
+  overflow: hidden;
+  width: calc(100% - 1em - 2px);
+}
+
+#app.mobile .calendar .day .dayname {
+  font-size: 48px;
+  font-weight: bold;
+  padding: 3px 8px;
+}
+
+#app.mobile .calendar .day .wake,
+#app.mobile .calendar .day .sleep {
+  display: flex;
+  padding: 8px 8px;
+  font-size: 36px;
+}
+
+#app.mobile .calendar .day select {
+  margin: 0.5em;
+  font-size: 20px;
+}
+
+#app.mobile .calendar .day .icon {
+  flex: 1;
+}
+
+#app.mobile .calendar .day .hour {
+  text-align: right;
+  flex: 2;
+}
+
+#app.mobile .calendar .day .minute {
+  flex: 1;
+}
+
+#app.mobile .calendar .day .arrows {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  text-align: center;
+}
+
+#app.mobile .calendar .day .arrows>div {
+  font-size: 36px;
+  line-height: 36px;
+}
+
+#app.mobile .calendar .day .arrows .fa-sort-up {
+  position: relative;
+  height: 18px;
+  overflow: hidden;
+  top: 3px;
+  z-index: 2;
+}
+
+#app.mobile .calendar .day .arrows .fa-sort-down {
+  position: relative;
+  top: -12px;
+}
+
+#app.mobile .calendar .day .fa-dot-circle,
+#app.mobile .calendar .day .fa-history,
+#app.mobile .calendar .day .fa-clock,
+#app.mobile .calendar .day .fa-times-circle {
+  flex: 1;
+  text-align: right;
+}
+*/

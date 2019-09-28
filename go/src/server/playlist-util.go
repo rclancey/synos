@@ -16,10 +16,10 @@ func m3uEscape(s string) string {
 	return s
 }
 
-func M3U(pl *musicdb.Playlist) ([]string, error) {
-	lines := make([]string, len(pl.PlaylistItems) * 2 + 2)
+func M3U(tracks []*musicdb.Track) ([]string, error) {
+	lines := make([]string, len(tracks) * 2 + 2)
 	lines[0] = "#EXTM3U"
-	for i, track := range pl.PlaylistItems {
+	for i, track := range tracks {
 		if track == nil {
 			continue
 		}

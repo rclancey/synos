@@ -1,172 +1,125 @@
-import React from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 //import { List, AutoSizer } from "react-virtualized";
 import { Album } from './SongList';
+import { API } from '../../lib/api';
+import { useAPI } from '../../lib/useAPI';
+import { ScreenHeader } from './ScreenHeader';
+import { AlbumIndex } from './Index';
+import { CoverArt } from '../CoverArt';
+import { CoverList } from './CoverList';
 
-export class AlbumList extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      scrollTop: 0,
-      albums: [],
-      index: [],
-      album: null,
-    };
-    this.onClose = this.onClose.bind(this);
-    this.rowRenderer = this.rowRenderer.bind(this);
-    this.onScroll = this.onScroll.bind(this);
+const albumImageUrl = (album, artist) => {
+  let url = '/api/art/album?';
+  if (album.artist) {
+    url += `artist=${escape(album.artist.sort)}`;
+  } else if (artist) {
+    url += `artist=${escape(artist.sort)}`;
   }
+  url += `&album=${escape(album.sort)}`;
+  return url;
+};
 
-  componentDidMount() {
-    this.loadAlbums();
-  }
+const AlbumImage = ({ album, artist, size }) => {
+  const url = useMemo(() => albumImageUrl(album, artist), [album, artist]);
+  return (
+    <CoverArt url={url} size={size} radius={10} />
+  );
+};
 
-  componentDidUpdate(prevProps) {
-    if (this.props.artist !== prevProps.artist) {
-      this.loadArtists();
-    }
-  }
-
-  loadAlbums() {
-    let url = '/api/index/';
-    if (this.props.artist) {
-      url += `albums?artist=${escape(this.props.artist.sort)}`;
-    } else {
-      url += 'album-artist';
-    }
-    return fetch(url, { method: 'GET' })
-      .then(resp => resp.json())
+export const AlbumList = ({
+  prev,
+  artist,
+  controlAPI,
+  adding,
+  onClose,
+  onTrackMenu,
+  onPlaylistMenu,
+  onAdd,
+}) => {
+  const [scrollTop, setScrollTop] = useState(0);
+  const [albums, setAlbums] = useState([]);
+  const [album, setAlbum] = useState(null);
+  const ref = useRef(null);
+  const api = useAPI(API);
+  useEffect(() => {
+    api.albumIndex(artist)
       .then(albums => {
         albums.forEach(album => {
-          album.name = Object.keys(album.names).sort((a, b) => album.names[a] < album.names[b] ? 1 : album.names[a] > album.names[b] ? -1 : 0)[0];
-          album.artist.name = Object.keys(album.artist.names).sort((a, b) => album.artist.names[a] < album.artist.names[b] ? 1 : album.artist.names[a] > album.artist.names[b] ? -1 : 0)[0];
+          album.name = Object.entries(album.names)
+            .sort((a, b) => a[1] > b[1] ? 1 : a[1] < b[1] ? -1 : 0)[0][0];
+          album.artist.name = Object.entries(album.artist.names)
+            .sort((a, b) => a[1] > b[1] ? 1 : a[1] < b[1] ? -1 : 0)[0][0];
         });
-        if (this.props.artist) {
+        if (artist) {
           albums.sort((a, b) => a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : 0)
         }
-        const index = this.makeIndex(albums || []);
-        this.setState({ albums, index });
+        setAlbums(albums);
       });
-  }
-
-  makeIndex(albums) {
-    const index = [];
-    let prev = null;
-    albums.forEach((album, i) => {
-      let first = (this.props.artist ? album : album.artist).sort.substr(0, 1);
-      if (!first.match(/^[a-z]/)) {
-        first = '#';
+  }, [artist]);
+  const onOpen = useMemo(() => {
+    return (album) => setAlbum(album);
+  }, [setAlbum]);
+  const onCloseMe = useMemo(() => {
+    return () => {
+      if (album === null) {
+        onClose();
+      } else {
+        setAlbum(null);
       }
-      if (prev !== first) {
-        const n = prev ? prev.charCodeAt(0) + 1 : 'a'.charCodeAt(0);
-        const m = first === '#' ? 'z'.charCodeAt(0) : first.charCodeAt(0) - 1;
-        for (let j = n; j <= m; j++) {
-          index.push({ name: String.fromCharCode(j).toUpperCase(), scrollTop: -1 });
-        }
-        index.push({ name: first.toUpperCase(), scrollTop: Math.floor(i / 2) * 195 });
-        prev = first;
+    };
+  }, [album, onClose]);
+  const onScroll = useMemo(() => {
+    return ({ scrollOffset }) => setScrollTop(scrollOffset);
+  });
+  const itemRenderer = useMemo(() => {
+    return ({ index, onOpen }) => {
+      const album = albums[index];
+      if (!album) {
+        return (<div className="item" />);
       }
-    });
-    return index;
-  }
-
-  onOpen(album) {
-    this.setState({ album });
-  }
-
-  onClose() {
-    if (this.state.album === null) {
-      this.props.onClose();
-    } else {
-      this.setState({ album: null });
-    }
-  }
-
-  coverArtUrl(album) {
-    let url = '/api/art/album?';
-    if (album) {
-      url += `artist=${escape(album.artist.sort)}`;
-    } else if (this.props.artist) {
-      url += `artist=${escape(this.props.artist.sort)}`;
-    }
-    url += `&album=${escape(album.sort)}`;
-    return `url(${url})`;
-    //return `url(/api/art/album?artist=${escape(this.props.artist)}&album=${escape(album)})`;
-  }
-
-  onScroll({ scrollTop }) {
-    this.setState({ scrollTop });
-  }
-
-  rowRenderer({ key, index, style }) {
-    const album1 = this.state.albums[index * 2];
-    const album2 = this.state.albums[index * 2 + 1];
-    return (
-      <div key={key} className="row" style={style}>
-        <div className="padding" />
-        <div className="item" onClick={() => this.onOpen(album1)}>
-          <div className="coverArt" style={{backgroundImage: this.coverArtUrl(album1)}} />
-          <div className="title">{album1.name}</div>
-        </div>
-        <div className="padding" />
-        { album2 ? (
-          <div className="item" onClick={() => this.onOpen(album2)}>
-            <div className="coverArt" style={{backgroundImage: this.coverArtUrl(album2)}} />
-            <div className="title">{album2.name}</div>
-          </div>
-        ) : (
-          <div className="item" />
-        ) }
-        <div className="padding" />
-      </div>
-    );
-  }
-
-  render() {
-    if (this.state.album !== null) {
-      console.debug('rendering album %o', this.state.album);
       return (
-        <Album
-          prev={this.props.artist || { name: "Albums"}}
-          artist={this.props.artist || this.state.album.artist}
-          album={this.state.album}
-          onClose={this.onClose}
-          onTrackMenu={this.props.onTrackMenu}
-          onPlaylistMenu={this.props.onPlaylistMenu}
-        />
+        <div className="item" onClick={() => onOpen(album)}>
+          <AlbumImage album={album} artist={artist} size={155} />
+          <div className="title">{album.name}</div>
+        </div>
       );
-    }
+    };
+  }, [albums, artist]);
+
+  if (album !== null) {
+    console.debug('rendering album %o', album);
     return (
-      <div className="albumList">
-        <div className="back" onClick={this.onClose}>{this.props.prev}</div>
-        <div className="header">
-          <div className="title">{this.props.artist ? this.props.artist.name : "Albums"}</div>
-        </div>
-        <div className="index">
-          {this.state.index.map(idx => (
-            <div key={idx.name} className={idx.scrollTop < 0 ? 'disabled' : ''} onClick={() => idx.scrollTop >= 0 && this.ref.scrollTo(idx.scrollTop)}>{idx.name}</div>
-          ))}
-        </div>
-        <div className="items">
-          <AutoSizer>
-            {({width, height}) => (
-              <List
-                ref={ref => this.ref = ref}
-                width={width}
-                height={height}
-                itemCount={Math.ceil(this.state.albums.length / 2)}
-                itemSize={195}
-                overscanCount={Math.ceil(height / 195)}
-                initialScrollOffset={this.state.scrollTop}
-                onScroll={this.onScroll}
-              >
-                {this.rowRenderer}
-              </List>
-            )}
-          </AutoSizer>
-        </div>
-      </div>
+      <Album
+        prev={artist || { name: "Albums"}}
+        artist={artist || album.artist}
+        album={album}
+        adding={adding}
+        onClose={onCloseMe}
+        onTrackMenu={onTrackMenu}
+        onPlaylistMenu={onPlaylistMenu}
+        onAdd={onAdd}
+      />
     );
   }
-}
+  return (
+    <CoverList
+      name={artist ? artist.name : "Albums"}
+      items={albums}
+      selected={album}
+      Indexer={AlbumIndex}
+      indexerArgs={{ albums, artist }}
+      Child={Album}
+      childArgs={{ album, artist: artist || (album ? album.artist : null) }}
+      onSelect={setAlbum}
+      itemRenderer={itemRenderer}
+      prev={prev}
+      controlAPI={controlAPI}
+      adding={adding}
+      onClose={onClose}
+      onTrackMenu={onTrackMenu}
+      onAdd={onAdd}
+    />
+  );
+};

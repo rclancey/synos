@@ -1,12 +1,12 @@
 import displayTime from './displayTime';
 
 export const PLAYLIST_POSITION = {
-  key: 'index',
-  minWidth: 10,
-  maxWidth: 10,
-  label: '',
+  key: 'origIndex',
+  minWidth: 30,
+  maxWidth: 50,
+  label: '#',
   className: 'num',
-  formatter: ({ rowIndex }) => rowIndex.toString()
+  formatter: ({ rowData }) => (rowData.origIndex + 1).toString()
 };
 
 export const CHECKED = {
@@ -46,6 +46,7 @@ export const DISC_NUMBER = {
   key: 'disc_number',
   label: 'Disc #',
   className: 'num',
+  maxWidth: 75,
   formatter: ({ rowData }) => {
     if (rowData.disc_number) {
       if (rowData.disc_count) {
@@ -61,6 +62,7 @@ export const TRACK_NUMBER = {
   key: 'track_number',
   label: 'Track #',
   className: 'num',
+  maxWidth: 75,
   formatter: ({ rowData }) => {
     if (rowData.track_number) {
       if (rowData.track_count) {
@@ -96,6 +98,7 @@ export const RATING = {
   key: 'rating',
   label: 'Rating',
   className: 'stars',
+  maxWidth: 80,
   formatter: ({ rowData }) => stars(rowData.rating),
 };
 
@@ -103,6 +106,7 @@ export const ALBUM_RATING = {
   key: 'album_rating',
   label: 'Album Rating',
   className: 'stars',
+  maxWidth: 80,
   formatter: ({ rowData }) => stars(rowData.album_rating),
 };
 
@@ -110,6 +114,7 @@ export const RELEASE_YEAR = {
   key: 'year',
   label: 'Year',
   className: 'num',
+  maxWidth: 75,
   formatter: ({ rowData }) => {
     if (rowData.release_date) {
       return new Date(rowData.release_date).getFullYear().toString();
@@ -164,6 +169,7 @@ export const RELEASE_DATE = {
   key: 'release_date',
   label: 'Release Date',
   className: 'date',
+  maxWidth: 120,
   formatter: ({ rowData }) => displayDate(rowData.release_date),
 };
 
@@ -171,6 +177,7 @@ export const DATE_ADDED = {
   key: 'date_added',
   label: 'Date Added',
   className: 'date',
+  maxWidth: 150,
   formatter: ({ rowData }) => displayDateTime(rowData.date_added),
 };
 
@@ -178,6 +185,7 @@ export const DATE_MODIFIED = {
   key: 'date_modified',
   label: 'Date Modified',
   className: 'date',
+  maxWidth: 150,
   formatter: ({ rowData }) => displayDateTime(rowData.date_modified),
 };
 
@@ -185,6 +193,7 @@ export const PURCHASE_DATE = {
   key: 'purchase_date',
   label: 'Purchase Date',
   className: 'date',
+  maxWidth: 150,
   formatter: ({ rowData }) => displayDateTime(rowData.purchase_date),
 };
 
@@ -192,6 +201,7 @@ export const LAST_PLAYED = {
   key: 'play_date_utc',
   label: 'Last Played',
   className: 'date',
+  maxWidth: 150,
   formatter: ({ rowData }) => displayDateTime(rowData.play_date_utc),
 };
 
@@ -199,6 +209,7 @@ export const LAST_SKIPPED = {
   key: 'skip_date',
   label: 'Last Skipped',
   className: 'date',
+  maxWidth: 150,
   formatter: ({ rowData }) => displayDateTime(rowData.skip_date),
 };
 
@@ -206,18 +217,21 @@ export const PLAY_COUNT = {
   key: 'play_count',
   label: 'Plays',
   className: 'num',
+  maxWidth: 75,
 };
 
 export const SKIP_COUNT = {
   key: 'skip_count',
   label: 'Skips',
   className: 'num',
+  maxWidth: 75,
 };
 
 export const TIME = {
   key: 'total_time',
   label: 'Time',
   className: 'time',
+  maxWidth: 60,
   formatter: ({ rowData }) => displayTime(rowData.total_time),
 };
 
@@ -230,11 +244,21 @@ export const BEATS_PER_MINUTE = {
   key: 'bpm',
   label: 'Beats per Minute',
   className: 'num',
+  maxWidth: 75,
 };
 
 export const BIT_RATE = {
   key: 'bit_rate',
   label: 'Bit Rate',
   className: 'num',
+  maxWidth: 75,
+};
+
+export const EMPTY = {
+  key: null,
+  label: '',
+  className: 'empty',
+  minWidth: 1,
+  formatter: ({ rowData }) => '',
 };
 

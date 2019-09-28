@@ -1,4 +1,4 @@
-#app.desktop.dark {
+#app.desktop.light {
   background-color: white;
 }
 
@@ -195,9 +195,72 @@
   box-shadow: white 0px 0px 50px 10px;
 }
 
-#app.desktop.dark .login input {
+#app.desktop.light .login input {
   background-color: white;
   border-color: black;
   color: black;
+}
+
+#app.desktop.light .calendar {
+  background-color: black;
+  color: white;
+  border-color: red;
+}
+
+#app.desktop.light .calendar .day {
+  border-color: #2687fb;
+}
+
+#app.desktop.light .calendar .day .dayname {
+  background-color: #2687fb;
+  color: #1e2023;
+}
+
+#app.desktop.light .calendar .day .wake.under,
+#app.desktop.light .calendar .day .sleep.under {
+  color: #99c;
+}
+
+#app.desktop.light .calendar .day .wake.over,
+#app.desktop.light .calendar .day .sleep.over {
+  color: #c99;
+}
+
+#app.desktop.light .calendar .day select {
+  margin: 0.5em;
+  background-color: #1e2023;
+  border-color: #2687fb;
+  color: #2687fb;
+}
+
+#app.desktop.light .calendar .day .icon {
+  color: #ccc;
+}
+
+#app.desktop.light .calendar .day .fa-dot-circle,
+#app.desktop.light .calendar .day .fa-history {
+  color: #df26fb;
+}
+
+#app.desktop.light .calendar .day .fa-times-circle,
+#app.desktop.light .calendar .day .fa-clock {
+  color: #2687fb;
+}
+
+#app.desktop.light .jookiPlaylist {
+  background-color: white;
+}
+
+#app.desktop.light .jookiPlaylist>.header {
+  border-bottom-color: #ccc;
+  background-color: white;
+}
+
+#app.desktop.light .jookiPlaylist>.header .meta .title {
+  color: black;
+}
+
+#app.desktop.light .jookiPlaylist .header>.meta .size {
+  color: #666;
 }
 

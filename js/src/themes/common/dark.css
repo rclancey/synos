@@ -1,3 +1,4 @@
+/*
 #app.dark .icon.airplay {
   background-image: url(../../icons/airplay-dark.png);
 }
@@ -62,7 +63,8 @@
   background-image: url(../../icons/podcasts-dark.png);
 }
 
-#app.dark .icon.purchased {
+#app.dark .icon.purchased,
+#app.dark .icon.purchased_music {
   background-image: url(../../icons/purchased-dark.png);
 }
 
@@ -82,6 +84,7 @@
   background-image: url(../../icons/tvshows-dark.png);
 }
 
+*/
 #app.desktop.dark .playlistBrowser .folder .folderToggle {
   border-left-color: #999;
 }

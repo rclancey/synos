@@ -1,74 +1,65 @@
-import React, { useState, useRef, useEffect } from 'react';
-import base64 from 'base-64';
+import React, { useState, useRef, useEffect, useMemo, useContext } from 'react';
+import { checkLoginCookie, doLogin, LoginContext } from '../lib/login';
+import { ThemeContext } from '../lib/theme';
 
-const importedThemes = {};
-
-const doLogin = (username, password) => {
-  const headers = new Headers();
-  if (username !== undefined && username !== null && username !== '' && password !== undefined && password !== null && password !== '') {
-    headers.set('Authorization', 'Basic ' + base64.encode(username + ":" + password));
-  }
-  return fetch('/api/login', {
-    method: 'POST',
-    credientials: 'include',
-    headers,
-  })
-    .then(resp => {
-      if (resp.status === 200) {
-        return resp.json();
-      }
-      return { status: resp.statusText };
-    })
-    .then(resp => {
-      return resp.status === 'OK';
-    });
-};
-
-export const CheckLogin = ({ mobile, theme, loggedIn, onLogin, children }) => {
-  const checkRef = useRef(false);
+export const CheckLogin = ({ mobile, children }) => {
+  const [login, setLogin] = useState({ loggedIn: null, username: null });
   useEffect(() => {
-    if (checkRef.current === false) {
-      checkRef.current = true;
-      doLogin(null, null)
-        .then(stat => {
-          console.debug('login stat: %o', stat);
-          if (stat) { onLogin(true) }
-          else { onLogin(false) }
-        });
-    }
-  });
-  if (loggedIn) {
-    console.debug('logged in, displaying children');
-    return children;
+    setLogin(checkLoginCookie());
+  }, []);
+  const onLoginRequired = useMemo(() => {
+    return () => setLogin(orig => Object.assign({}, orig, { loggedIn: false }));
+  }, [setLogin]);
+  const onLogin = useMemo(() => {
+    return (username, password) => doLogin(username, password).then(setLogin);
+  }, [setLogin])
+  const ctx = useMemo(() => {
+    return { ...login, onLoginRequired };
+  }, [login, onLoginRequired]);
+  if (login.loggedIn === null) {
+    return null;
   }
-  console.debug('not logged in, displaying login form');
-  return <Login mobile={mobile} theme={theme} onLogin={() => onLogin(true)} />;
+  if (login.loggedIn) {
+    return (
+      <LoginContext.Provider value={ctx}>
+        {children}
+      </LoginContext.Provider>
+    );
+  }
+  return (
+    <Login mobile={mobile} username={login.username} onLogin={onLogin} />
+  );
 };
 
-export const Login = ({ mobile, theme, onLogin }) => {
-  const [username, setUsername] = useState('');
+export const Login = ({ mobile, username, onLogin }) => {
+  const theme = useContext(ThemeContext);
+  const [tmpUsername, setUsername] = useState(username);
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const formFactor = mobile ? 'mobile' : 'desktop';
-  if (importedThemes[formFactor] === undefined || importedThemes[formFactor] === null) {
-    importedThemes[formFactor] = true;
-    import(`../themes/${formFactor}/layout.css`).then(css => importedThemes[formFactor] = css);
-  }
-  if (importedThemes[theme] === undefined || importedThemes[theme] === null) {
-    importedThemes[theme] = true;
-    import(`../themes/${formFactor}/${theme}.css`).then(css => importedThemes[theme] = css);
-  }
   return (
-    <div id="app" className={`login ${mobile ? "mobile" : "desktop"} ${theme}`}>
+    <div id="app" className={`login ${formFactor} ${theme}`}>
       <div className="leftPad" />
       <div className="centerPad">
         <div className="topPad" />
         <div className="login">
           <div className="header">Synos: Login Required</div>
           <div>Username:</div>
-          <div><input type="text" value={username} onChange={evt => setUsername(evt.target.value)} /></div>
+          <div>
+            <input
+              type="text"
+              value={tmpUsername}
+              onChange={evt => setUsername(evt.target.value)}
+            />
+          </div>
           <div>Password:</div>
-          <div><input type="password" value={password} onChange={evt => setPassword(evt.target.value)} /></div>
+          <div>
+            <input
+              type="password"
+              value={password}
+              onChange={evt => setPassword(evt.target.value)}
+            />
+          </div>
           { error !== null ? (<>
             <div />
             <div className="error">{error}</div>
@@ -78,51 +69,9 @@ export const Login = ({ mobile, theme, onLogin }) => {
             <input
               type="button"
               value="Login"
-              onClick={() => {
-                doLogin(username, password)
-                  .then(stat => {
-                    if (stat) { setError(null); onLogin && onLogin() }
-                    else { setError("Login incorrect") }
-                  });
-              }}
+              onClick={() => onLogin(tmpUsername, password).catch(err => setError(err.message))}
             />
           </div>
-          {/*
-          <table>
-            <tbody>
-              <tr>
-                <td>Username:</td>
-                <td><input type="text" value={username} onChange={evt => setUsername(evt.target.value)} /></td>
-              </tr>
-              <tr>
-                <td>Password:</td>
-                <td><input type="password" value={password} onChange={evt => setPassword(evt.target.value)} /></td>
-              </tr>
-              { error !== null ? (
-                <tr className="error">
-                  <td></td>
-                  <td>{error}</td>
-                </tr>
-              ) : null }
-              <tr>
-                <td></td>
-                <td>
-                  <input
-                    type="button"
-                    value="Login"
-                    onClick={() => {
-                      doLogin(username, password)
-                        .then(stat => {
-                          if (stat) { setError(null); onLogin && onLogin() }
-                          else { setError("Login incorrect") }
-                        });
-                    }}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          */}
         </div>
         <div className="bottomPad" />
       </div>

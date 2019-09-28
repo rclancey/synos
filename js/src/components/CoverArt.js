@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const CoverArt = ({ track, size, radius, style, children }) => {
+export const CoverArt = ({ track, size, radius, style, url, children }) => {
   const xstyle = Object.assign({
     backgroundSize: 'cover',
     backgroundPosition: 'center',
@@ -25,8 +25,12 @@ export const CoverArt = ({ track, size, radius, style, children }) => {
     xstyle.border = 'solid transparent 1px';
     xstyle.borderRadius = `${radius}px`;
   }
-  if (track) {
-    if (track.persistent_id) {
+  if (url) {
+    xstyle.backgroundImage = `url(${url})`;
+  } else if (track) {
+    if (track.artwork_url) {
+      xstyle.backgroundImage = `url(${track.artwork_url})`;
+    } else if (track.persistent_id) {
       xstyle.backgroundImage = `url(/api/art/track/${track.persistent_id})`;
     } else if (track.album) {
       if (track.album_artist) {

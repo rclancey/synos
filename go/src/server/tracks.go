@@ -80,6 +80,7 @@ func GetTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		return nil, err
 	}
 	fn := tr.Path()
+	log.Printf("get track %s: %s\n", tr.PersistentID, fn)
 	rng := req.Header.Get("Range")
 	if rng == "" || strings.HasPrefix(rng, "bytes=0-") {
 		tr.PlayCount += 1
@@ -266,6 +267,8 @@ func ListTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var params struct {
 		Count int
 		Page int
+		Purchased *bool
+		DateAdded *musicdb.Time `url:"date_added"`
 		Since musicdb.Time
 	}
 	params.Count = 100
@@ -274,7 +277,14 @@ func ListTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	tracks, err := db.TracksSince(params.Since, params.Page - 1, params.Count)
+	args := map[string]interface{}{}
+	if params.Purchased != nil {
+		args["purchased"] = *params.Purchased
+	}
+	if params.DateAdded != nil {
+		args["date_added"] = *params.DateAdded
+	}
+	tracks, err := db.TracksSince(params.Since, params.Page - 1, params.Count, args)
 	if err != nil {
 		return nil, DatabaseError.Raise(err, "")
 	}

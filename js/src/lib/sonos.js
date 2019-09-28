@@ -1,43 +1,103 @@
-const queueManip = (method, tracks) => {
-  const options = { method };
-  if (tracks !== undefined && tracks !== null) {
-    options.body = JSON.stringify(tracks.map(track => track.persistent_id));
-    options.headers = { 'Content-Type': 'application/json' };
+import { APIBase } from './api';
+
+export class SonosAPI extends APIBase {
+  constructor(onLoginRequired) {
+    super(onLoginRequired);
+    this.play = this.play.bind(this);
+    this.pause = this.pause.bind(this);
+    this.skipTo = this.skipTo.bind(this);
+    this.skipBy = this.skipBy.bind(this);
+    this.seekTo = this.seekTo.bind(this);
+    this.seekBy = this.seekBy.bind(this);
+    this.replaceQueue = this.replaceQueue.bind(this);
+    this.appendToQueue = this.appendToQueue.bind(this);
+    this.insertIntoQueue = this.insertIntoQueue.bind(this);
+    this.setPlaylist = this.setPlaylist.bind(this);
+    this.setVolumeTo = this.setVolumeTo.bind(this);
+    this.changeVolumeBy = this.changeVolumeBy.bind(this);
+    this.getQueue = this.getQueue.bind(this);
   }
-  return fetch('/api/sonos/queue', options)
-    .then(resp => resp.json());
-};
 
-export const getSonosQueue = () => queueManip('GET');
-export const replaceSonosQueue = tracks => queueManip('POST', tracks);
-export const insertIntoSonosQueue = tracks => queueManip('PATCH', tracks);
-export const appendToSonosQueue = tracks => queueManip('PUT', tracks);
-
-const stateManip = action => {
-  const uri = `/api/sonos/${action}`;
-  return fetch(uri, { method: 'POST' })
-    .then(resp => resp.json());
-};
-
-export const playSonos = () => stateManip('play');
-export const pauseSonos = () => stateManip('pause');
-
-const posManip = (action, method, val) => {
-  const uri = `/api/sonos/${action}`;
-  const options = { method };
-  if (val !== undefined && val !== null) {
-    options.body = JSON.stringify(val);
-    options.headers = { 'Content-Type': 'application/json' };
+  queueManip(method, tracks) {
+    const url = `/api/sonos/queue`;
+    const args = { method };
+    if (tracks !== undefined && tracks !== null) {
+      args.body = tracks.map(track => track.persistent_id);
+    }
+    return this.fetch(url, args);
   }
-  return fetch(uri, options)
-    .then(resp => resp.json());
-};
 
-export const seekSonosTo = ms => posManip('seek', 'POST', Math.round(ms));
-export const seekSonosBy = ms => posManip('seek', 'PUT', Math.round(ms));
-export const skipSonosTo = idx => posManip('skip', 'POST', idx);
-export const skipSonosBy = count => posManip('skip', 'PUT', count);
+  getQueue() {
+    return this.queueManip('GET');
+  }
 
-export const getSonosVolume = () => posManip('volume', 'GET');
-export const setSonosVolumeTo = vol => posManip('volume', 'POST', Math.round(vol));
-export const changeSonosVolumeBy = vol => posManip('volume', 'PUT', Math.round(vol));
+  setPlaylist(id, index) {
+    let url = `/api/sonos/queue?playlist=${id}`;
+    if (index) {
+      url += `&index=${index}`;
+    }
+    return this.post(url);
+  }
+
+  replaceQueue(tracks) {
+    return this.queueManip('POST', tracks);
+  }
+
+  insertIntoQueue(tracks) {
+    return this.queueManip('PATCH', tracks);
+  }
+
+  appendToQueue(tracks) {
+    return this.queueManip('PUT', tracks);
+  }
+
+  stateManip(action) {
+    const url = `/api/sonos/${action}`;
+    return this.post(url);
+  }
+
+  play() {
+    return this.stateManip('play');
+  }
+
+  pause() {
+    return this.stateManip('pause');
+  }
+
+  posManip(action, method, val) {
+    const url = `/api/sonos/${action}`;
+    const args = { method };
+    if (val !== undefined && val !== null) {
+      args.body = val;
+    }
+    return this.fetch(url, args);
+  }
+
+  seekTo(ms) {
+    return this.posManip('seek', 'POST', Math.round(ms));
+  }
+
+  seekBy(ms) {
+    return this.posManip('seek', 'PUT', Math.round(ms));
+  }
+
+  skipTo(idx) {
+    return this.posManip('skip', 'POST', idx);
+  }
+
+  skipBy(count) {
+    return this.posManip('skip', 'PUT', count);
+  }
+
+  getVolume() {
+    return this.posManip('volume', 'GET');
+  }
+
+  setVolumeTo(vol) {
+    return this.posManip('volume', 'POST', Math.round(vol));
+  }
+
+  changeVolumeBy(delta) {
+    return this.posManip('volume', 'PUT', Math.round(delta));
+  }
+}

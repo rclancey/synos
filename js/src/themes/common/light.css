@@ -1,3 +1,4 @@
+/*
 .icon.airplay {
   background-image: url(../../icons/airplay.png);
 }
@@ -62,7 +63,8 @@
   background-image: url(../../icons/podcasts.png);
 }
 
-.icon.purchased {
+.icon.purchased,
+.icon.purchased_music {
   background-image: url(../../icons/purchased.png);
 }
 
@@ -85,4 +87,5 @@
 .icon.tvshows {
   background-image: url(../../icons/tvshows.png);
 }
+*/
 

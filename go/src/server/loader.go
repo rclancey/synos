@@ -45,6 +45,12 @@ func WatchITunes() (chan bool, error) {
 	return quit, nil
 }
 
+type LibraryEvent struct {
+	Type string `json:"type"`
+	Playlists []*musicdb.Playlist `json:"playlists,omitempty"`
+	Tracks []*musicdb.Track `json:"tracks,omitempty"`
+}
+
 func updateItunes(fn string, errlog *logging.Logger) error {
 	l := loader.NewLoader()
 	go l.Load(fn)
@@ -52,10 +58,21 @@ func updateItunes(fn string, errlog *logging.Logger) error {
 	playlists := -1
 	//count := 0
 	errlog.Info("begin itunes library update")
+	evt := &LibraryEvent{
+		Type: "library",
+		Playlists: []*musicdb.Playlist{},
+		Tracks: []*musicdb.Track{},
+	}
 	for {
 		update, ok := <-l.C
 		if !ok {
 			//errlog.("loader channel closed")
+			if len(evt.Playlists) > 0 || len(evt.Tracks) > 0 {
+				hub, err := getWebsocketHub()
+				if err == nil {
+					hub.BroadcastEvent(evt)
+				}
+			}
 			return nil
 		}
 		/*
@@ -81,19 +98,31 @@ func updateItunes(fn string, errlog *logging.Logger) error {
 			} else if tupdate.Location == nil {
 				// noop
 			} else {
-				err := db.UpdateITunesTrack(tupdate)
+				updated, err := db.UpdateITunesTrack(tupdate)
 				if err != nil {
 					errlog.Error("error updating track:", err)
 					l.Abort()
 					return err
 				}
+				if updated && tupdate.PersistentID != nil {
+					tr, err := db.GetTrack(musicdb.PersistentID(*tupdate.PersistentID))
+					if err == nil {
+						evt.Tracks = append(evt.Tracks, tr)
+					}
+				}
 			}
 		case *loader.Playlist:
-			err := db.UpdateITunesPlaylist(tupdate)
+			updated, err := db.UpdateITunesPlaylist(tupdate)
 			if err != nil {
 				errlog.Error("error updating playlist:", err)
 				l.Abort()
 				return err
+			}
+			if updated && tupdate.PersistentID != nil {
+				pl, err := db.GetPlaylist(musicdb.PersistentID(*tupdate.PersistentID))
+				if err == nil {
+					evt.Playlists = append(evt.Playlists, pl)
+				}
 			}
 		case error:
 			errlog.Error("error in loader:", tupdate)

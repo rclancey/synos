@@ -1,6 +1,7 @@
 import React from 'react';
 import sortBy from 'lodash.sortby';
 import reverse from 'lodash.reverse';
+import { TrackSelectionList } from '../lib/trackList';
 import { TrackList } from './TrackList';
 import { ColumnBrowser } from './ColumnBrowser';
 import * as COLUMNS from '../lib/columns';

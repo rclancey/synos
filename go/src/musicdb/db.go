@@ -115,12 +115,23 @@ func (db *DB) TracksSinceCount(t Time) (int, error) {
 	return i, nil
 }
 
-func (db *DB) TracksSince(t Time, page, count int) ([]*Track, error) {
-	qs := `SELECT * FROM track WHERE date_modified >= ? ORDER BY id`
-	if count > 0 {
-		qs += fmt.Sprintf(" LIMIT %d OFFSET %d", count, page * count)
+func (db *DB) TracksSince(t Time, page, count int, args map[string]interface{}) ([]*Track, error) {
+	qs := `SELECT * FROM track WHERE date_modified >= ? `
+	params := []interface{}{t}
+	for k, v := range args {
+		if strings.Contains(k, "date") {
+			qs += fmt.Sprintf(`AND %s >= ? `, k)
+		} else {
+			qs += fmt.Sprintf(`AND %s = ? `, k)
+		}
+		params = append(params, v)
 	}
-	rows, err := db.Query(qs, t)
+	qs += `ORDER BY id`
+	if count > 0 {
+		qs += fmt.Sprintf(` LIMIT %d OFFSET %d`, count, page * count)
+	}
+	log.Println(qs, params)
+	rows, err := db.Query(qs, params...)
 	if err != nil {
 		return nil, err
 	}
@@ -1139,9 +1150,9 @@ func (db *DB) DeletePlaylist(pl *Playlist) error {
 	return tx.Commit()
 }
 
-func (db *DB) UpdateITunesTrack(tr *loader.Track) error {
+func (db *DB) UpdateITunesTrack(tr *loader.Track) (bool, error) {
 	if tr.PersistentID == nil {
-		return errors.New("track has no persistent id")
+		return false, errors.New("track has no persistent id")
 	}
 	xtr := tr.Clone()
 	xtr.TrackID = nil
@@ -1156,28 +1167,28 @@ func (db *DB) UpdateITunesTrack(tr *loader.Track) error {
 			track.Validate()
 			tx, err := db.Begin()
 			if err != nil {
-				return err
+				return true, err
 			}
 			err = db.insertStruct(tx, track)
 			if err != nil {
 				log.Printf("difficulty with track %s", track.PersistentID.String())
 				tx.Rollback()
-				return err
+				return true, err
 			}
 			qs = `INSERT INTO itunes_track (id, data, mod_date) VALUES(?, ?, ?)`
 			_, err = tx.Exec(qs, id, serializeGob(tr), time.Now().In(time.UTC))
 			if err != nil {
 				tx.Rollback()
 				log.Println("erorr %s in %s", err.Error(), qs)
-				return err
+				return true, err
 			}
-			return tx.Commit()
+			return true, tx.Commit()
 		}
-		return err
+		return false, err
 	}
 	mydata := serializeGob(xtr)
 	if bytes.Equal(data, mydata) {
-		return nil
+		return false, nil
 	}
 	qs = `SELECT * FROM track WHERE id = ?`
 	row = db.QueryRow(qs, PersistentID(*tr.PersistentID))
@@ -1186,39 +1197,39 @@ func (db *DB) UpdateITunesTrack(tr *loader.Track) error {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// track was deleted
-			return nil
+			return false, nil
 		}
-		return err
+		return true, err
 	}
 	orig := &loader.Track{}
 	err = deserializeGob(data, orig)
 	if err != nil {
-		return err
+		return true, err
 	}
 	track.Update(TrackFromITunes(orig), TrackFromITunes(tr))
 	track.Validate()
 	tx, err := db.Begin()
 	if err != nil {
-		return err
+		return true, err
 	}
 	err = db.updateStruct(tx, track)
 	if err != nil {
 		log.Printf("difficulty with track %s", track.PersistentID.String())
 		tx.Rollback()
-		return err
+		return true, err
 	}
 	qs = `UPDATE itunes_track SET data = ?, mod_date = ? WHERE id = ?`
 	_, err = tx.Exec(qs, mydata, time.Now().In(time.UTC), id)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return true, err
 	}
-	return tx.Commit()
+	return true, tx.Commit()
 }
 
-func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) error {
+func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) (bool, error) {
 	if pl.PersistentID == nil {
-		return errors.New("playlist has no persistent id")
+		return false, errors.New("playlist has no persistent id")
 	}
 	id := PersistentID(*pl.PersistentID).String()
 	qs := `SELECT data FROM itunes_playlist WHERE id = ?`
@@ -1230,32 +1241,32 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) error {
 			playlist := PlaylistFromITunes(pl)
 			tx, err := db.Begin()
 			if err != nil {
-				return err
+				return true, err
 			}
 			err = db.insertStruct(tx, playlist)
 			if err != nil {
 				log.Printf("difficulty with playlist %s", playlist.PersistentID.String())
 				tx.Rollback()
-				return err
+				return true, err
 			}
 			err = db.savePlaylistTracksWithTx(playlist, tx)
 			if err != nil {
 				tx.Rollback()
-				return err
+				return true, err
 			}
 			qs = `INSERT INTO itunes_playlist (id, data, mod_date) VALUES(?, ?, ?)`
 			_, err = tx.Exec(qs, id, serializeGob(pl), time.Now().In(time.UTC))
 			if err != nil {
 				tx.Rollback()
-				return err
+				return true, err
 			}
-			return tx.Commit()
+			return true, tx.Commit()
 		}
-		return err
+		return false, err
 	}
 	mydata := serializeGob(pl)
 	if bytes.Equal(data, mydata) {
-		return nil
+		return false, nil
 	}
 	qs = `SELECT * FROM playlist WHERE id = ?`
 	row = db.QueryRow(qs, PersistentID(*pl.PersistentID))
@@ -1264,41 +1275,41 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) error {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// playlist was deleted
-			return nil
+			return false, nil
 		}
-		return err
+		return true, err
 	}
 	playlist.TrackIDs, err = db.PlaylistTrackIDs(playlist)
 	if err != nil {
-		return err
+		return true, err
 	}
 	orig := &loader.Playlist{}
 	err = deserializeGob(data, orig)
 	if err != nil {
-		return err
+		return true, err
 	}
 	playlist.Update(PlaylistFromITunes(orig), PlaylistFromITunes(pl))
 	tx, err := db.Begin()
 	if err != nil {
-		return err
+		return true, err
 	}
 	err = db.updateStruct(tx, playlist)
 	if err != nil {
 		log.Printf("difficulty with playlist %s", playlist.PersistentID.String())
 		tx.Rollback()
-		return err
+		return true, err
 	}
 	err = db.savePlaylistTracksWithTx(playlist, tx)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return true, err
 	}
 	qs = `UPDATE itunes_playlist SET data = ?, mod_date = ? WHERE id = ?`
 	_, err = tx.Exec(qs, mydata, time.Now().In(time.UTC), id)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return true, err
 	}
-	return tx.Commit()
+	return true, tx.Commit()
 }
 

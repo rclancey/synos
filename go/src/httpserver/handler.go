@@ -1,10 +1,14 @@
 package httpserver
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 )
 
@@ -12,35 +16,99 @@ type Redirect string
 
 type StaticFile string
 
-type WebSocket string
+type WebSocket interface {
+	Open(*websocket.Conn) error
+	ReadPump()
+	WritePump()
+	Close()
+}
+
+type ProxyURL string
+
+func SetDefaultContentType(w http.ResponseWriter, ct string) {
+	h := w.Header()
+	if h.Get("Content-Type") == "" {
+		h.Set("Content-Type", ct)
+	}
+}
 
 type HandlerFunc func(w http.ResponseWriter, req *http.Request) (interface{}, error)
 
 type hf HandlerFunc
 func (h hf) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	obj, err := h(w, req)
+	gzrw := NewGZipResponseWriter(w, req)
+	obj, err := h(gzrw, req)
 	if err != nil {
 		herr, isa := err.(*HTTPError)
 		if isa {
 			herr.Respond(w)
 			return
 		}
-		InternalServerError.Raise(err, "Internal Server Error").Respond(w)
+		InternalServerError.Raise(err, "Internal Server Error").Respond(gzrw)
 		return
 	}
 	if obj != nil {
 		switch tobj := obj.(type) {
 		case Redirect:
-			http.Redirect(w, req, string(tobj), http.StatusFound)
+			http.Redirect(gzrw, req, string(tobj), http.StatusFound)
 		case StaticFile:
-			http.ServeFile(w, req, string(tobj))
+			http.ServeFile(gzrw, req, string(tobj))
+		case io.ReadSeeker:
+			http.ServeContent(gzrw, req, req.URL.Path, time.Now(), tobj)
+			closer, isa := tobj.(io.Closer)
+			if isa {
+				defer closer.Close()
+			}
+		case []byte:
+			http.ServeContent(gzrw, req, req.URL.Path, time.Now(), bytes.NewReader(tobj))
+		case ProxyURL:
+			client := &http.Client{}
+			preq, err := http.NewRequest(req.Method, string(tobj), req.Body)
+			if err != nil {
+				BadRequest.Raise(err, "Invalid downstream server").Respond(gzrw)
+				return
+			}
+			for k, vs := range req.Header {
+				switch k {
+				case "Host":
+				default:
+					preq.Header[k] = vs
+				}
+			}
+			preq.Header.Set("X-Forwarded-For", req.RemoteAddr)
+			res, err := client.Do(preq)
+			if err != nil {
+				BadGateway.Raise(err, "Downstream server error").Respond(gzrw)
+				return
+			}
+			wh := w.Header()
+			for k, vs := range res.Header {
+				wh[k] = vs
+			}
+			gzrw.WriteHeader(res.StatusCode)
+			io.Copy(gzrw, res.Body)
+			res.Body.Close()
 		case WebSocket:
-			// noop
+			conn, err := upgrader.Upgrade(gzrw, req, nil)
+			if err != nil {
+				tobj.Close()
+				InternalServerError.Raise(err, "Can't upgrade connection").Respond(gzrw)
+				return
+			}
+			err = tobj.Open(conn)
+			if err != nil {
+				tobj.Close()
+				InternalServerError.Raise(err, "Can't open websocket").Respond(gzrw)
+				return
+			}
+			go tobj.WritePump()
+			go tobj.ReadPump()
 		case *HTTPError:
-			tobj.RespondJSON(w)
+			tobj.RespondJSON(gzrw)
 		default:
-			SendJSON(w, obj)
+			SendJSON(gzrw, obj)
 		}
+		gzrw.Close()
 	}
 }
 

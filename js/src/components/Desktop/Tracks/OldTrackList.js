@@ -5,7 +5,7 @@ import { DragSource, DropTarget } from 'react-dnd';
 
 const rowSource = {
   beginDrag(props, monitor, component) {
-    console.debug('beginDrag(%o, %o, %o)', props, monitor, component);
+    console.debug('beginDrag(%o)', { props, monitor, component });
     const tracks = props.list.map((rowData, index) => {
       if (props.selected && props.selected[rowData.persistent_id]) {
         return { index, rowData };

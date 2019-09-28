@@ -1,8 +1,8 @@
 import React, { Fragment } from 'react';
 import sortBy from 'lodash.sortby';
 import { trackDB } from '../lib/trackdb';
-import { PlaylistBrowser } from './PlaylistBrowser';
-import { TrackBrowser } from './TrackBrowser';
+import { PlaylistBrowser } from './PlaylistBrowser2';
+import { TrackBrowser } from './TrackBrowser2';
 import { ProgressBar } from './ProgressBar';
 
 export class Library extends React.Component {
@@ -15,6 +15,7 @@ export class Library extends React.Component {
       playlists: [],
       playlist: null,
       openFolders: {},
+      devices: {},
     };
     this.onSearch = this.onSearch.bind(this);
     this.onSelectPlaylist = this.onSelectPlaylist.bind(this);
@@ -151,12 +152,28 @@ export class Library extends React.Component {
       .then(ids => this.setPlaylistTracks(pl, ids));
   }
 
+  loadJooki() {
+    fetch('/api/jooki/state', { method: 'GET' })
+      .then(resp => resp.json())
+      .then(jooki => {
+        fetch('/api/jooki/playlists', { method: 'GET' })
+          .then(resp => resp.json())
+          .then(playlists => {
+            jooki.playlists = playlists;
+            const devices = Object.assign({}, this.state.devices, { jooki });
+            this.setState({ devices });
+          });
+      });
+  }
+
   componentDidMount() {
     this.loadPlaylists();
-    const progressCallback = tracks => this.setState({ tracks: tracks.slice(0), loaded: tracks.length });
+    this.loadJooki();
+    //const progressCallback = tracks => this.setState({ tracks: tracks.slice(0), loaded: tracks.length });
+    const progressCallback = tracks => this.setState({ loaded: tracks.length });
     trackDB.countTracks()
       .then(count => this.setState({ trackCount: count+1 }))
-      .then(() => trackDB.loadTracks(200, progressCallback))
+      .then(() => trackDB.loadTracks(1000, progressCallback))
       .then(tracks => {
         return new Promise(resolve => this.setState({ tracks }, resolve));
       })
@@ -175,17 +192,22 @@ export class Library extends React.Component {
   }
 
   onSearch(search) {
+    console.debug('library set search to %o', search);
     this.setState({ search });
   }
 
-  onSelectPlaylist(playlist) {
+  onSelectPlaylist(playlist, device) {
     if (playlist === null) {
-      this.setState({ playlist: null });
+      this.setState({ playlist: null, device: null });
       this.props.onViewPlaylist(null);
+    } else if (device) {
+      this.setState({ playlist, device });
+    } else if (playlist.folder) {
+      this.setState({ playlist: Object.assign({}, playlist, { tracks: [] }), device });
     } else if (!playlist.folder) {
       this.props.onViewPlaylist(playlist.persistent_id);
       this.loadPlaylistTracks(playlist)
-        .then(playlist => this.setState({ playlist }));
+        .then(playlist => this.setState({ playlist, device }));
     }
   }
 
@@ -200,7 +222,10 @@ export class Library extends React.Component {
     this.setState({ openFolders });
   }
 
-  onMovePlaylist(src, dst) {
+  onMovePlaylist({ source, target }) {
+    console.debug('onMovePlaylist(%o)', { source, target });
+    throw new Error("not implemented");
+    /*
     const recurse = (pls) => {
       return pls.map(pl => {
         if (!pl.children && (dst === null || pl.persistent_id !== dst.persistent_id)) {
@@ -226,11 +251,16 @@ export class Library extends React.Component {
     }
     console.debug('playlists now %o', root);
     this.setState({ playlists: root });
+    */
   }
 
-  onAddToPlaylist(dst, tracks) {
+  onAddToPlaylist({ source, target }) {
+    console.debug("onAddToPlaylist(%o)", { source, target });
+    throw new Error("not implemented");
+    /*
     return this.props.api.addToPlaylist(dst, tracks)
       .then(ids => this.setPlaylistTracks(dst, ids));
+    */
   }
 
   onReorderTracks(playlist, targetIndex, sourceIndices) {
@@ -322,6 +352,7 @@ export class Library extends React.Component {
         <div key="library" className="library">
           <PlaylistBrowser
             playlists={this.state.playlists}
+            devices={this.state.devices}
             openFolders={this.state.openFolders}
             selected={this.state.playlist ? this.state.playlist.persistent_id : null}
             onChange={playlists => this.setState({ playlists })}
@@ -331,15 +362,18 @@ export class Library extends React.Component {
             onAddToPlaylist={this.onAddToPlaylist}
             onConfirm={this.onConfirm}
           />
+          { this.state.device || (
           <TrackBrowser
+            columnBrowser={true}
             tracks={this.state.playlist ? this.state.playlist.tracks : this.state.tracks}
             playlist={this.state.playlist}
-            onReorderTracks={this.onReorderTracks}
-            onDeleteTracks={this.onDeleteTracks}
+            onReorder={this.onReorderTracks}
+            onDelete={this.onDeleteTracks}
             onConfirm={this.onConfirm}
             onPlay={this.onTrackPlay}
             search={this.props.search}
           />
+          ) }
         </div>
         <ProgressBar key="progress" total={this.state.trackCount} complete={this.state.loaded} />
         { this.state.confirming ? (

@@ -126,7 +126,7 @@ func PlaylistTracks(w http.ResponseWriter, req *http.Request) (interface{}, erro
 	}
 	ext := path.Ext(req.URL.Path)
 	if ext == ".m3u" {
-		lines, err := M3U(pl)
+		lines, err := M3U(tracks)
 		if err != nil {
 			return nil, H.InternalServerError.Raise(err, "")
 		}

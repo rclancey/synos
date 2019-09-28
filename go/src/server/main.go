@@ -8,13 +8,10 @@ import (
 	"httpserver"
 	"lastfm"
 	"musicdb"
-	"sonos"
 	"spotify"
 )
 
 var db *musicdb.DB
-var dev *sonos.Sonos
-var hub *Hub
 var cfg *SynosConfig
 var lastFm *lastfm.LastFM
 var spot *spotify.SpotifyClient
@@ -40,22 +37,19 @@ func main() {
 		log.Fatal("error sending default log messages to error log:", err)
 	}
 	errlog.MakeDefault()
-	iface := cfg.Sonos.GetInterface()
-	if iface == nil {
-		log.Println("sonos not configured")
-	} else {
-		go func() {
-			s, err := sonos.NewSonos(iface.Name, cfg.Bind.RootURL(cfg.Sonos, false), db)
-			if err != nil {
-				log.Println("error getting sonos:", err)
-			} else {
-				log.Println("sonos ready")
-				dev = s
-				hub = NewHub(dev)
-				go hub.Run()
-			}
-		}()
-	}
+	go func() {
+		getSonos(false)
+	}()
+
+	go func() {
+		cron, err := cfg.Jooki.LoadCron()
+		if err != nil {
+			log.Println("error loading cron config:", err)
+		} else {
+			ScheduleFromConfig(cron)
+		}
+		getJooki(false)
+	}()
 
 	lastFm = cfg.LastFM.Client()
 	spot = cfg.Spotify.Client()
@@ -80,6 +74,21 @@ func main() {
 	srv.Handle("/api/art/artist", ArtistArt)
 	srv.Handle("/api/art/album", AlbumArt)
 	srv.Handle("/api/art/genre", GenreArt)
+	srv.Handle("/api/cron", CronHandler)
+	srv.Handle("/api/jooki/state", GetJookiState)
+	srv.Handle("/api/jooki/tokens", GetJookiTokens)
+	srv.Handle("/api/jooki/playlists", GetJookiPlaylists)
+	srv.Handle("/api/jooki/copy", CopyPlaylistToJooki)
+	srv.Handle("/api/jooki/playlist/play", PlayJookiPlaylist)
+	srv.Handle("/api/jooki/playlist/rename", RenameJookiPlaylist)
+	srv.Handle("/api/jooki/playlist/token", SetJookiPlaylistToken)
+	srv.Handle("/api/jooki/play", JookiPlay)
+	srv.Handle("/api/jooki/pause", JookiPause)
+	srv.Handle("/api/jooki/skip", JookiSkip)
+	srv.Handle("/api/jooki/seek", JookiSeek)
+	srv.Handle("/api/jooki/volume", JookiVolume)
+	srv.Handle("/api/jooki/art/", JookiArt)
+	srv.Handle("/api/radio/", RadioHandler)
 	srv.Handle("/api/sonos/available", HasSonos)
 	srv.Handle("/api/sonos/queue", SonosQueue)
 	srv.Handle("/api/sonos/skip", SonosSkip)
@@ -87,7 +96,7 @@ func main() {
 	srv.Handle("/api/sonos/play", SonosPlay)
 	srv.Handle("/api/sonos/pause", SonosPause)
 	srv.Handle("/api/sonos/volume", SonosVolume)
-	srv.Handle("/api/sonos/ws", ServeWS)
+	srv.Handle("/api/ws", ServeWS)
 
 	srv.ListenAndServe()
 }

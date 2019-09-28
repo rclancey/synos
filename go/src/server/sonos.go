@@ -1,14 +1,63 @@
 package main
 
 import (
+	"errors"
+	"log"
 	"net/http"
+	"strconv"
 
 	H "httpserver"
 	"musicdb"
+	"sonos"
 )
 
+var sonosDevice *sonos.Sonos
+
+type SonosEvent struct {
+	Type string `json:"type"`
+	Event interface{} `json:"event"`
+}
+
+func getSonos(quick bool) (*sonos.Sonos, error) {
+	if sonosDevice != nil {
+		return sonosDevice, nil
+	}
+	if quick {
+		return nil, nil
+	}
+	iface := cfg.Sonos.GetInterface()
+	if iface == nil {
+		return nil, errors.New("sonos not configured")
+	}
+	var err error
+	sonosDevice, err = sonos.NewSonos(iface.Name, cfg.Bind.RootURL(cfg.Sonos, false), db)
+	if err != nil {
+		sonosDevice = nil
+		log.Println("error getting sonos:", err)
+		return nil, err
+	}
+	hub, err := getWebsocketHub()
+	if err != nil {
+		sonosDevice = nil
+		return nil, err
+	}
+	go func() {
+		for {
+			msg, ok := <-sonosDevice.Events
+			if !ok {
+				log.Println("sonos channel closed")
+				sonosDevice = nil
+				break
+			}
+			hub.BroadcastEvent(&SonosEvent{Type: "sonos", Event: msg})
+		}
+	}()
+	log.Println("sonos ready")
+	return sonosDevice, nil
+}
+
 func HasSonos(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	return dev != nil, nil
+	return sonosDevice != nil, nil
 }
 
 func SonosQueue(w http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -29,6 +78,7 @@ func SonosQueue(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 func SonosGetQueue(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, _ := getSonos(true)
 	if dev == nil {
 		return nil, SonosUnavailableError
 	}
@@ -60,13 +110,14 @@ func readTracks(req *http.Request) ([]*musicdb.Track, error) {
 }
 
 func SonosReplaceQueue(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, _ := getSonos(true)
 	if dev == nil {
 		return nil, SonosUnavailableError
 	}
 	var err error
 	plid := new(musicdb.PersistentID)
 	err = plid.Decode(req.URL.Query().Get("playlist"))
-	if err != nil && *plid != 0 {
+	if err == nil && *plid != 0 {
 		var pl *musicdb.Playlist
 		pl, err = db.GetPlaylist(*plid)
 		if err != nil {
@@ -76,6 +127,12 @@ func SonosReplaceQueue(w http.ResponseWriter, req *http.Request) (interface{}, e
 			return nil, H.NotFound.Raise(nil, "playlist %s not found", plid)
 		}
 		err = dev.ReplaceQueueWithPlaylist(pl)
+		if err == nil {
+			idx, xerr := strconv.Atoi(req.URL.Query().Get("index"))
+			if xerr == nil {
+				err = dev.SetQueuePosition(idx)
+			}
+		}
 	} else {
 		var tracks []*musicdb.Track
 		tracks, err = readTracks(req)
@@ -95,6 +152,7 @@ func SonosReplaceQueue(w http.ResponseWriter, req *http.Request) (interface{}, e
 }
 
 func SonosAppendQueue(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, _ := getSonos(true)
 	if dev == nil {
 		return nil, SonosUnavailableError
 	}
@@ -126,6 +184,7 @@ func SonosAppendQueue(w http.ResponseWriter, req *http.Request) (interface{}, er
 }
 
 func SonosInsertQueue(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, _ := getSonos(true)
 	if dev == nil {
 		return nil, SonosUnavailableError
 	}
@@ -169,6 +228,7 @@ func SonosInsertQueue(w http.ResponseWriter, req *http.Request) (interface{}, er
 }
 
 func SonosClearQueue(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, _ := getSonos(true)
 	if dev == nil {
 		return nil, SonosUnavailableError
 	}
@@ -180,6 +240,7 @@ func SonosClearQueue(w http.ResponseWriter, req *http.Request) (interface{}, err
 }
 
 func SonosSkip(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, _ := getSonos(true)
 	if dev == nil {
 		return nil, SonosUnavailableError
 	}
@@ -200,6 +261,7 @@ func SonosSkip(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 func SonosSeek(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, _ := getSonos(true)
 	if dev == nil {
 		return nil, SonosUnavailableError
 	}
@@ -220,6 +282,7 @@ func SonosSeek(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 func SonosPlay(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, _ := getSonos(true)
 	if dev == nil {
 		return nil, SonosUnavailableError
 	}
@@ -231,6 +294,7 @@ func SonosPlay(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 func SonosPause(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, _ := getSonos(true)
 	if dev == nil {
 		return nil, SonosUnavailableError
 	}
@@ -242,6 +306,7 @@ func SonosPause(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 func SonosVolume(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, _ := getSonos(true)
 	var err error
 	switch req.Method {
 	case http.MethodGet:

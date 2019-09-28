@@ -3,6 +3,7 @@ import React from 'react';
 //import FolderTheme from 'react-sortable-tree-theme-file-explorer';
 import { PLAYLIST_ORDER } from '../lib/distinguished_kinds';
 import { TreeView } from './TreeView';
+import { DevicePlaylists } from './Device/Playlists';
 
 export class PlaylistBrowser extends React.Component {
   constructor(props) {
@@ -59,7 +60,7 @@ export class PlaylistBrowser extends React.Component {
             })
           }
     */
-    console.debug("playlists = %o, order = %o", this.props.playlists, PLAYLIST_ORDER);
+    //console.debug("playlists = %o, order = %o", this.props.playlists, PLAYLIST_ORDER);
     return (
       <div
         ref={node => this.node = node}
@@ -95,6 +96,11 @@ export class PlaylistBrowser extends React.Component {
               </div>
             )) }
         </div>
+        <DevicePlaylists
+          devices={this.props.devices}
+          selected={this.props.selected}
+          onSelect={this.props.onSelect}
+        />
         <h1>Music Playlists</h1>
         { this.props.playlists
           .filter(pl => {

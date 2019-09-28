@@ -17,12 +17,16 @@ type GZipResponseWriter struct {
 }
 
 func NewGZipResponseWriter(w http.ResponseWriter, r *http.Request) *GZipResponseWriter {
-	encs := strings.Split(r.Header.Get("Accept-Encoding"), ",")
 	accept := false
-	for _, enc := range encs {
-		if strings.ToLower(strings.TrimSpace(enc)) == "gzip" {
-			accept = true
-			break
+	if r.Header.Get("Range") == "" {
+		if strings.ToLower(strings.TrimSpace(r.Header.Get("Connection"))) != "upgrade" {
+			encs := strings.Split(r.Header.Get("Accept-Encoding"), ",")
+			for _, enc := range encs {
+				if strings.ToLower(strings.TrimSpace(enc)) == "gzip" {
+					accept = true
+					break
+				}
+			}
 		}
 	}
 	return &GZipResponseWriter{w: w, acceptGzip: accept, gzw: nil}
@@ -36,7 +40,7 @@ func (w *GZipResponseWriter) WriteHeader(statusCode int) {
 	if statusCode == http.StatusOK && w.acceptGzip {
 		h := w.w.Header()
 		ct := strings.Split(h.Get("Content-Type"), ";")[0]
-		if strings.HasPrefix(ct, "text/") {
+		if strings.HasPrefix(ct, "text/") || ct == "application/json" {
 			enc := strings.ToLower(h.Get("Content-Encoding"))
 			if enc == "" {
 				h.Set("Content-Encoding", "gzip")
@@ -52,6 +56,13 @@ func (w *GZipResponseWriter) Write(data []byte) (int, error) {
 		return w.gzw.Write(data)
 	}
 	return w.w.Write(data)
+}
+
+func (w *GZipResponseWriter) Close() error {
+	if w.gzw != nil {
+		return w.gzw.Close()
+	}
+	return nil
 }
 
 func (w *GZipResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {

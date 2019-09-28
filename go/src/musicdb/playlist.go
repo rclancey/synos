@@ -17,6 +17,7 @@ import (
 
 type Playlist struct {
 	PersistentID         PersistentID   `json:"persistent_id,omitempty" db:"id"`
+	JookiID              *string        `json:"jooki_id" db:"jooki_id"`
 	ParentPersistentID   *PersistentID  `json:"parent_persistent_id,omitempty" db:"parent_id"`
 	Kind                 PlaylistKind   `json:"kind" db:"kind"`
 	Folder               bool           `json:"folder,omitempty" db:"folder"`
