@@ -22,7 +22,7 @@ export const DesktopSkin = ({
 
   useEffect(() => {
     const handler = event => {
-      console.debug('top level key down handler %o', event);
+      //console.debug('top level key down handler %o', event);
       if (event.ctrlKey) {
         if (event.code === 'KeyF') {
           console.debug('activate search');
@@ -44,7 +44,7 @@ export const DesktopSkin = ({
       document.removeEventListener('keydown', handler, true);
     };
   }, []);
-  console.debug('rendering desktop skin');
+  //console.debug('rendering desktop skin');
 
   return (
     <div id="app" className={`desktop ${theme}`}>

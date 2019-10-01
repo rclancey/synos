@@ -43,7 +43,7 @@ export const ColumnBrowser = ({
         setScrollToIndex(undefined);
       }
     }
-  });
+  }, [lastIndex]);
   return (
     <div
       ref={n => node.current = n || node.current}

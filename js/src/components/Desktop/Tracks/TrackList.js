@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, { useState, useRef, useEffect, useContext, useMemo } from "react";
 import { Column, Table } from "react-virtualized";
 import Draggable from "react-draggable";
 import { DragSource, DropTarget } from 'react-dnd';
@@ -161,6 +161,7 @@ export const TrackList = ({
           border-color: transparent;
         }
         .trackList :global(.ReactVirtualized__Table__row.dropTarget) {
+          border-bottom-color: blue;
         }
         .trackList :global(.ReactVirtualized__Table__row.even) {
           background-color: ${colors.trackList.evenBg};

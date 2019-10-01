@@ -33,7 +33,7 @@ export const TrackRow = ({
     accept: ['TrackList'],
     drop(item, monitor) {
       if (onReorder) {
-        onReorder(playlist, index, item.tracks.map(t => t.index));
+        onReorder(playlist, index + 1, item.tracks.map(t => t.index));
       }
     },
     canDrop(item, monitor) {
@@ -51,12 +51,17 @@ export const TrackRow = ({
     collect(monitor, props) {
       return {
         isOver: monitor.isOver(),
+        clientOffset: monitor.getClientOffset(),
+        sourceOffset: monitor.getSourceClientOffset(),
+        isDragging: !!(monitor.getItem()),
       };
     },
   });
+
   return connectDropTarget(connectDragSource(
     <div
       className={`${className} ${dropCollect.isOver ? 'dropTarget' : ''}`}
+      data={JSON.stringify(dropCollect)}
       role="row"
       style={style}
       onMouseDown={event => onClick(event, index)}

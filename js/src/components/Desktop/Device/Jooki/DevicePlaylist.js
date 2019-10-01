@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect} from 'react';
 import { Folder } from '../../Playlists/Folder';
 import { JookiTrackBrowser } from './TrackBrowser';
 import { JookiDevice } from './Device';
@@ -9,6 +9,18 @@ export const JookiDevicePlaylist = ({
   selected,
   onSelect,
 }) => {
+  useEffect(() => {
+    if (!device || !device.playlists) {
+      return;
+    }
+    if (!selected) {
+      return;
+    }
+    const pl = device.playlists.find(x => x.persistent_id === selected);
+    if (pl) {
+      onSelect(pl, <JookiTrackBrowser device={device} playlist={pl} />);
+    }
+  }, [device ? device.playlists : null]);
   if (!device) {
     return null;
   }

@@ -39,16 +39,60 @@ export const colors = {
       text: 'white',
       separator: '#494b4d',
     },
-    /*
-    body: '#1e2023',
-    even: '#292b2e',
-    odd: '#1e2023',
-    border: '#494b4d',
-    highlight: '#2687fb',
-    blurHighlight: '#545456',
-    */
+    login: {
+      border: '#fff',
+      text: '#2687fb',
+      shadow: '#2687fb',
+      background: '#1e2023',
+      gradient1: '#144987',
+      gradient2: '#1e2023',
+    },
   },
+
   light: {
+    background: '#fff',
+    sectionBackground: '#ddd',
+    text: '#000',
+    text1: '#000',
+    text2: '#666',
+    blurHighlight: '#999',
+    highlightText: '#09c',
+    highlightInverse: '#fff',
+    button: '$09c',
+    switch: {
+      border: {
+        on: '#09c',
+        off: 'rgba(204, 204, 204, 0.7)',
+      },
+      knob: {
+        background: '#fff',
+        shadow: 'rgba(200, 200, 200, 0.7)',
+      },
+    },
+    disabler: 'rgba(0, 153, 204, 0.3)',
+    panelBackground: '#ccc',
+    panelText: '#000',
+    dropTarget: {
+      folderBackground: 'yellow',
+      folderText: 'black',
+      playlistBackground: 'orange',
+      playlistText: 'black',
+    },
+    trackList: {
+      background: '#fff',
+      border: '#999',
+      evenBg: '#eee',
+      text: '#000',
+      separator: '#777',
+    },
+    login: {
+      border: '#000',
+      text: '#000',
+      shadow: '#000',
+      background: '#ccc',
+      gradient1: '#144987',
+      gradient2: '#1e2023',
+    },
   },
 };
 

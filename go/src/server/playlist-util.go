@@ -10,7 +10,8 @@ import (
 
 func m3uEscape(s string) string {
 	s = html.EscapeString(s)
-	s = strings.Replace(s, "&amp;", "%26", -1)
+	s = strings.Replace(s, "&#39;", "", -1)
+	s = strings.Replace(s, "&amp;", "&#38;", -1)
 	s = strings.Replace(s, "&lt;", "&#60;", -1)
 	s = strings.Replace(s, "&gt;", "&#62;", -1)
 	return s

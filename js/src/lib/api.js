@@ -1,3 +1,6 @@
+export const SHUFFLE = 1;
+export const REPEAT = 2;
+
 export class APIBase {
   constructor(onLoginRequired) {
     this.onLoginRequired = onLoginRequired;
@@ -98,9 +101,9 @@ export class API extends APIBase {
 
   reorderTracks(playlist, targetIndex, sourceIndices) {
     const srcIdx = new Set(sourceIndices);
-    const before = playlist.tracks.slice(0, targetIndex).filter((tr, i) => !srcIdx.has(i));
-    const after = playlist.tracks.slice(targetIndex).filter((tr, i) => !srcIdx.has(i + targetIndex));
-    const middle = playlist.tracks.filter((tr, i) => srcIdx.has(i));
+    const before = playlist.items.slice(0, targetIndex).filter((tr, i) => !srcIdx.has(i));
+    const after = playlist.items.slice(targetIndex).filter((tr, i) => !srcIdx.has(i + targetIndex));
+    const middle = playlist.items.filter((tr, i) => srcIdx.has(i));
     const newTracks = before.concat(middle).concat(after);
     /*
     const target = playlist.tracks[targetIndex];
@@ -111,7 +114,7 @@ export class API extends APIBase {
     const after = newIdx === -1 ? tracks.slice(0) : tracks.slice(newIdx+1);
     const newTracks = before.concat(sources).concat(after);
     */
-    console.debug('move %o to %o (%o => %o)', sourceIndices, targetIndex, playlist.tracks.map(tr => tr.persistent_id), newTracks.map(tr => tr.persistent_id));
+    console.debug('move %o to %o (%o => %o)', sourceIndices, targetIndex, playlist.items.map(tr => tr.persistent_id), newTracks.map(tr => tr.persistent_id));
     const url = `/api/playlist/${playlist.persistent_id}/tracks`;
     const body = newTracks.map(track => ({ persistent_id: track.persistent_id }));
     return this.put(url, body)
@@ -121,13 +124,19 @@ export class API extends APIBase {
   deletePlaylistTracks(playlist, selected) {
     console.debug('delete %o from %o', selected, playlist);
     const delIdx = new Set(selected.map(s => s.track.origIndex));
-    const newTracks = playlist.tracks.filter((track, i) => !delIdx.has(i));
+    const newTracks = playlist.items.filter((track, i) => !delIdx.has(i));
     //const newTracks = playlist.tracks.filter(track => !selected[track.persistent_id]);
     const url = `/api/playlist/${playlist.persistent_id}/tracks`;
     const body = newTracks.map(track => ({ persistent_id: track.persistent_id }));
     console.debug('tracks after deleting: %o', newTracks);
     return this.put(url, body)
       .then(pl => pl.track_ids);
+  }
+
+  movePlaylist(playlist, folder) {
+    const url = `/api/playlist/${playlist.persistent_id}`;
+    const body = Object.assign({}, playlist, { parent_persistent_id: folder ? folder.persistent_id : null });
+    return this.put(url, body);
   }
 
   loadGenres() {

@@ -1,6 +1,7 @@
 import React, { useReducer, useMemo, useRef, useEffect, useContext } from 'react';
 import { LoginContext } from '../../lib/login';
 import { WS } from '../../lib/ws';
+import { SHUFFLE, REPEAT } from '../../lib/api';
 import { SonosAPI } from '../../lib/sonos';
 
 const initState = () => {
@@ -14,6 +15,7 @@ const initState = () => {
     currentTimeSetAt: 0,
     duration: 0,
     volume: 20,
+    playMode: 0,
   };
 };
 const reducer = (state, action) => {

@@ -96,6 +96,7 @@ func main() {
 	srv.Handle("/api/sonos/play", SonosPlay)
 	srv.Handle("/api/sonos/pause", SonosPause)
 	srv.Handle("/api/sonos/volume", SonosVolume)
+	srv.Handle("/api/sonos/playmode", SonosPlayMode)
 	srv.Handle("/api/ws", ServeWS)
 
 	srv.ListenAndServe()

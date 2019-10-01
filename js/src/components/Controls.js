@@ -116,6 +116,7 @@ export const Seeker = ({
         }
         .padding {
           flex: 2;
+          max-height: ${0.5 * size / root3}px;
         }
         .triangles {
           flex: 1;

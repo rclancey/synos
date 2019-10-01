@@ -124,6 +124,11 @@ export const Library = ({
     return (pl, dev) => {
       console.debug('onSelectPlaylist(%o, %o)', pl, dev);
       if (!dev) {
+        if (!pl) {
+          setPlaylist(null);
+          setDevice(null);
+          return;
+        }
         if (pl.folder) {
           return;
         }
@@ -141,21 +146,34 @@ export const Library = ({
   const onMovePlaylist = useMemo(() => {
     return ({ source, target }) => {
       console.debug('onMovePlaylist: %o', { source, target });
+      api.movePlaylist(source.playlist, target.playlist)
+        .then(() => api.loadPlaylists())
+        .then(pls => setPlaylists(addPlaylistTimestamp(pls, Date.now())));
     };
   }, [api]);
   const onAddToPlaylist = useMemo(() => {
     return ({ source, target }) => {
       console.debug('onAddToPlaylist: %o', { source, target });
+      if (target.playlist && source.tracks && source.tracks.length > 0) {
+        api.addToPlaylist(target.playlist, source.tracks.map(tr => tr.track));
+      }
     };
   }, [api]);
   const onReorderTracks = useMemo(() => {
     return (playlist, targetIndex, sourceIndices) => {
       console.debug('onReorderTracks: %o', { playlist, targetIndex, sourceIndices });
+      if (playlist && sourceIndices && sourceIndices.length > 0) {
+        api.reorderTracks(playlist, targetIndex, sourceIndices)
+          .then(() => api.loadPlaylist(playlist.persistent_id))
+          .then(pl => setPlaylist(pl));
+      }
     };
   }, [api]);
   const onDeleteTracks = useMemo(() => {
     return (playlist, selected) => {
       console.debug('onDeleteTracks: %o', { playlist, selected });
+      if (playlist && selected && selected.length > 0) {
+      }
     };
   }, [api]);
 

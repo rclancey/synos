@@ -3,8 +3,10 @@ package main
 import (
 	"errors"
 	"log"
+	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	H "httpserver"
 	"musicdb"
@@ -42,14 +44,25 @@ func getSonos(quick bool) (*sonos.Sonos, error) {
 		return nil, err
 	}
 	go func() {
+		timer := time.NewTimer(time.Minute * 5)
 		for {
-			msg, ok := <-sonosDevice.Events
-			if !ok {
-				log.Println("sonos channel closed")
-				sonosDevice = nil
-				break
+			select {
+			case msg, ok := <-sonosDevice.Events:
+				if !ok {
+					log.Println("sonos channel closed")
+					sonosDevice = nil
+					break
+				}
+				hub.BroadcastEvent(&SonosEvent{Type: "sonos", Event: msg})
+				if !timer.Stop() {
+					<-timer.C
+				}
+				timer.Reset(time.Minute * 5)
+			case <-timer.C:
+				log.Println("reconnecting sonos")
+				sonosDevice.Reconnect()
+				timer.Reset(time.Minute * 5)
 			}
-			hub.BroadcastEvent(&SonosEvent{Type: "sonos", Event: msg})
 		}
 	}()
 	log.Println("sonos ready")
@@ -58,6 +71,33 @@ func getSonos(quick bool) (*sonos.Sonos, error) {
 
 func HasSonos(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	return sonosDevice != nil, nil
+}
+
+func SonosPlayMode(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, _ := getSonos(true)
+	if dev == nil {
+		return nil, SonosUnavailableError
+	}
+	switch req.Method {
+	case http.MethodGet:
+		return dev.GetPlayMode()
+	case http.MethodPost:
+		data, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		mode, err := strconv.Atoi(string(data))
+		if err != nil {
+			return nil, H.BadRequest.Raise(err, "not a number")
+		}
+		err = dev.SetPlayMode(mode)
+		if err != nil {
+			return nil, err
+		}
+		return mode, nil
+	default:
+		return nil, H.MethodNotAllowed.Raise(nil, "")
+	}
 }
 
 func SonosQueue(w http.ResponseWriter, req *http.Request) (interface{}, error) {

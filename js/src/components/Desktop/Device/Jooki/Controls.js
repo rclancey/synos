@@ -3,6 +3,7 @@ import displayTime from '../../../../lib/displayTime';
 import { PlayPauseSkip, Volume, Progress } from '../../../Controls';
 import { JookiCoverArt } from './CoverArt';
 import { TrackInfo } from '../../../TrackInfo';
+import { Center } from '../../../Center';
 
 const Buttons = ({
   status,
@@ -12,20 +13,18 @@ const Buttons = ({
   onSeekBy,
 }) => (
   <div className="playpause">
-    <div className="wrapper">
-      <div className="padding" />
+    <Center orientation="horizontal" style={{ width: '100%' }}>
       <PlayPauseSkip
-        size={24}
+        width={150}
+        height={24}
         paused={status !== 'PLAYING'}
         onPlay={onPlay}
         onPause={onPause}
         onSkipBy={onSkipBy}
         onSeekBy={onSeekBy}
         style={{ flex: 1 }}
-        className="buttons"
       />
-      <div className="padding" />
-    </div>
+    </Center>
     <style jsx>{`
       .playpause {
         display: flex;
@@ -33,21 +32,14 @@ const Buttons = ({
         flex-direction: row;
         padding: 5px;
       }
+      /*
       .playpause :global(.rewind),
       .playpause :global(.ffwd) {
         padding: 5px;
         margin-left: 1em;
         margin-right: 1em;
       }
-      .wrapper {
-        display: flex;
-        flex-direction: row;
-        padding-left: 0;
-        flex: 10;
-      }
-      .padding {
-        flex: 2;
-      }
+      */
     `}</style>
   </div>
 );

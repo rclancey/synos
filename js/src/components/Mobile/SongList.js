@@ -144,13 +144,13 @@ export const SongList = ({
       .then(onUpdatePlaylist);
   }, [playlist, api, onUpdatePlaylist]);
   const onDelete = useMemo(() => {
-    return (track, index) => api.deletePlaylistTracks({ ...playlist, tracks }, [{ track: { origIndex: index } }])
+    return (track, index) => api.deletePlaylistTracks({ ...playlist, items: tracks }, [{ track: { origIndex: index } }])
       .then(onUpdatePlaylist);
   }, [playlist, api, onUpdatePlaylist]);
   const onMove = useMemo(() => {
     return (srcIndex, dstIndex, dir) => {
       console.debug('move track %o to %o in %o', srcIndex, dstIndex, playlist);
-      api.reorderTracks({ ...playlist, tracks }, dstIndex, [srcIndex])
+      api.reorderTracks({ ...playlist, items: tracks }, dstIndex, [srcIndex])
         .then(onUpdatePlaylist)
         .then(() => {
           if (ref.current) {

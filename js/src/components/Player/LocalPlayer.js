@@ -1,6 +1,6 @@
 import React, { useReducer, useMemo, useRef, useEffect, useContext } from 'react';
 import { LoginContext } from '../../lib/login';
-import { API } from '../../lib/api';
+import { API, REPEAT, SHUFFLE } from '../../lib/api';
 
 const getTrackUrl = (track) => {
   if (!track) {
@@ -33,6 +33,7 @@ const initState = () => {
     currentTime: 0,
     duration: 0,
     volume: 20,
+    playMode: 0,
   }, (saved ? JSON.parse(saved) : {}));
 };
 
@@ -126,6 +127,12 @@ const reducer = (state, action) => {
       duration: action.duration,
     };
     return Object.assign({}, state, update);
+  case 'shuffle':
+    update = { playMode: state.playMode ^ SHUFFLE };
+    return saveState(Object.assign({}, state, update));
+  case 'repeat':
+    update = { playMode: state.playMode ^ REPEAT };
+    return saveState(Object.assign({}, state, update));
   }
   return state;
 };
@@ -214,6 +221,14 @@ export const LocalPlayer = ({
       dispatch({ type: 'volumeBy', delta: del });
       return Promise.resolve();
     };
+    const onShuffle = () => {
+      dispatch({ type: 'shuffle' });
+      return Promise.resolve();
+    };
+    const onRepeat = () => {
+      dispatch({ type: 'repeat' });
+      return Promise.resolve();
+    };
     return {
       onPlay,
       onPause,
@@ -227,6 +242,8 @@ export const LocalPlayer = ({
       onSetPlaylist,
       onSetVolumeTo,
       onChangeVolumeBy,
+      onShuffle,
+      onRepeat,
     };
   }, [api]);
 
