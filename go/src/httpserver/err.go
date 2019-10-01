@@ -72,6 +72,7 @@ var NotFound = &HTTPError{Status: http.StatusNotFound, Message: "Not Found"}
 var Unauthorized = &HTTPError{Status: http.StatusUnauthorized, Message: "Login Required"}
 var Forbidden = &HTTPError{Status: http.StatusForbidden, Message: "Forbidden"}
 var MethodNotAllowed = &HTTPError{Status: http.StatusMethodNotAllowed, Message: "Method not allowed"}
+var BadGateway = &HTTPError{Status: http.StatusBadGateway, Message: "Bad Gateway"}
 var ServiceUnavailable = &HTTPError{Status: http.StatusServiceUnavailable, Message: "Service Unavailable"}
 var InternalServerError = &HTTPError{Status: http.StatusInternalServerError, Message: "InternalServerError"}
 

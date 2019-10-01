@@ -1,125 +1,309 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { TrackInfo } from '../TrackInfo';
 import { Queue } from './Queue';
 import { CoverArt } from '../CoverArt';
 import { PlayPauseSkip, Volume, Progress, Timers } from '../Controls';
 import { Switch } from '../Switch';
+import { Center } from '../Center';
+import { useTheme } from '../../lib/theme';
 
-export class NowPlaying extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      expanded: false,
-      showQueue: false,
-    };
-  }
+const Expander = ({ onExpand }) => {
+  const colors = useTheme();
+  return (
+    <div className="fas fa-angle-up" onClick={onExpand}>
+      <style jsx>{`
+        div {
+          color: ${colors.highlightText};
+          padding: 1em 1em 1em 0;
+        }
+      `}</style>
+    </div>
+  );
+};
 
-  getTrack() {
-    if (this.props.queue === null || this.props.queue === undefined) {
-      return null;
-    }
-    if (this.props.queueIndex === null || this.props.queueIndex === undefined) {
-      return null;
-    }
-    if (this.props.queueIndex < 0 || this.props.queueIndex >= this.props.queue.length) {
-      return null;
-    }
-    return this.props.queue[this.props.queueIndex];
-  }
+const Collapser = ({ onCollapse }) => {
+  const colors = useTheme();
+  return (
+    <div className="collapse fas fa-angle-down" onClick={onCollapse}>
+      <style jsx>{`
+        div {
+          color: ${colors.highlightText};
+          padding: 5px 1em;
+        }
+      `}</style>
+    </div>
+  );
+};
 
-  renderExpanded(track) {
-    if (this.state.showQueue) {
-      return (
-        <Queue
-          tracks={this.props.queue}
-          index={this.props.queueIndex}
-          onSelect={(track, i) => this.props.onSkipTo(i)}
-          onClose={() => this.setState({ showQueue: false })}
-        />
-      );
+const Hamburger = ({ onOpen }) => {
+  const colors = useTheme();
+  return (
+    <div className="showQueue fas fa-bars" onClick={onOpen}>
+      <style jsx>{`
+        div {
+          color: ${colors.highlightText};
+          text-align: right;
+          padding: 5px 1em;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export const NowPlaying = ({
+  controlAPI,
+  playbackInfo,
+  sonos,
+  onEnableSonos,
+  onDisableSonos,
+}) => {
+  const colors = useTheme();
+  const [expanded, setExpanded] = useState(false);
+  const track = useMemo(() => {
+    if (!playbackInfo.queue) {
+      return {};
     }
+    return playbackInfo.queue[playbackInfo.index] || {};
+  }, [playbackInfo.queue, playbackInfo.index]);
+  const onCollapse = useMemo(() => {
+    return () => setExpanded(false);
+  }, [setExpanded]);
+  const onExpand = useMemo(() => {
+    return () => setExpanded(true);
+  }, [setExpanded]);
+
+  if (expanded) {
     return (
-      <div className="nowplaying big">
-        <div className="header">
-          <div className="collapse fas fa-angle-down" onClick={() => this.setState({ expanded: false })} />
-          <div className="title"/>
-          <div className="showQueue fas fa-bars" onClick={() => this.setState({ showQueue: true })} />
-        </div>
-        <div className="content">
-          <CoverArt track={track} size={280} radius={10} />
-          <Progress
-            currentTime={this.props.currentTime}
-            duration={this.props.duration}
-            onSeekTo={this.props.onSeekTo}
-          />
-          <Timers currentTime={this.props.currentTime} duration={this.props.duration} />
-          <TrackInfo track={track} />
-          <PlayPauseSkip
-            className="controls"
-            size={24}
-            paused={this.props.status !== 'PLAYING'}
-            onPlay={this.props.onPlay}
-            onPause={this.props.onPause}
-            onSkipBy={this.props.onSkipBy}
-            onSeekBy={this.props.onSeekBy}
-          />
-          <Volume className="volume" volume={this.props.volume} onChange={this.props.onSetVolumeTo} />
-
-          <div className="sonosSwitch">
-            <Switch
-              on={this.props.sonos}
-              onToggle={val => {
-                if (val) { this.props.onEnableSonos() }
-                else { this.props.onDisableSonos() }
-              }}
-            />
-            <div className="label">Play on Sonos</div>
-          </div>
-        </div>
-      </div>
+      <Expanded
+        playbackInfo={playbackInfo}
+        controlAPI={controlAPI}
+        track={track}
+        sonos={sonos}
+        onEnableSonos={onEnableSonos}
+        onDisableSonos={onDisableSonos}
+        onCollapse={onCollapse}
+      />
     );
   }
-
-  render() {
-    let track = this.getTrack();
-    if (!track) {
-      track = {};
-      /*
-      return (
-        <span
-          className="fab fa-apple"
-          style={{
-            fontSize: '36pt',
-            textAlign: 'center',
-            width: '100%',
-            padding: '4px',
-          }}
-        />
-      );
-      */
-    }
-    if (this.state.expanded) {
-      return this.renderExpanded(track);
-    }
-    //const dur = track.total_time;
-    //const cur = this.props.currentTime;
-    //const pct = (dur > 0 ? 100 * cur / dur : 0);
-    return (
-      <div className="nowplaying">
-        <div className="fas fa-angle-up" style={{ padding: '1em 1em 1em 0' }} onClick={() => this.setState({ expanded: true })} />
-        <CoverArt track={track} size={48} radius={4} />
-        <TrackInfo track={track} />
+  return (
+    <div className="nowplaying">
+      <Expander onExpand={onExpand} />
+      <CoverArt track={track} size={48} radius={4} />
+      <TrackInfo track={track} className="mobile controls" />
+      <Center orientation="vertical">
         <PlayPauseSkip
-          className="controls"
-          size={18}
-          paused={this.props.status !== 'PLAYING'}
-          onPlay={this.props.onPlay}
-          onPause={this.props.onPause}
-          onSkipBy={this.props.onSkipBy}
-          onSeekBy={this.props.onSeekBy}
+          width={100}
+          height={18}
+          paused={playbackInfo.playStatus !== 'PLAYING'}
+          onPlay={controlAPI.onPlay}
+          onPause={controlAPI.onPause}
+          onSkipBy={controlAPI.onSkipBy}
+          onSeekBy={controlAPI.onSeekBy}
         />
-      </div>
+      </Center>
+      <style jsx>{`
+        .nowplaying {
+          padding: 10px;
+          position: fixed;
+          z-index: 3;
+          bottom: 0px;
+          width: 100vw;
+          box-sizing: border-box;
+          border-top-style: solid;
+          border-top-width: 1px;
+          display: flex;
+          flex-direction: row;
+          background: ${colors.background};
+        }
+        .fa-angle-up {
+          color: ${colors.highlightText};
+          padding: 1em 1em 1em 0;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+const Header = ({ onCollapse, onShowQueue }) => (
+  <div className="header">
+    <Collapser onCollapse={onCollapse} />
+    <div className="padding" />
+    <Hamburger onOpen={onShowQueue} />
+    <style jsx>{`
+      .header {
+        padding: 0;
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        flex: 1;
+      }
+      .padding {
+        flex: 10;
+      }
+    `}</style>
+  </div>
+);
+
+const SonosSwitch = ({ state, on, off }) => {
+  const colors = useTheme();
+  return (
+    <div className="sonosSwitch">
+      <Switch
+        on={state}
+        onToggle={val => {
+          if (val) { on() }
+          else { off() }
+        }}
+      />
+      <div className="label">Play on Sonos</div>
+      <style jsx>{`
+        .sonosSwitch {
+          display: flex;
+          flex-direction: row;
+          margin-top: 2em;
+        }
+        .label {
+          flex: 10;
+          padding-left: 1em;
+          font-size: 18px;
+          font-weight: bold;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+const Expanded = ({
+  playbackInfo,
+  controlAPI,
+  track,
+  sonos,
+  onEnableSonos,
+  onDisableSonos,
+  onCollapse,
+}) => {
+  const colors = useTheme();
+  const [showQueue, setShowQueue] = useState(false);
+  const onSelect = useMemo(() => {
+    return (track, i) => controlAPI.onSkipTo(i);
+  }, [controlAPI]);
+  const onClose = useMemo(() => {
+    return () => setShowQueue(false);
+  }, [setShowQueue]);
+  if (showQueue) {
+    return (
+      <Queue
+        tracks={playbackInfo.queue}
+        index={playbackInfo.index}
+        onSelect={onSelect}
+        onClose={onClose}
+      />
     );
   }
-}
+  return (
+    <div className="nowplaying big">
+      <Header onCollapse={onCollapse} onShowQueue={() => setShowQueue(true)} />
+      <div className="content">
+        <CoverArt track={track} size={280} radius={10} />
+        <Progress
+          style={{
+            flex: 1,
+            marginTop: '5px',
+            marginBottom: '10px',
+          }}
+          currentTime={playbackInfo.currentTime}
+          duration={playbackInfo.duration}
+          onSeekTo={controlAPI.onSeekTo}
+        />
+        <Timers
+          style={{ fontSize: '9px' }}
+          currentTime={playbackInfo.currentTime}
+          duration={playbackInfo.duration}
+        />
+        <TrackInfo track={track} className="mobile controls" />
+        <PlayPauseSkip
+          style={{
+            padding: '0 5em',
+            margin: '1em 0',
+            boxSizing: 'border-box',
+          }}
+          height={24}
+          paused={playbackInfo.playStatus !== 'PLAYING'}
+          onPlay={controlAPI.onPlay}
+          onPause={controlAPI.onPause}
+          onSkipBy={controlAPI.onSkipBy}
+          onSeekBy={controlAPI.onSeekBy}
+        />
+        <Volume
+          volume={playbackInfo.volume}
+          style={{width: '100%'}}
+          onChange={controlAPI.onSetVolumeTo}
+        />
+        <SonosSwitch state={sonos} on={onEnableSonos} off={onDisableSonos} />
 
+      </div>
+      <style jsx>{`
+        .nowplaying {
+          position: fixed;
+          z-index: 3;
+          bottom: 0px;
+          width: 100vw;
+          box-sizing: border-box;
+          border-top-style: solid;
+          flex-direction: row;
+          display: block;
+          flex-direction: column;
+          height: 100%;
+          padding: 0;
+          border-top: none;
+          background-color: ${colors.background};
+        }
+        .content {
+          flex: 10;
+          width: 280px;
+          min-width: 280px;
+          max-width: 280px;
+          margin-left: auto;
+          margin-right: auto;
+          padding-top: 1em;
+        }
+        /*
+        .nowplaying>div {
+          flex-direction: row;
+          width: 100%;
+          flex: 1;
+          display: block;
+        }
+        .nowplaying.big :global(.timer) {
+          display: flex;
+          flex-direction: row;
+        }
+        .nowplaying.big :global(.currentTime),
+        .nowplaying.big :global(.remainingTime) {
+          flex: 1;
+          font-size: 9px;
+        }
+        .nowplaying.big :global(.timer .padding) {
+          flex: 10;
+        }
+        .nowplaying.big :global(.playPauseSkip) {
+          padding: 0 5em;
+          margin: 1em 0;
+          box-sizing: border-box;
+        }
+        .nowplaying.big :global(.progressContainer) {
+          flex: 1;
+          min-height: 4px;
+          max-height: 4px;
+          margin-top: 5px;
+          margin-bottom: 10px;
+        }
+        .nowplaying.big :global(.progressContainer .progress) {
+          pointer-events: none;
+          height: 4px;
+        }
+        */
+      `}</style>
+    </div>
+  );
+};

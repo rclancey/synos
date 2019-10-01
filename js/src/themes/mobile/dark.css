@@ -151,7 +151,7 @@
   background-color: #666;
 }
 
-#app.mobile.dark .queue {
+#app.mobile.dark>.queue {
   background: #000;
 }
 
@@ -228,3 +228,53 @@
   background-image: linear-gradient(#144987, #1e2023);
 }
 
+
+#app.mobile.dark .calendar {
+  background-color: black;
+  color: white;
+  border-color: red;
+}
+
+#app.mobile.dark .calendar .day {
+  border-color: #2687fb;
+}
+
+#app.mobile.dark .calendar .day .dayname {
+  background-color: #2687fb;
+  color: #1e2023;
+}
+
+#app.mobile.dark .calendar .day .wake.under,
+#app.mobile.dark .calendar .day .sleep.under {
+  color: #99c;
+}
+
+#app.mobile.dark .calendar .day .wake.over,
+#app.mobile.dark .calendar .day .sleep.over {
+  color: #c99;
+}
+
+#app.mobile.dark .calendar .day select {
+  margin: 0.5em;
+  background-color: #1e2023;
+  border-color: #2687fb;
+  color: #2687fb;
+}
+
+#app.mobile.dark .calendar .day .icon {
+  color: #ccc;
+}
+
+#app.mobile.dark .calendar .day .fa-dot-circle,
+#app.mobile.dark .calendar .day .fa-history {
+  color: #df26fb;
+}
+
+#app.mobile.dark .calendar .day .fa-times-circle,
+#app.mobile.dark .calendar .day .fa-clock {
+  color: #2687fb;
+}
+
+#app.mobile.dark .device {
+  background-color: black;
+}

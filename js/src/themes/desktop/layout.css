@@ -55,6 +55,7 @@
   animation: Prog-Scroll infinite 1s linear;
 }
 
+/*
 #app.desktop {
   position: fixed;
   top: 0;
@@ -66,27 +67,33 @@
   font-family: Tahoma;
 }
 
-#app.desktop .controls {
-  display: flex;
-  flex-direction: row;
-  flex: 1;
-  min-height: 56px;
-  max-height: 56px;
-  height: 56px;
-}
-
 #app.desktop .library {
   flex: 100;
   display: flex;
   flex-direction: row;
+  overflow: hidden;
 }
 
 #app.desktop .library .playlistBrowser:focus,
+*/
 #app.desktop .library .ReactVirtualized__Table__headerRow:focus,
 #app.desktop .library .ReactVirtualized__Table__row:focus {
   outline: none;
 }
 
+/*
+#app.desktop .library .playlistBrowser .label .title input {
+  outline: none;
+  border: solid Highlight 1px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-family: Tahoma;
+  font-size: 13px;
+  padding: 0px;
+}
+*/
+
+/*
 #app.desktop .library .ReactVirtualized__Table__headerRow {
   font-size: 12px;
   text-transform: none;
@@ -96,10 +103,6 @@
 }
 
 #app.desktop .library .ReactVirtualized__Table__headerColumn {
-/*
-  border-left: solid #ccc 1px;
-  margin-right: -1px;
-*/
   border-right-style: solid;
   border-right-width: 1px;
   cursor: default;
@@ -107,6 +110,12 @@
   box-sizing: border-box;
   padding-left: 0.25em;
   padding-right: 0.25em;
+}
+
+#app.desktop .library .trackList .ReactVirtualized__Table__row {
+  box-sizing: border-box;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
 }
 
 #app.desktop .library .ReactVirtualized__Table__row.dropTarget {
@@ -148,7 +157,9 @@
 #app.desktop .library .ReactVirtualized__Table__headerTruncatedText {
   flex: auto;
 }
+*/
 
+/*
 #app.desktop .library .DragHandle {
   flex: 0 0 16px;
   z-index: 2;
@@ -167,7 +178,9 @@
   justify-content: center;
   align-items: center;
 }
+*/
 
+/*
 #app.desktop .columnBrowser {
   border-right-style: solid;
   border-right-width: 1px;
@@ -177,7 +190,9 @@
 #app.desktop .columnBrowser .ReactVirtualized__Table__headerColumn {
   border-right: none;
 }
+*/
 
+/*
 #app.desktop .playlistBrowser {
   flex: 1;
   min-width: 200px;
@@ -186,11 +201,14 @@
   height: 100%;
   overflow: auto;
 }
+*/
 
+/*
 #app.desktop .trackBrowser {
   flex: 100;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 #app.desktop .columnBrowserContainer {
@@ -208,6 +226,14 @@
   flex: 20;
 }
 
+#app.desktop .trackList {
+  flex: 10;
+  width: 100%;
+  overflow: hidden;
+}
+*/
+
+/*
 #app.desktop .playlistBrowser .icon {
   width: 16px;
   height: 16px;
@@ -226,7 +252,9 @@
 
 #app.desktop .playlistBrowser .groups {
 }
+*/
 
+/*
 #app.desktop .airplayMenu .item {
   display: flex;
 }
@@ -249,7 +277,9 @@
 #app.desktop .airplayMenu .item .checkbox {
   flex: 1;
 }
+*/
 
+/*
 #app.desktop .playlistBrowser .rstcustom__collapseButton,
 #app.desktop .playlistBrowser .rstcustom__expandButton {
   top: 25%;
@@ -272,6 +302,11 @@
   padding-top: 3px;
   padding-bottom: 3px;
   cursor: default;
+}
+
+#app.desktop .playlistBrowser .label.editing {
+  padding-top: 2px;
+  padding-bottom: 2px;
 }
 
 #app.desktop .playlistBrowser .folder {
@@ -308,12 +343,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+*/
 
-#app.desktop .controls .playpause {
-  width: 33%;
-  display: flex;
-}
-
+/*
 #app.desktop .controls .playpause .buttons {
   display: flex;
   padding-left: 4em;
@@ -335,7 +367,9 @@
   display: flex;
   height: 56px;
 }
+*/
 
+/*
 #app.desktop .controls .search {
   width: 33%;
   display: flex;
@@ -354,13 +388,16 @@
   width: 100%;
   box-sizing: border-box;
 }
+*/
 
+/*
 #app.desktop .controls .nowplaying>div {
   display: flex;
   flex-direction: row;
   width: 100%;
   height: 56px;
 }
+*/
 
 #app.desktop .controls .nowplaying .coverart {
   width: 56px;
@@ -371,6 +408,7 @@
   background-position: center;
 }
 
+/*
 #app.desktop .controls .nowplaying .timer {
   flex: 1;
   display: flex;
@@ -389,6 +427,7 @@
   padding-right: 5px;
   padding-bottom: 5px;
 }
+*/
 
 #app.desktop .controls .nowplaying .trackInfo {
   flex: 100;
@@ -409,6 +448,7 @@
   padding-bottom: 5px;
 }
 
+/*
 #app.desktop .controls .nowplaying .progressContainer {
   flex: 1;
   min-height: 4px;
@@ -419,7 +459,9 @@
   height: 100%;
   pointer-events: none;
 }
+*/
 
+/*
 #app.desktop .queue {
   position: absolute;
   z-index: 10;
@@ -433,7 +475,9 @@
   max-height: 80vh;
   overflow: auto;
 }
+*/
 
+/*
 #app.desktop .queue .item {
   display: flex;
   flex-direction: row;
@@ -448,7 +492,9 @@
   padding-bottom: 1px;
   margin-bottom: 1px;
 }
+*/
 
+/*
 #app.desktop .queue .item .coverart {
   flex: 1;
   box-sizing: border-box;
@@ -458,7 +504,9 @@
   border-radius: 3px;
   margin-right: 1em;
 }
+*/
 
+/*
 #app.desktop .queue .item .trackInfo {
   flex: 10;
   display: flex;
@@ -509,7 +557,9 @@
 #app.desktop .queue .item.selected .time {
   color: white;
 }
+*/
 
+/*
 #app.desktop .queueMenu {
   flex: 1;
   margin-left: 1em;
@@ -535,7 +585,9 @@
   margin-top: 2px;
   margin-left: 2px;
 }
+*/
 
+/*
 #app.desktop .cover {
   position: fixed;
   top: 0;
@@ -547,6 +599,7 @@
   display: flex;
   flex-direction: column;
 }
+*/
 
 #app.desktop .cover>.padding {
   flex: 1;
@@ -638,3 +691,183 @@
   font-weight: bold;
 }
 
+
+#app.desktop .calendar {
+  /*
+  position: absolute;
+  left: 100px;
+  top: 100px;
+  z-index: 100;
+  padding: 1em;
+  border-style: solid;
+  border-width: 1px;
+  */
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+#app.desktop .calendar .day {
+  display: flex;
+  flex-direction: column;
+  margin: 0.5em;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#app.desktop .calendar .day .dayname {
+  font-size: 20px;
+  font-weight: bold;
+  padding: 3px 8px;
+}
+
+#app.desktop .calendar .day .wake,
+#app.desktop .calendar .day .sleep {
+  display: flex;
+  padding: 3px 8px;
+}
+
+#app.desktop .calendar .day select {
+  margin: 0.5em;
+  font-size: 100%;
+}
+
+#app.desktop .calendar .day .icon {
+  flex: 1;
+}
+
+#app.desktop .calendar .day .hour {
+  text-align: right;
+  flex: 2;
+}
+
+#app.desktop .calendar .day .minute {
+  flex: 1;
+}
+
+#app.desktop .calendar .day .arrows {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  text-align: center;
+}
+
+#app.desktop .calendar .day .arrows>div {
+  font-size: 14px;
+  line-height: 14px;
+}
+
+#app.desktop .calendar .day .arrows .fa-sort-up {
+  position: relative;
+  height: 7px;
+  overflow: hidden;
+  top: 3px;
+  z-index: 2;
+}
+
+#app.desktop .calendar .day .arrows .fa-sort-down {
+  position: relative;
+  top: -3px;
+}
+
+#app.desktop .calendar .day .fa-dot-circle,
+#app.desktop .calendar .day .fa-history,
+#app.desktop .calendar .day .fa-clock,
+#app.desktop .calendar .day .fa-times-circle {
+  flex: 1;
+  text-align: right;
+}
+
+#app.desktop .jookiToken {
+  /*
+  border-style: solid;
+  border-width: 1px;
+  border-color: #666;
+  background-color: white;
+  */
+  background-color: transparent;
+  overflow: hidden;
+  box-sizing: border-box;
+  margin-left: 25px;
+  margin-right: 0.25em;
+}
+
+#app.desktop .jookiToken img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+#app.desktop .jookiPlaylist {
+  flex: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#app.desktop .jookiPlaylist>div>.header {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  padding-top: 2em;
+  padding-left: 1em;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+
+#app.desktop .jookiPlaylist>div>.header .token {
+  margin: 1em;
+}
+
+#app.desktop .jookiPlaylist>div>.header .token img {
+  height: 128px;
+}
+
+#app.desktop .jookiPlaylist>div>.header .meta {
+  margin: 1em;
+}
+
+#app.desktop .jookiPlaylist>div>.header .meta .title {
+  margin-top: 1em;
+  font-size: 24pt;
+  font-weight: bold;
+}
+
+#app.desktop .jookiPlaylist>div>.header .meta .size {
+  font-size: 10pt;
+}
+
+/*
+#app.desktop .jooki.controls {
+  flex: 1;
+  flex-direction: column;
+  max-width: 600px;
+  padding-right: 1em;
+  height: auto;
+  max-height: none;
+}
+
+#app.desktop .jooki.controls .nowplaying {
+  width: 100%;
+  flex: 10;
+  border: none;
+}
+
+#app.desktop .jooki.controls .nowplaying .coverart {
+  display: none;
+}
+
+#app.desktop .jooki.controls .playpause {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  width: 100%;
+  padding: 1em;
+  box-sizing: border-box;
+}
+
+#app.desktop .jooki.controls .playpause .buttons {
+  padding-left: 0;
+}
+*/

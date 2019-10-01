@@ -139,8 +139,9 @@ func QueryScan(req *http.Request, obj interface{}) error {
 		ft := rf.Type
 		if ft.Kind() == reflect.Ptr {
 			ft = ft.Elem()
-			v = reflect.New(ft)
-			rv.Field(i).Set(v)
+			pv := reflect.New(ft)
+			rv.Field(i).Set(pv)
+			v = pv.Elem()
 		} else {
 			v = rv.Field(i)
 		}

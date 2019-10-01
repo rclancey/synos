@@ -1,8 +1,9 @@
 import React from 'react';
 import { CoverArt } from './CoverArt';
 import { TrackInfo, TrackTime } from './TrackInfo';
+import { useTheme } from '../lib/theme';
 
-export const QueueInfo = ({ tracks }) => {
+export const QueueInfo = ({ tracks, ...props }) => {
   const durT = tracks.reduce((sum, val) => sum + val.total_time, 0) / 60000;
   let dur = '';
   if (durT < 59.5) {
@@ -18,25 +19,65 @@ export const QueueInfo = ({ tracks }) => {
   }
   const songs = tracks.length > 1 ? 'songs' : 'song';
   return (
-    <div className="queueInfo">
+    <div className="queueInfo" {...props}>
       {`${tracks.length} ${songs}\u00a0\u2014\u00a0${dur}`}
     </div>
   );
 };
 
-export const QueueItem = ({ track, coverSize, coverRadius, current, selected, onSelect, onPlay }) => (
-  <div
-    className={"item" + (selected ? ' selected' : '')}
-    onClick={onSelect}
-    onDoubleClick={onPlay}
-  >
-    <CoverArt track={track} size={coverSize} radius={coverRadius} >
-      { current ? (<div className="current" />) : null }
-    </CoverArt>
-    <TrackInfo track={track} />
-    <TrackTime ms={track.total_time} className="time" />
-  </div>
-);
+export const QueueItem = ({
+  track,
+  coverSize,
+  coverRadius,
+  current,
+  selected,
+  infoClassName,
+  onSelect,
+  onPlay
+}) => {
+  const colors = useTheme();
+  return (
+    <div
+      className={"item" + (selected ? ' selected' : '')}
+      onClick={onPlay}
+      onDoubleClick={onPlay}
+    >
+      <CoverArt track={track} size={coverSize} radius={coverRadius} >
+        { current ? (<div className="current" />) : null }
+      </CoverArt>
+      <TrackInfo track={track} className={`queue ${infoClassName}`} />
+      <TrackTime ms={track.total_time} className="time" />
+      <style jsx>{`
+        .item {
+          display: flex;
+          flex-direction: row;
+          box-sizing: border-box;
+          width: 100%;
+          height: 48px;
+          border: solid transparent 1px;
+          border-radius: 4px;
+          padding-left: 1em;
+          padding-right: 1em;
+          padding-top: 1px;
+          padding-bottom: 1px;
+          margin-bottom: 1px;
+          cursor: pointer;
+        }
+        .item.selected {
+          background-color: ${colors.highlightText};
+          color: ${colors.background};
+        }
+        .item :global(.coverart) {
+          flex: 1;
+          box-sizing: border-box;
+          border: solid transparent 1px;
+          border-radius: 3px;
+          margin-right: 1em;
+        }
+      `}</style>
+    </div>
+  );
+};
 
 export class DesktopQueue extends React.Component {
   constructor(props) {
@@ -76,6 +117,7 @@ export const MobileQueue = ({ tracks, index, onSelect, onClose }) => (
       { tracks.map((track, i) => (
         <QueueItem
           track={track}
+          coverSize={36}
           selected={i === index}
           current={i === index}
           onSelect={() => onSelect(track, i)}

@@ -1,5 +1,6 @@
 #app.desktop.dark {
   background-color: black;
+  color: white;
 }
 
 #app.desktop.dark #loading {
@@ -38,19 +39,32 @@
   background-color: #292b2e;
 }
 
+#app.desktop.dark .library .trackList,
 #app.desktop.dark .library .trackListContainer {
   background-color: #1e2023;
 }
 
+#app.desktop.dark .library .selected,
+#app.desktop.dark .library .ReactVirtualized__Table__row.even.selected,
+#app.desktop.dark .library .ReactVirtualized__Table__row.odd.selected,
+#app.desktop.dark .library .ReactVirtualized__Table__row.selected {
+  background-color: #545456;
+}
+
 #app.desktop.dark .library .playlistBrowser:focus-within .selected,
 #app.desktop.dark .library .columnBrowser:focus-within .selected,
+#app.desktop.dark .library .trackList:focus-within .selected,
 #app.desktop.dark .library .trackListContainer:focus-within .selected {
   background-color: #2687fb;
   color: white;
 }
 
-#app.desktop.dark .library .selected {
-  background-color: #545456;
+#app.desktop.dark .library .trackList .ReactVirtualized__Table__row.even {
+  border-bottom-color: #292b2e;
+}
+
+#app.desktop.dark .library .trackList .ReactVirtualized__Table__row.odd {
+  border-bottom-color: #1e2023;
 }
 
 #app.desktop.dark .library .ReactVirtualized__Table__rowColumn.stars {
@@ -107,11 +121,12 @@
   border-top-color: #999;
 }
 
-#app.desktop.dark .playlistBrowser .folder.dropTarget>.label {
+#app.desktop.dark .playlistBrowser .folder>.label.dropTarget {
   background-color: yellow;
+  color: black;
 }
 
-#app.desktop.dark .playlistBrowser .playlist.dropTarget>.label {
+#app.desktop.dark .playlistBrowser .playlist>.label.dropTarget {
   background-color: orange !important;
 }
 
@@ -122,11 +137,17 @@
   */
 }
 
-#app.desktop.dark .controls .playpause .buttons .rewind div,
-#app.desktop.dark .controls .playpause .buttons .play,
-#app.desktop.dark .controls .playpause .buttons .pause,
-#app.desktop.dark .controls .playpause .buttons .ffwd div {
+#app.desktop.dark .controls .playpause .playPauseSkip .rewind div,
+#app.desktop.dark .controls .playpause .playPauseSkip .play,
+#app.desktop.dark .controls .playpause .playPauseSkip .pause,
+#app.desktop.dark .controls .playpause .playPauseSkip .ffwd div {
   border-color: #a9a9ab;
+}
+
+#app.desktop.dark .airplayMenu {
+  background-color: #32363b;
+  color: white;
+  border-color: #494b4d;
 }
 
 #app.desktop.dark .controls .nowplaying {
@@ -159,10 +180,28 @@
   background-color: #666;
 }
 
-#app.desktop.dark .queue {
-  background-color: rgba(245, 245, 245, 0.97);
+#app.desktop.dark .volumeControl {
+  color: #a9a9ab;
+}
+
+#app.desktop.dark .buttonMenu {
+  background-color: #32363b;
   border-color: #494b4d;
-  box-shadow: 1px 4px 5px 1px rgba(204, 204, 204, 0.5);
+  color: white;
+}
+
+#app.desktop.dark .buttonMenu .menu {
+  background-color: #32363b;
+  box-shadow: 1px 4px 5px 1px rgba(0, 0, 0, 0.8);
+  border-color: #494b4d;
+}
+
+#app.desktop.dark .queue .item {
+  color: white;
+}
+
+#app.desktop.dark .queue .item:hover {
+  color: #2687fb;
 }
 
 #app.desktop.dark .queue .item.selected {
@@ -235,5 +274,77 @@
 
 #app.desktop.dark .login input[type="button"] {
   background-image: linear-gradient(#144987, #1e2023);
+}
+
+
+#app.desktop.dark .calendar {
+  background-color: black;
+  color: white;
+  border-color: red;
+}
+
+#app.desktop.dark .calendar .day {
+  border-color: #2687fb;
+}
+
+#app.desktop.dark .calendar .day .dayname {
+  background-color: #2687fb;
+  color: #1e2023;
+}
+
+#app.desktop.dark .calendar .day .wake.under,
+#app.desktop.dark .calendar .day .sleep.under {
+  color: #99c;
+}
+
+#app.desktop.dark .calendar .day .wake.over,
+#app.desktop.dark .calendar .day .sleep.over {
+  color: #c99;
+}
+
+#app.desktop.dark .calendar .day select {
+  margin: 0.5em;
+  background-color: #1e2023;
+  border-color: #2687fb;
+  color: #2687fb;
+}
+
+#app.desktop.dark .calendar .day .icon {
+  color: #ccc;
+}
+
+#app.desktop.dark .calendar .day .fa-dot-circle,
+#app.desktop.dark .calendar .day .fa-history {
+  color: #df26fb;
+}
+
+#app.desktop.dark .calendar .day .fa-times-circle,
+#app.desktop.dark .calendar .day .fa-clock {
+  color: #2687fb;
+}
+
+#app.desktop.dark .jookiPlaylist {
+  background-color: #1e2023;
+}
+
+#app.desktop.dark .jookiPlaylist>div>.header {
+  border-bottom-color: #494b4d;
+  background-color: black;
+}
+
+#app.desktop.dark .jookiPlaylist>div>.header .meta .title {
+  color: white;
+}
+
+#app.desktop.dark .jookiPlaylist>div>.header .meta .size {
+  color: #999;
+}
+
+#app.desktop.dark .jooki.controls {
+  background-color: #1e2023;
+}
+
+#app.desktop.dark .jooki.controls .playpause {
+  background-color: #1e2023;
 }
 

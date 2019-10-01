@@ -21,6 +21,7 @@ import (
 
 type Track struct {
 	PersistentID     PersistentID `json:"persistent_id" db:"id"`
+	JookiID          *string      `json:"jooki_id" db:"jooki_id"`
 	Album            *string      `json:"album,omitempty" db:"album"`
 	AlbumArtist      *string      `json:"album_artist,omitempty" db:"album_artist"`
 	AlbumRating      *uint8       `json:"album_rating,omitempty" db:"album_rating"`
@@ -67,6 +68,7 @@ type Track struct {
 	VolumeAdjustment *uint8       `json:"volume_adjustment,omitempty" db:"volume_adjustment"`
 	Work             *string      `json:"work,omitempty" db:"work"`
 	MediaKind        MediaKind    `json:"media_kind,omitempty" db:"media_kind"`
+	ArtworkURL       *string      `json:"artwork_url,omitempty" db:"-"`
 	db *DB
 }
 
@@ -140,6 +142,30 @@ func (t *Track) Path() string {
 		}
 	}
 	return *t.Location
+}
+
+func (t *Track) ContentType() string {
+	switch strings.ToLower(filepath.Ext(t.Path())) {
+	case ".mp3":
+		return "audio/mpeg"
+	case ".m4a":
+		return "audio/mp4a-latm"
+	case ".mp4":
+		return "audio/mp4a-latm"
+	case ".wav":
+		return "audio/x-wav"
+	case ".ogg":
+		return "audio/ogg"
+	case ".flac":
+		return "audio/x-flac"
+	case ".aac":
+		return "audio/x-aac"
+	case ".weba":
+		return "audio/webm"
+	case ".wma":
+		return "audio/x-ms-wma"
+	}
+	return "audio/mpeg"
 }
 
 func (t *Track) getTag() (tag.Metadata, error) {

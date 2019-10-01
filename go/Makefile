@@ -4,7 +4,7 @@ ITUNES_SRC = $(shell find src -type f)
 
 export GOPATH
 
-all: $(PLATFORM)/server $(PLATFORM)/preview_musicdb
+all: $(PLATFORM)/server
 
 make_enums: src/make_enums.go
 	env GOARCH="" GOOS="" GOARM="" go build src/make_enums.go

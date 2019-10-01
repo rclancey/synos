@@ -132,8 +132,69 @@ type SonosConfig struct {
 	*httpserver.NetworkConfig
 }
 
+type SleepTime struct {
+	Time     int    `json:"time"`
+	Override *int64 `json:"override"`
+}
+
+type WakeTime struct {
+	*SleepTime
+	PlaylistID *string `json:"playlist_id"`
+}
+
+type DayJob struct {
+	Wake  *WakeTime  `json:"wake"`
+	Sleep *SleepTime `json:"sleep"`
+}
+
+type CronConfig []*DayJob
+
 type JookiConfig struct {
-	*httpserver.NetworkConfig
+	Cron string `json:"cron"`
+}
+
+func (cfg *JookiConfig) Init(top *SynosConfig) error {
+	fn, err := top.Abs(cfg.Cron)
+	if err != nil {
+		return err
+	}
+	cfg.Cron = fn
+	return nil
+}
+
+func (cfg *JookiConfig) LoadCron() (*CronConfig, error) {
+	f, err := os.Open(cfg.Cron)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	obj := &CronConfig{}
+	err = json.Unmarshal(data, obj)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
+func (cfg *JookiConfig) SaveCron(cron *CronConfig) error {
+	data, err := json.MarshalIndent(cron, "", "  ")
+	if err != nil {
+		return err
+	}
+	f, err := os.Create(cfg.Cron)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.Write(data)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type ITunesConfig struct {
@@ -239,7 +300,7 @@ func (cfg *SynosConfig) Init() error {
 	if err != nil {
 		return err
 	}
-	err = cfg.Jooki.Init()
+	err = cfg.Jooki.Init(cfg)
 	if err != nil {
 		return err
 	}

@@ -1,31 +1,29 @@
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 //import { List, AutoSizer } from "react-virtualized";
 import { PLAYLIST_ORDER } from '../../lib/distinguished_kinds';
 import { Playlist } from './SongList';
+import { Icon } from '../Icon';
+import { API } from '../../lib/api';
+import { useAPI } from '../../lib/useAPI';
+import { ScreenHeader } from './ScreenHeader';
 
-export class PlaylistList extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      scrollTop: [0],
-      path: [],
-      playlists: [],
-    };
-    this.onClose = this.onClose.bind(this);
-    this.onScroll = this.onScroll.bind(this);
-    this.rowRenderer = this.rowRenderer.bind(this);
-  }
-
-  componentDidMount() {
-    this.loadPlaylists();
-  }
-
-  loadPlaylists() {
-    const url = '/api/playlists';
-    return fetch(url, { method: 'GET' })
-      .then(resp => resp.json())
+export const PlaylistList = ({
+  prev,
+  adding,
+  controlAPI,
+  onClose,
+  onTrackMenu,
+  onPlaylistMenu,
+  onAdd,
+}) => {
+  const [scrollTop, setScrollTop] = useState([0]);
+  const [path, setPath] = useState([]);
+  const [playlists, setPlaylists] = useState([]);
+  const api = useAPI(API);
+  useEffect(() => {
+    api.loadPlaylists()
       .then(playlists => playlists.filter(pl => {
         const o = PLAYLIST_ORDER[pl.kind];
         if (o === null || o === undefined) {
@@ -36,102 +34,151 @@ export class PlaylistList extends React.Component {
         }
         return false;
       }))
-      .then(playlists => this.setState({ playlists }));
-  }
-
-  onOpen(pl) {
-    this.setState({
-      scrollTop: this.state.scrollTop.concat([0]),
-      path: this.state.path.concat([pl]),
-    });
-  }
-
-  onClose() {
-    if (this.state.path.length === 0) {
-      this.props.onClose();
-    } else {
-      //const t = this.state.scrollTop[this.state.scrollTop.length - 1];
-      this.setState({
-        scrollTop: this.state.scrollTop.slice(0, this.state.scrollTop.length - 1),
-        path: this.state.path.slice(0, this.state.path.length - 1),
-      });//, () => document.body.parentNode.scrollTo(0, t));
-    }
-  }
-
-  onScroll({ scrollTop }) {
-    const tops = this.state.scrollTop.slice(0);
-    tops.pop();
-    tops.push(scrollTop);
-    this.setState({ scrollTop: tops });
-  }
-
-  folder() {
-    if (this.state.path.length === 0) {
-      return this.state.playlists;
-    }
-    return this.state.path[this.state.path.length - 1].children || [];
-  }
-
-  rowRenderer({ key, index, style }) {
-    const pl = this.folder()[index];
-    return (
-      <div key={pl.persistent_id} className="item" style={style} onClick={() => this.onOpen(pl)}>
-        <div className={`icon ${pl.kind}`} />
-        <div className="title">{pl.name}</div>
-      </div>
-    );
-  }
-
-  render() {
-    let title = 'Playlists';
-    let prevTitle = this.props.prev;
-    if (this.state.path.length > 0) {
-      prevTitle = 'Playlists';
-      if (this.state.path.length > 1) {
-        prevTitle = this.state.path[this.state.path.length-2].name;
-      }
-      const pl = this.state.path[this.state.path.length-1];
-      if (pl.folder) {
-        title = pl.name;
+      .then(setPlaylists);
+  }, []);
+  const onNewPlaylist = useMemo(() => console.debug, []);
+  const onOpen = useMemo(() => {
+    return (pl) => {
+      setScrollTop(orig => orig.concat([0]));
+      setPath(orig => orig.concat([pl]));
+    };
+  }, [setScrollTop, setPath]);
+  const onCloseMe = useMemo(() => {
+    return () => {
+      if (path.length === 0) {
+        onClose();
       } else {
+        setScrollTop(orig => orig.slice(0, orig.length - 1));
+        setPath(orig => orig.slice(0, orig.length - 1));
+      }
+    };
+  }, [path, setPath, setScrollTop]);
+  const onScroll = useMemo(() => {
+    return ({ scrollOffset }) => {
+      setScrollTop(orig => orig.slice(0, orig.length - 1).concat([scrollOffset]));
+    };
+  }, [setScrollTop]);
+  const folder = useMemo(() => {
+    if (path.length === 0) {
+      return playlists;
+    }
+    return path[path.length - 1].children || [];
+  }, [path, playlists]);
+
+  const rowRenderer = useMemo(() => {
+    return ({ key, index, style }) => {
+      if (index >= folder.length) {
         return (
-          <Playlist
-            playlist={pl}
-            prev={prevTitle}
-            onClose={this.onClose}
-            onEnqueue={this.props.onEnqueue}
-            onTrackMenu={this.props.onTrackMenu}
-            onPlaylistMenu={this.props.onPlaylistMenu}
-          />
+          <div
+            key="new"
+            className="item addPlaylist"
+            style={style}
+            onClick={() => onNewPlaylist(path.length === 0 ? null : path[path.length - 1])}
+          >
+            <Icon name="new-playlist" size={36} />
+            <div className="title">New Playlist...</div>
+          </div>
         );
       }
+      const pl = folder[index];
+      return (
+        <div
+          key={pl.persistent_id}
+          className="item"
+          style={style}
+          onClick={() => onOpen(pl)}
+        >
+          <Icon name={pl.kind} size={36} />
+          <div className="title">{pl.name}</div>
+        </div>
+      );
+    };
+  }, [folder, path, onOpen]);
+  let title = 'Playlists';
+  let prevTitle = prev;
+  if (path.length > 0) {
+    prevTitle = 'Playlists';
+    if (path.length > 1) {
+      prevTitle = path[path.length - 2].name;
     }
-    return (
-      <div className="playlistList">
-        <div className="back" onClick={this.onClose}>{prevTitle}</div>
-        <div className="header">
-          {/*<div className="icon folder" />*/}
-          <div className="title">{title}</div>
-        </div>
-        <div className="items">
-          <AutoSizer>
-            {({width, height}) => (
-              <List
-                width={width}
-                height={height}
-                itemCount={this.folder().length}
-                itemSize={58}
-                overscanCount={Math.ceil(height / 58)}
-                initialScrollOffset={this.state.scrollTop[this.state.scrollTop.length - 1]}
-                onScroll={this.onScroll}
-              >
-                {this.rowRenderer}
-              </List>
-            )}
-          </AutoSizer>
-        </div>
-      </div>
-    );
+    const pl = path[path.length - 1];
+    if (pl.folder) {
+      title = pl.name;
+    } else {
+      return (
+        <Playlist
+          playlist={pl}
+          prev={prevTitle}
+          adding={adding}
+          onClose={onCloseMe}
+          onTrackMenu={onTrackMenu}
+          onPlaylistMenu={onPlaylistMenu}
+          onAdd={onAdd}
+        />
+      );
+    }
   }
-
-}
+  return (
+    <div className="playlistList">
+      <ScreenHeader
+        name={title}
+        prev={prevTitle}
+        onClose={onCloseMe}
+      />
+      <div className="items">
+        <AutoSizer>
+          {({width, height}) => (
+            <List
+              width={width}
+              height={height}
+              itemCount={folder.length + 1}
+              itemSize={45}
+              overscanCount={Math.ceil(height / 45)}
+              initialScrollOffset={scrollTop[scrollTop.length - 1]}
+              onScroll={onScroll}
+            >
+              {rowRenderer}
+            </List>
+          )}
+        </AutoSizer>
+      </div>
+      <style jsx>{`
+        .playlistList {
+          width: 100vw;
+          height: 100vh;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+        .playlistList .items {
+          height: calc(100vh - 185px);
+        }
+        .playlistList :global(.item) {
+          display: flex;
+          padding: 9px 0.5em 0px 0.5em;
+          box-sizing: border-box;
+        }
+        .playlistList .item .icon {
+          flex: 1;
+          width: 36px;
+          min-width: 36px;
+          max-width: 36px;
+          height: 36px;
+          box-sizing: border-box;
+          background-size: cover;
+          opacity: 0.75;
+        }
+        .playlistList :global(.item .title) {
+          flex: 10;
+          font-size: 18px;
+          line-height: 36px;
+          padding-left: 0.5em;
+          /*
+          padding: 9px 9px 18px 9px;
+          border-bottom-style: solid;
+          border-bottom-width: 1px;
+          */
+        }
+      `}</style>
+    </div>
+  );
+};

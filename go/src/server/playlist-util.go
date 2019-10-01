@@ -10,16 +10,17 @@ import (
 
 func m3uEscape(s string) string {
 	s = html.EscapeString(s)
-	s = strings.Replace(s, "&amp;", "%26", -1)
+	s = strings.Replace(s, "&#39;", "", -1)
+	s = strings.Replace(s, "&amp;", "&#38;", -1)
 	s = strings.Replace(s, "&lt;", "&#60;", -1)
 	s = strings.Replace(s, "&gt;", "&#62;", -1)
 	return s
 }
 
-func M3U(pl *musicdb.Playlist) ([]string, error) {
-	lines := make([]string, len(pl.PlaylistItems) * 2 + 2)
+func M3U(tracks []*musicdb.Track) ([]string, error) {
+	lines := make([]string, len(tracks) * 2 + 2)
 	lines[0] = "#EXTM3U"
-	for i, track := range pl.PlaylistItems {
+	for i, track := range tracks {
 		if track == nil {
 			continue
 		}

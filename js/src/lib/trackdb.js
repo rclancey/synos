@@ -78,6 +78,13 @@ export const trackDB = {
             if (progressCallback && tracks.length % batchCount === 0) {
               progressCallback(tracks);
             }
+            /*
+            if (tracks.length === 1000) {
+              resolve(tracks);
+            } else {
+              cur.continue();
+            }
+            */
             cur.continue();
           } else {
             resolve(tracks);

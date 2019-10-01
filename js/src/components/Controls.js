@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo, useRef } from 'react';
 import { TrackTime } from './TrackInfo';
+import { useTheme } from '../lib/theme';
 
 const orientations = {
   right: ['Top', 'Bottom', 'Left'],
@@ -9,59 +10,36 @@ const orientations = {
 };
 
 const root3 = Math.sqrt(3);
-//let sizeV, sizeU;
 
-const parseSize = (size, dflt) => {
-  if (size === null || size === undefined) {
-    return { v: dflt, u: 'px' };
-  }
-  if (typeof size === 'number') {
-    return { v: size, u: 'px' };
-  }
-  const m = size.match(/^([0-9.]+)(px|pt|pc|q|mm|cm|in|em|rem|ex|ch|vw|vh)?$/);
-  if (m) {
-    return { v: parseFloat(m[1]), u: m[2] || 'px' };
-  }
-  return { v: dflt, u: 'px' };
-};
-
-export const Triangle = ({ orientation, size, color, style, ...props }) => {
-  const sz = parseSize(size, 24);
-  const xstyle = Object.assign({}, style, {
+export const Triangle = ({ orientation, size = 24, ...props }) => {
+  const colors = useTheme();
+  const style = {
     width: 0,
     height: 0,
-  });
+    touchAction: 'none',
+  };
   const ori = orientations[orientation] || orientations.right;
   ori.slice(0, 2).forEach(d => {
-    xstyle[`border${d}Color`] = 'transparent';
-    xstyle[`border${d}Style`] = 'solid';
-    xstyle[`border${d}Width`] = `${sz.v / root3}${sz.u}`;
+    style[`border${d}`] = `solid transparent ${size / root3}px`;
   });
   const d = ori[2];
-  //xstyle[`border${d}Color`] = color || 'black';
-  xstyle[`border${d}Style`] = 'solid';
-  xstyle[`border${d}Width`] = `${sz.v}${sz.u}`;
-  return (<div style={xstyle} {...props} />);
+  style[`border${d}`] = `solid ${colors.button} ${size}px`;
+  return (<div style={style} {...props} />);
 };
 
-
 export const PlayButton = ({ size, onPlay }) => (
-  <Triangle orientation="right" size={size || 24} color="#444" className="play" onClick={onPlay} />
+  <Triangle orientation="right" size={size || 24} className="play" onClick={onPlay} />
 );
 
 export const PauseButton = ({ size, onPause }) => {
-  const sz = parseSize(size, 24);
+  const colors = useTheme();
   const style = {
-    width: `${sz.v / 4}${sz.u}`,
-    height: `${sz.v * 2 / root3}${sz.u}`,
-    borderLeftStyle: 'solid',
-    //borderLeftColor: '#444',
-    borderLeftWidth: `${sz.v * 7 / 24}${sz.u}`,
-    borderRightStyle: 'solid',
-    //borderRightColor: '#444',
-    borderRightWidth: `${sz.v * 7 / 24}${sz.u}`,
-    marginLeft: `${sz.v / 12}${sz.u}`,
-    marginRight: `${sz.v / 12}${sz.u}`,
+    width: `${size / 4}px`,
+    height: `${size * 2 / root3}px`,
+    borderLeft: `solid ${colors.button} ${size * 7 / 24}px`,
+    borderRight: `solid ${colors.button} ${size * 7 / 24}px`,
+    marginLeft: `${size / 12}px`,
+    marginRight: `${size / 12}px`,
   };
   return (
     <div style={style} className="pause" onClick={onPause} />
@@ -75,110 +53,185 @@ export const PlayPauseButton = ({ size, paused, onPlay, onPause }) => {
   return (<PauseButton size={size} onPause={onPause} />);
 };
 
-export class Seeker extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      seeking: false,
-    };
-    this.div = React.createRef();
-    this.interval = null;
-    this.beginSeek = this.beginSeek.bind(this);
-  }
-
-  beginSeek(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    if (this.state.seeking) {
-      return false;
-    } 
-    if (this.interval !== null) {
-      clearInterval(this.interval);
-      this.interval = null;
-    }
-    if (evt.type === 'mousedown') {
-      document.addEventListener('mouseup', () => this.setState({ seeking: false }), { once: true });
-    } else if (evt.type === 'touchstart') { 
-      document.addEventListener('touchend', () => this.setState({ seeking: false }), { once: true });
-    } 
-    this.setState({ seeking: true }, () => {
+export const Seeker = ({
+  size = 15,
+  fwd = true,
+  onSeek,
+  onSkip,
+}) => {
+  const seeking = useRef(false);
+  const interval = useRef(null);
+  const div = useRef(null);
+  const beginSeek = useMemo(() => {
+    return (evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      if (seeking.current) {
+        return false;
+      }
+      if (interval.current !== null) {
+        clearInterval(interval.current);
+        interval.current = null;
+      }
+      if (evt.type === 'mousedown') {
+        document.addEventListener('mouseup', () => seeking.current = false, { once: true });
+      } else if (evt.type === 'touchstart') {
+        document.addEventListener('touchend', () => seeking.current = false, { once: true });
+      }
+      seeking.current = true;
       const startTime = Date.now();
-      this.interval = setInterval(() => {
+      interval.current = setInterval(() => {
         const t = Date.now() - startTime;
-        if (this.state.seeking) {
+        if (seeking.current) {
           if (t >= 250) {
-            this.props.onSeek();
-          } 
+            onSeek(fwd ? 200 : -200);
+          }
         } else {
-          clearInterval(this.interval);
-          this.interval = null;
+          clearInterval(interval.current);
           if (t < 250) {
-            this.props.onSkip();
-          } 
-        } 
+            onSkip(fwd ? 1 : -1);
+          }
+        }
       }, 40);
-    });
-  } 
-  
-  render() {
-    return (
-      <div 
-        ref={this.div}
-        className={this.props.className}
-        style={this.props.style}
-        onMouseDown={this.beginSeek}
-        onTouchStart={this.beginSeek}
-      > 
-        {this.props.children}
-      </div>
-    );
-  } 
-}
-
-export const RewindButton = ({ size, onSkipBy, onSeekBy }) => (
-  <Seeker style={{ display: 'flex' }} className="rewind" onSkip={() => onSkipBy(-1)} onSeek={() => onSeekBy(-200)}>
-    <Triangle orientation="left" size={size || 15} color="#444" />
-    <Triangle orientation="left" size={size || 15} color="#444" />
-  </Seeker>
-);
-
-export const FastForwardButton = ({ size, onSkipBy, onSeekBy }) => (
-  <Seeker style={{ display: 'flex' }} className="ffwd" onSkip={() => onSkipBy(1)} onSeek={() => onSeekBy(200)}>
-    <Triangle orientation="right" size={size || 15} color="#444" />
-    <Triangle orientation="right" size={size || 15} color="#444" />
-  </Seeker>
-);
-
-export const PlayPauseSkip = ({ size, paused, onPlay, onPause, onSkipBy, onSeekBy, style, ...props }) => {
-  const sz = parseSize(size, 24);
+    };
+  }, [seeking, interval, onSeek, onSkip]);
   return (
-    <div style={{ display: 'flex', ...style }} {...props}>
-      <RewindButton size={`${sz.v * 0.625}${sz.u}`} onSkipBy={onSkipBy} onSeekBy={onSeekBy} />
-      <PlayPauseButton size={`${sz.v}${sz.u}`} paused={paused} onPlay={onPlay} onPause={onPause} />
-      <FastForwardButton size={`${sz.v * 0.625}${sz.u}`} onSkipBy={onSkipBy} onSeekBy={onSeekBy} />
+    <div 
+      className="seeker"
+      ref={div}
+      onMouseDown={beginSeek}
+      onTouchStart={beginSeek}
+    > 
+      <div className="padding" />
+      <div className="triangles">
+        <Triangle orientation={fwd ? "right" : "left"} size={size} />
+        <Triangle orientation={fwd ? "right" : "left"} size={size} />
+      </div>
+      <div className="padding" />
+      <style jsx>{`
+        .seeker {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
+        .padding {
+          flex: 2;
+          max-height: ${0.5 * size / root3}px;
+        }
+        .triangles {
+          flex: 1;
+          display: flex;
+          flex-direction: row;
+        }
+      `}</style>
     </div>
   );
 };
 
-export const Volume = ({ volume, onChange, style, ...props }) => (
-  <div style={{ ...style, display: 'flex' }} {...props}>
-    <div className="fas fa-volume-down" style={{ flex: 1 }}  onClick={() => onChange(volume - 10)} />
-    <div style={{ flex: 10, paddingLeft: '1em', paddingRight: '1em' }}>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        step={1}
-        value={volume}
-        style={{ width: '100%' }}
-        onChange={evt => onChange(parseInt(evt.target.value))}
-      />
-    </div>
-    <div className="fas fa-volume-up" style={{ flex: 1 }} onClick={() => onChange(volume + 10)}/>
-  </div>
+export const RewindButton = ({ size = 15, onSkipBy, onSeekBy }) => (
+  <Seeker size={size} fwd={false} onSkip={onSkipBy} onSeek={onSeekBy} />
 );
 
-export const Progress = ({ currentTime, duration, onSeekTo, height, background, color, style, ...props }) => {
+export const FastForwardButton = ({ size = 15, onSkipBy, onSeekBy }) => (
+  <Seeker size={size} fwd={true} onSkip={onSkipBy} onSeek={onSeekBy} />
+);
+
+export const PlayPauseSkip = ({ width, height, paused, onPlay, onPause, onSkipBy, onSeekBy, ...props }) => {
+  return (
+    <div className="playPauseSkip" {...props}>
+      <RewindButton
+        size={height * 0.625}
+        onSkipBy={onSkipBy}
+        onSeekBy={onSeekBy}
+      />
+      <div className="padding" />
+      <PlayPauseButton
+        size={height}
+        paused={paused}
+        onPlay={onPlay}
+        onPause={onPause}
+      />
+      <div className="padding" />
+      <FastForwardButton
+        size={height * 0.625}
+        onSkipBy={onSkipBy}
+        onSeekBy={onSeekBy}
+      />
+      <style jsx>{`
+        .playPauseSkip {
+          display: flex;
+          height: ${2 * height / root3}px;
+          width: ${width ? `${width}px` : '100%'};
+          min-width: ${width ? `${width}px` : '100%'};
+          display: flex;
+          flex-direction: row;
+        }
+        .playPauseSkip .padding {
+          flex: 1;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export const Volume = ({ volume, onChange, ...props }) => {
+  const colors = useTheme();
+  const up = useMemo(() => {
+    if (up >= 50) {
+      return Math.min(100, volume + 5);
+    }
+    if (up >= 25) {
+      return Math.min(100, volume + 2);
+    }
+    return Math.min(100, volume + 1);
+  }, [volume]);
+  const down = useMemo(() => {
+    return Math.max(0, volume - 5);
+  }, [volume]);
+  return (
+    <div className="volumeControl" {...props}>
+      <div
+        className="fas fa-volume-down"
+        onClick={() => onChange(down)}
+      />
+      <div className="slider">
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={volume}
+          style={{ width: '100%' }}
+          onChange={evt => onChange(parseInt(evt.target.value))}
+        />
+      </div>
+      <div
+        className="fas fa-volume-up"
+        onClick={() => onChange(up)}
+      />
+      <style jsx>{`
+        .volumeControl {
+          display: flex;
+          color: ${colors.button};
+        }
+        .volumeControl div.fas {
+          flex: 1;
+        }
+        .volumeControl .fa-volume-down {
+          text-align: right;
+        }
+        .volumeControl .slider {
+          flex: 10;
+          padding-left: 1em;
+          padding-right: 1em;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export const Progress = ({ currentTime, duration, onSeekTo, height = 4, ...props }) => {
+  const colors = useTheme();
   const seekTo = evt => {
     let l = 0;
     let node = evt.target;
@@ -190,47 +243,54 @@ export const Progress = ({ currentTime, duration, onSeekTo, height, background, 
     const x = evt.pageX - l;
     const w = evt.target.offsetWidth;
     const t = duration * x / w;
+    console.debug('onSeekTo: %o', { l, x, w, t });
     onSeekTo(t);
   };
   const pct = duration > 0 ? 100 * currentTime / duration : 0;
-  const sz = parseSize(height, 4)
   return (
-    <div
-      style={{
-        ...style,
-        minHeight: `${sz.v}${sz.u}`,
-        maxHeight: `${sz.v}${sz.u}`,
-        height: `${sz.v}${sz.u}`,
-        backgroundColor: background || '#ccc',
-      }}
-      onClick={seekTo}
-      {...props}
-    >
-      <div
-        className="progress"
-        style={{
-          width: `${pct}%`,
-          height: `${sz.v}${sz.u}`,
-          backgroundColor: color || '#666',
-          pointerEvents: 'none',
-        }}
-      />
+    <div className="progressContainer" onClick={seekTo} {...props}>
+      <div className="progress" style={{ width: `${pct}%` }} />
+      <style jsx>{`
+        .progressContainer {
+          min-height: ${height}px;
+          max-height: ${height}px;
+          height: ${height}px;
+          background-color: #ccc;
+        }
+        .progress {
+          height: ${height}px;
+          background-color: #666;
+          pointer-events: none;
+        }
+      `}</style>
     </div>
   );
 };
 
-export const Timers = ({ currentTime, duration }) => (
-  <div className="timer">
+export const Timers = ({ currentTime, duration, ...props }) => (
+  <div className="timer" {...props}>
     <TrackTime ms={currentTime} className="currentTime" />
     <div className="padding">{'\u00a0'}</div>
     <TrackTime ms={currentTime - duration} className="remainingTime" />
+    <style jsx>{`
+      .timer {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+      }
+      .padding {
+        flex: 10;
+      }
+    `}</style>
   </div>
 );
 
+/*
 export const ProgressTimer = ({ currentTime, duration, onSeekTo, className, style }) => (
   <div className={className} style={style}>
     <Progress currentTime={currentTime} duration={duration} onSeekTo={onSeekTo} />
     <Timers currentTime={currentTime} duration={duration} />
   </div>
 );
+*/
 

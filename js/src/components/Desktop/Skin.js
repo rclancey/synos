@@ -1,85 +1,82 @@
-import React, { useState } from 'react';
-import { DragDropContextProvider } from 'react-dnd'
-import HTML5Backend from 'react-dnd-html5-backend'
+import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { Controls } from './Controls';
-import { Library } from '../Library';
+import { Library } from './Library';
+import { useTheme } from '../../lib/theme';
 
 import 'react-virtualized/styles.css';
 import 'react-sortable-tree/style.css';
-import '../../themes/desktop/layout.css';
-//import '../../themes/desktop/light.css';
-//import '../../themes/desktop/dark.css';
+//import '../../themes/desktop/layout.css';
+
 const importedThemes = {};
 
 export const DesktopSkin = ({
-  api,
   theme,
-  status,
-  queue,
-  queueIndex,
-  currentTime,
-  duration,
-  volume,
-  sonos,
-  onViewPlaylist,
-  onPlay,
-  onPause,
-  onInsertIntoQueue,
-  onAppendToQueue,
-  onReplaceQueue,
-  onSkipTo,
-  onSkipBy,
-  onSeekTo,
-  onSeekBy,
-  onSetVolumeTo,
-  onEnableSonos,
-  onDisableSonos,
+  player,
+  setPlayer,
+  playbackInfo,
+  controlAPI,
 }) => {
-  if (importedThemes[theme] === undefined || importedThemes[theme] === null) {
-    import(`../../themes/desktop/${theme}.css`);
-  }
+  const colors = useTheme();
   const [search, setSearch] = useState({});
   const [playlist, setPlaylist] = useState(null);
-  //const [progress, setProgress] = useState({ complete: 0, total: 0 });
-  const track = queue[queueIndex];
+
+  useEffect(() => {
+    const handler = event => {
+      //console.debug('top level key down handler %o', event);
+      if (event.ctrlKey) {
+        if (event.code === 'KeyF') {
+          console.debug('activate search');
+        } else if (event.code === 'KeyN') {
+          if (event.shiftKey) {
+            console.debug('new playlist folder');
+          } else if (event.altKey) {
+            console.debug('new smart playlist');
+          } else {
+            console.debug('new playlist');
+          }
+        } else if (event.code === 'KeyG') {
+          console.debug('new genius playlist');
+        }
+      }
+    };
+    document.addEventListener('keydown', handler, true);
+    return () => {
+      document.removeEventListener('keydown', handler, true);
+    };
+  }, []);
+  //console.debug('rendering desktop skin');
+
   return (
     <div id="app" className={`desktop ${theme}`}>
       <Controls
-        status={status}
-        queue={queue}
-        queueIndex={queueIndex}
-        currentTime={currentTime}
-        duration={duration}
-        volume={volume}
-        sonos={sonos}
         search={search[playlist]}
-        onPlay={onPlay}
-        onPause={onPause}
-        onSkipTo={onSkipTo}
-        onSkipBy={onSkipBy}
-        onSeekTo={onSeekTo}
-        onSeekBy={onSeekBy}
-        onSetVolumeTo={onSetVolumeTo}
-        onEnableSonos={onEnableSonos}
-        onDisableSonos={onDisableSonos}
-        onSearch={(query) => { const s = Object.assign({}, search); s[playlist] = query; setSearch(s); }}
+        playbackInfo={playbackInfo}
+        controlAPI={controlAPI}
+        setPlayer={setPlayer}
+        onSearch={(query) => setSearch({}, search, { [playlist]: query })}
       />
-      <DragDropContextProvider backend={HTML5Backend}>
-        <Library 
-          api={api}
-          search={search[playlist]}
-          currentTrack={track}
-          onInsertIntoQueue={onInsertIntoQueue}
-          onAppendToQueue={onAppendToQueue}
-          onReplaceQueue={onReplaceQueue}
-          onViewPlaylist={setPlaylist}
-        />
-      </DragDropContextProvider>
-      {/*
-        onProgress={(complete, total) => setProgress({ complete, total: total || progress.total })}
+      <Library 
+        playlist={playlist}
+        track={playbackInfo && playbackInfo.queue ? playbackInfo.queue[playbackInfo.index] : null}
+        search={search[playlist]}
+        controlAPI={controlAPI}
+        setPlaylist={setPlaylist}
       />
-      <ProgressBar key="progress" total={progress.total} complete={progress.complete} />
-      */}
+      <style jsx>{`
+        #app {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+          font-family: Tahoma;
+          background-color: ${colors.background};
+          color: ${colors.text};
+        }
+      `}</style>
+
     </div>
   );
 };

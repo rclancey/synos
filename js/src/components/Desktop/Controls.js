@@ -1,125 +1,181 @@
-import React, { Fragment, useRef, useState } from 'react';
+import React, { Fragment, useRef, useState, useEffect, useContext } from 'react';
 import displayTime from '../../lib/displayTime';
-import { PlayPauseSkip, Progress } from '../Controls';
+import { PlayPauseSkip, Volume, Progress } from '../Controls';
 import { CoverArt } from '../CoverArt';
 import { TrackInfo } from '../TrackInfo';
 import { Queue } from './Queue';
+import { Icon } from '../Icon';
+import { Cover } from '../Cover';
+import { useTheme } from '../../lib/theme';
 
-const Buttons = ({ status, sonos, onPlay, onPause, onSkipBy, onSeekBy, onEnableSonos, onDisableSonos }) => (
-  <div className="playpause" style={{ display: 'flex', flexDirection: 'row' }}>
-    <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '1em', flex: 10 }}>
-      <div style={{ flex: 2 }} />
+const Buttons = ({ status, sonos, volume, onPlay, onPause, onSkipBy, onSeekBy, onSetVolumeTo, onEnableSonos, onDisableSonos }) => (
+  <div className="playpause">
+    <div className="wrapper">
+      <div className="padding" />
       <PlayPauseSkip
-        size={24}
+        width={120}
+        height={24}
         paused={status !== 'PLAYING'}
         onPlay={onPlay}
         onPause={onPause}
         onSkipBy={onSkipBy}
         onSeekBy={onSeekBy}
-        style={{ flex: 1 }}
-        className="buttons"
       />
-      <div style={{ flex: 2 }} />
+        {/*style={{ flex: 1, paddingLeft: '4em' }}*/}
+      <div className="padding" />
     </div>
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1em' }}>
-      <div style={{ flex: 2 }} />
-      <AirplayButton sonos={sonos} onEnableSonos={onEnableSonos} onDisableSonos={onDisableSonos} />
-      <div style={{ flex: 2 }} />
+    <div className="foo" style={{ flex: 8 }}>
+      <div className="padding" />
+      <Volume
+        volume={volume}
+        onChange={onSetVolumeTo}
+      />
+      <div className="padding" />
     </div>
+    <div className="foo">
+      <div className="padding" />
+      <AirplayButton
+        sonos={sonos}
+        onEnableSonos={onEnableSonos}
+        onDisableSonos={onDisableSonos}
+      />
+      <div className="padding" />
+    </div>
+    <style jsx>{`
+      .playpause {
+        width: 33%;
+        display: flex;
+        flex-direction: row;
+      }
+      .playpause :global(.rewind),
+      .playpause :global(.ffwd) {
+        padding: 5px;
+        margin-left: 1em;
+        margin-right: 1em;
+      }
+      .wrapper {
+        display: flex;
+        flex-direction: column;
+        padding-left: 3em;
+        flex: 10;
+      }
+      .padding {
+        flex: 2;
+      }
+      .foo {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        margin-right: 1em;
+      }
+    `}</style>
   </div>
 );
 
-const AirplayMenu = ({ buttonRef, sonos, onEnableSonos, onDisableSonos }) => {
-  const rect = buttonRef.current.getBoundingClientRect();
+const OutputDevice = ({ name, icon, enabled, onEnable }) => {
   return (
-    <div className="airplayMenu" style={{
-      position: 'absolute',
-      left: `${rect.x}px`,
-      top: `{$rect.y}px`,
-      zIndex: 10,
-      width: '322px',
-      backgroundColor: 'white',
-      border: 'solid #ccc 1px',
-      borderRadius: '5px',
-      padding: '5px',
-      boxSizing: 'border-box',
-    }}>
-      <div className="item">
-        <div className="icon computer" />
-        <div className="title">Computer</div>
-        <div className="checkbox">
-          <input
-            type="checkbox"
-            checked={!sonos}
-            onChange={onDisableSonos}
-          />
-        </div>
+    <div className="device">
+      <Icon name={icon} size={18} />
+      <div className="title">{name}</div>
+      <div className="checkbox">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={evt => onEnable(evt.target.checked)}
+        />
       </div>
-      <div className="item">
-        <div className="icon sonos" />
-        <div className="title">Sonos</div>
-        <div className="checkbox">
-          <input
-            type="checkbox"
-            checked={sonos}
-            onChange={onEnableSonos}
-          />
-        </div>
-      </div>
+      <style jsx>{`
+        .device {
+          display: flex;
+          flex-direction: row;
+        }
+        .device :global(.icon) {
+          flex: 1;
+          margin-right: 1em;
+          mackground-size: cover;
+        }
+        .title {
+          flex: 10;
+          font-size: 13px;
+        }
+      `}</style>
     </div>
   );
 };
 
-const AirplayButton = ({ sonos, onEnableSonos, onDisableSonos }) => {
+const ButtonMenu = ({
+  icon,
+  maxWidth = 322,
+  children,
+}) => {
+  const colors = useTheme();
   const menuRef = useRef();
   const [open, setOpen] = useState(false);
+  const rect = menuRef.current ? menuRef.current.getBoundingClientRect() : { x: 0, y: 0 };
   return (
-    <div
-      ref={menuRef}
-      style={{
-        flex: 1,
-        width: '40px',
-        height: '26px',
-        minHeight: '26px',
-        maxHeight: '26px',
-        border: 'solid #ccc 1px',
-        borderRadius: '5px',
-        backgroundColor: '#eee',
-      }}
-      onClick={() => setOpen(true)}
-    >
-      <div className="icon airplay" style={{
-        width: '18px',
-        height: '18px',
-        backgroundSize: 'cover',
+    <div ref={menuRef} className="buttonMenu"  onClick={() => setOpen(cur => !cur)}>
+      <Icon name={icon} size={18} style={{
         marginLeft: 'auto',
         marginRight: 'auto',
         marginTop: '4px',
       }} />
       { open ? (
-        <Fragment>
+        <>
+          <Cover zIndex={9} onClear={() => setOpen(false)} />
           <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100vw',
-              height: '100vh',
-              zIndex: 9,
-            }}
-            onClick={evt => { evt.preventDefault(); evt.stopPropagation(); console.debug('cover clicked'); setOpen(false); }}
-          />
-          <AirplayMenu
-            buttonRef={menuRef}
-            sonos={sonos}
-            onEnableSonos={() => { setOpen(false); onEnableSonos(); }}
-            onDisableSonos={() => { setOpen(false); onDisableSonos(); }}
-          />
-        </Fragment>
+            className="menu"
+            style={{ left: `${rect.x}px`, top: `${rect.y}px` }}
+          >
+            {children}
+          </div>
+        </>
       ) : null }
+      <style jsx>{`
+        .buttonMenu {
+          flex: 1;
+          width: 40px;
+          height: 26px;
+          min-height: 26px;
+          max-height: 26px;
+          border-style: solid;
+          border-width: 1px;
+          border-radius: 5px;
+        }
+        .menu {
+          position: absolute;
+          z-index: 10;
+          width: ${maxWidth}px;
+          border-style: solid;
+          border-width: 1px;
+          border-radius: 5px;
+          padding: 5px;
+          box-sizing: border-box;
+          background-color: ${colors.background};
+        }
+      `}</style>
     </div>
   );
 };
+
+const AirplayButton = ({ sonos, onEnableSonos, onDisableSonos }) => {
+  return (
+    <ButtonMenu icon="airplay">
+      <OutputDevice
+        name="Computer"
+        icon="computer"
+        enabled={!sonos}
+        onEnable={() => { console.debug('disable sonos'); onDisableSonos(); }}
+      />
+      <OutputDevice
+        name="Sonos"
+        icon="sonos"
+        enabled={sonos}
+        onEnable={() => { console.debug('enable sonos'); onEnableSonos(); }}
+      />
+    </ButtonMenu>
+  );
+};
+
 
 const NotPlaying = () => (
   <span
@@ -133,127 +189,251 @@ const NotPlaying = () => (
   />
 );
 
+const Timer = ({ t }) => (
+  <div className="timer">
+    <div className="padding" />
+    <div className="currentTime">{displayTime(t)}</div>
+    <style jsx>{`
+      .timer {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-width: 50px;
+        max-width: 50px;
+      }
+      .padding {
+        flex: 100;
+      }
+      .currentTime {
+        flex: 1;
+        min-height: 14px;
+        max-height: 14px;
+        font-size: 11px;
+        text-align: right;
+        padding-right: 5px;
+        padding-bottom: 5px;
+      }
+    `}</style>
+  </div>
+);
+
 const NowPlaying = ({ track, currentTime, duration, onSeekTo }) => {
+  const colors = useTheme();
   if (!track) {
     return (<NotPlaying />);
   }
   return (
     <div className="nowplaying">
       <CoverArt track={track} size={56} radius={0} />
-      <div style={{
-        flex: 100,
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
-        <div style={{
-          flex: 100,
-          display: 'flex',
-          flexDirection: 'row',
-        }}>
-          <div className="timer">
-            <div style={{ flex: 100 }} />
-            <div className="currentTime">
-              {displayTime(currentTime)}
-            </div>
-          </div>
-          <TrackInfo track={track} />
-          <div className="timer">
-            <div style={{ flex: 100 }} />
-            <div className="currentTime">
-              {displayTime(currentTime - duration)}
-            </div>
-          </div>
+      <div className="outerwrapper">
+        <div className="innerwrapper">
+          <Timer t={currentTime} />
+          <TrackInfo track={track} className="desktop controls" />
+          <Timer t={currentTime - duration} />
         </div>
         <Progress currentTime={currentTime} duration={duration} onSeekTo={onSeekTo} height={4} />
       </div>
+      <style jsx>{`
+        .nowplaying {
+          width: 34%;
+          border-left-style: solid;
+          border-left-width: 1px;
+          border-right-style: solid;
+          border-right-width: 1px;
+          display: flex;
+          height: 56px;
+          overflow: hidden;
+          background-color: ${colors.sectionBackground};
+        }
+        .outerwrapper {
+          flex: 100;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        .innerwrapper {
+          flex: 100;
+          display: flex;
+          flex-direction: row;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 };
 
 const QueueMenu = ({ queue, queueIndex, onSkipTo }) => {
-  const queueRef = useRef();
-  const [open, setOpen] = useState(false);
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ flex: 2 }} />
-      <div ref={queueRef} className="queueMenu" onClick={() => setOpen(true)}>
-        <div>1<span className="row" /></div>
-        <div>2<span className="row" /></div>
-        <div>3<span className="row" /></div>
-      </div>
-      <div style={{ flex: 2 }} />
-      { open ? (
-        <Fragment>
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100vw',
-              height: '100vh',
-              zIndex: 9,
-            }}
-            onClick={() => setOpen(false)}
-          />
-          <Queue
-            buttonRef={queueRef}
-            queue={queue}
-            queueIndex={queueIndex}
-            onSkipTo={onSkipTo}
-          />
-        </Fragment>
-      ) : null }
+    <ButtonMenu icon="queue">
+      <Queue
+        queue={queue}
+        queueIndex={queueIndex}
+        onSkipTo={onSkipTo}
+      />
+    </ButtonMenu>
+  );
+};
+
+const Search = ({ search, onSearch }) => {
+  const node = useRef(null);
+  useEffect(() => {
+    const handler = event => {
+      console.debug('search select handler');
+      if (event.ctrlKey && event.code === 'KeyF') {
+        event.stopPropagation();
+        event.preventDefault();
+        if (node.current) {
+          console.debug('trying to focus on search input');
+          node.current.focus();
+          node.current.select();
+        } else {
+          console.debug('no node to focus');
+        }
+      }
+    };
+    document.addEventListener('keydown', handler, true);
+    return () => {
+      document.removeEventListener('keydown', handler, true);
+    };
+  }, []);
+  return (
+    <div className="searchBar">
+      <div className="padding" />
+      <input
+        ref={n => node.current = n || node.current}
+        tabIndex={20}
+        type="text"
+        placeholder={'\u{1f50d} Search'}
+        value={search || ''}
+        onChange={evt => onSearch(evt.target.value)}
+      />
+      <div className="padding" />
+      <style jsx>{`
+        .searchBar {
+          display: flex;
+          flex-direction: column;
+          max-width: 50%;
+          min-width: 50%;
+          flex: 2;
+          padding-left: 3em;
+        }
+        .padding {
+          flex: 2;
+        }
+        input {
+          flex: 1;
+          font-size: 10pt;
+          border-radius: 30px;
+          border-style: solid;
+          border-width: 1px;
+          padding: 5px;
+          padding-left: 10px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+      `}</style>
     </div>
   );
 };
 
-const Search = ({ search, onSearch }) => (
-  <div style={{
-    display: 'flex',
-    flexDirection: 'column',
-    width: '50%',
-    flex: 10,
-    paddingLeft: '3em',
-  }}>
-    <div style={{ flex: 2 }} />
-    <input
-      type="text"
-      placeholder={'\u{1f50d} Search'}
-      value={search || ''}
-      onChange={evt => onSearch(evt.target.value)}
-    />
-    <div style={{ flex: 1 }} />
-  </div>
-);
-
 const Tools = ({ queue, queueIndex, search, onSkipTo, onSearch }) => (
   <div className="search">
-    <QueueMenu queue={queue} queueIndex={queueIndex} onSkipTo={onSkipTo} />
+    <div className="queuebutton">
+      <div className="padding" />
+      <QueueMenu queue={queue} queueIndex={queueIndex} onSkipTo={onSkipTo} />
+      <div className="padding" />
+    </div>
+    <div className="padding" />
     <Search search={search} onSearch={onSearch} />
+    <style jsx>{`
+      .search {
+        width: 33%;
+        display: flex;
+        padding-right: 10px;
+        box-sizing: border-box;
+      }
+      .queuebutton {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        margin-left: 1em;
+      }
+      .padding {
+        flex: 2;
+      }
+    `}</style>
   </div>
 );
   
 export const Controls = ({
-  status,
-  currentTime,
-  duration,
-  queue,
-  queueIndex,
   search,
-  sonos,
-  onPlay,
-  onPause,
-  onSkipTo,
-  onSkipBy,
-  onSeekTo,
-  onSeekBy,
+  playbackInfo,
+  controlAPI,
+  setPlayer,
   onSearch,
-  onEnableSonos,
-  onDisableSonos,
-}) => (
-  <div className="controls">
-    <Buttons status={status} sonos={sonos} onPlay={onPlay} onPause={onPause} onSkipBy={onSkipBy} onSeekBy={onSeekBy} onEnableSonos={onEnableSonos} onDisableSonos={onDisableSonos} />
-    <NowPlaying track={queue[queueIndex]} currentTime={currentTime} duration={duration} onSeekTo={onSeekTo} />
-    <Tools queue={queue} queueIndex={queueIndex} search={search} onSkipTo={onSkipTo} onSearch={onSearch} />
-  </div>
-);
+}) => {
+  const colors = useTheme();
+  const {
+    queue,
+    index,
+    playStatus,
+    currentTime,
+    duration,
+    volume,
+  } = playbackInfo;
+  const {
+    onPlay,
+    onPause,
+    onSkipTo,
+    onSkipBy,
+    onSeekTo,
+    onSeekBy,
+    onSetVolumeTo,
+  } = controlAPI;
+
+  const sonos = playbackInfo.player === 'sonos';
+  const onEnableSonos = () => setPlayer('sonos');
+  const onDisableSonos = () => setPlayer('local');
+
+  return (
+    <div className="controls">
+      <Buttons
+        status={playStatus}
+        volume={volume}
+        sonos={sonos}
+        onPlay={onPlay}
+        onPause={onPause}
+        onSkipBy={onSkipBy}
+        onSeekBy={onSeekBy}
+        onSetVolumeTo={onSetVolumeTo}
+        onEnableSonos={onEnableSonos}
+        onDisableSonos={onDisableSonos}
+      />
+      <NowPlaying
+        track={queue ? queue[index] : null}
+        currentTime={currentTime}
+        duration={duration}
+        onSeekTo={onSeekTo}
+      />
+      <Tools
+        queue={queue}
+        queueIndex={index}
+        search={search}
+        onSkipTo={onSkipTo}
+        onSearch={onSearch}
+      />
+      <style jsx>{`
+        .controls {
+          display: flex;
+          flex-direction: row;
+          flex: 1;
+          min-height: 56px;
+          max-height: 56px;
+          height: 56px;
+          background-color: ${colors.panelBackground};
+        }
+      `}</style>
+    </div>
+  );
+};

@@ -14,7 +14,6 @@ import (
 func isMn(r rune) bool {
     return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
 }
-var deaccent = transform.Chain(norm.NFD, transform.RemoveFunc(isMn), norm.NFC)
 
 var aAnThe = regexp.MustCompile(`^(a|an|the) `)
 var nonAlpha = regexp.MustCompile(`[^a-z0-9]+`)
@@ -35,6 +34,9 @@ func MakeSort(v string) string {
 	if v == "" {
 		return ""
 	}
+	// it would be ideal if this were a global, but alas, something
+	// in there is not safe for concurrent use among goroutines
+	deaccent := transform.Chain(norm.NFD, transform.RemoveFunc(isMn), norm.NFC)
 	s, _, err := transform.String(deaccent, v)
 	if err != nil {
 		s = v

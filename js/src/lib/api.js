@@ -1,15 +1,40 @@
-export class API {
+export const SHUFFLE = 1;
+export const REPEAT = 2;
+
+export class APIBase {
   constructor(onLoginRequired) {
     this.onLoginRequired = onLoginRequired;
   }
 
-  fetch(url, args) {
+  fetch(url, xargs) {
+    const args = Object.assign({}, xargs);
+    if (!args.method) {
+      if (args.body) {
+        args.method = 'POST';
+      } else {
+        args.method = 'GET';
+      }
+    }
     args.credientials = 'include';
+    if (args.body) {
+      if (!args.headers) {
+        args.headers = {};
+      }
+      if (!args.headers['Content-Type']) {
+        args.headers['Content-Type'] = 'application/json';
+      }
+      if (typeof args.body !== 'string') {
+        args.body = JSON.stringify(args.body);
+      }
+    }
     return fetch(url, args)
       .then(resp => {
         if (resp.status === 401) {
           this.onLoginRequired();
           throw new Error(resp.status.toString());
+        }
+        if (resp.status === 204) {
+          return null;
         }
         if (resp.status !== 200) {
           throw new Error(resp.status.toString());
@@ -18,39 +43,69 @@ export class API {
       });
   }
 
-  loadTracks(page, count, since) {
-    const url = `/api/tracks?page=${page}&count=${count}&since=${since}`;
-    return this.fetch(url, { method: 'GET' });
+  get(url) {
+    const method = 'GET';
+    return this.fetch(url, { method });
+  }
+
+  post(url, body, args) {
+    const method = 'POST';
+    return this.fetch(url, Object.assign({}, args, { method, body }));
+  }
+
+  put(url, body, args) {
+    const method = 'PUT';
+    return this.fetch(url, Object.assign({}, args, { method, body }));
+  }
+
+  patch(url, body, args) {
+    const method = 'PATCH';
+    return this.fetch(url, Object.assign({}, args, { method, body }));
+  }
+
+}
+
+export class API extends APIBase {
+  loadTracks(page, count, since, args) {
+    let url = `/api/tracks?page=${page}&count=${count}&since=${since}`;
+    if (args) {
+      url += Object.entries(args)
+        .map(entry => `&${escape(entry[0])}=${escape(entry[1])}`)
+        .join('');
+    }
+    return this.get(url);
   }
 
   loadTrackCount(since) {
     const url = `/api/tracks/count?since=${since}`;
-    return this.fetch(url, { method: 'GET' });
+    return this.get(url);
   };
 
   loadPlaylists() {
     const url = `/api/playlists`;
-    return this.fetch(url, { method: 'GET' });
+    return this.get(url);
   };
 
   loadPlaylistTrackIds(pl) {
     const url = `/api/playlist/${pl.persistent_id}/track-ids`;
-    return this.fetch(url, { method: 'GET' });
+    return this.get(url);
   }
 
   addToPlaylist(dst, tracks) {
     //const playlist = Object.assign({}, dst);
     const url = `/api/playlist/${dst.persistent_id}`;
-    const args = {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(tracks.map(track => { return { persistent_id: track.persistent_id }; })),
-    };
-    return this.fetch(url, args)
+    const body = tracks.map(track => ({ persistent_id: track.persistent_id }));
+    return this.patch(url, body)
       .then(pl => pl.track_ids);
   };
 
   reorderTracks(playlist, targetIndex, sourceIndices) {
+    const srcIdx = new Set(sourceIndices);
+    const before = playlist.items.slice(0, targetIndex).filter((tr, i) => !srcIdx.has(i));
+    const after = playlist.items.slice(targetIndex).filter((tr, i) => !srcIdx.has(i + targetIndex));
+    const middle = playlist.items.filter((tr, i) => srcIdx.has(i));
+    const newTracks = before.concat(middle).concat(after);
+    /*
     const target = playlist.tracks[targetIndex];
     const sources = sourceIndices.map(i => playlist.tracks[i]);
     const tracks = playlist.tracks.filter((t, i) => !sourceIndices.includes(i));
@@ -58,45 +113,50 @@ export class API {
     const before = newIdx === -1 ? [] : tracks.slice(0, newIdx+1);
     const after = newIdx === -1 ? tracks.slice(0) : tracks.slice(newIdx+1);
     const newTracks = before.concat(sources).concat(after);
-    const url = `/api/playlist/${playlist.persistent_id}?replace=true`;
-    const args = {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(newTracks.map(track => { return { persistent_id: track.persistent_id }; })),
-    };
-    return this.fetch(url, args)
+    */
+    console.debug('move %o to %o (%o => %o)', sourceIndices, targetIndex, playlist.items.map(tr => tr.persistent_id), newTracks.map(tr => tr.persistent_id));
+    const url = `/api/playlist/${playlist.persistent_id}/tracks`;
+    const body = newTracks.map(track => ({ persistent_id: track.persistent_id }));
+    return this.put(url, body)
       .then(pl => pl.track_ids);
   }
 
   deletePlaylistTracks(playlist, selected) {
-    const newTracks = playlist.tracks.filter(track => !selected[track.persistent_id]);
-    const url = `/api/playlist/${playlist.persistent_id}?replace=true`;
-    const args = {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(newTracks.map(track => { return { persistent_id: track.persistent_id }; })),
-    };
-    return this.fetch(url, args)
+    console.debug('delete %o from %o', selected, playlist);
+    const delIdx = new Set(selected.map(s => s.track.origIndex));
+    const newTracks = playlist.items.filter((track, i) => !delIdx.has(i));
+    //const newTracks = playlist.tracks.filter(track => !selected[track.persistent_id]);
+    const url = `/api/playlist/${playlist.persistent_id}/tracks`;
+    const body = newTracks.map(track => ({ persistent_id: track.persistent_id }));
+    console.debug('tracks after deleting: %o', newTracks);
+    return this.put(url, body)
       .then(pl => pl.track_ids);
+  }
+
+  movePlaylist(playlist, folder) {
+    const url = `/api/playlist/${playlist.persistent_id}`;
+    const body = Object.assign({}, playlist, { parent_persistent_id: folder ? folder.persistent_id : null });
+    return this.put(url, body);
   }
 
   loadGenres() {
     const url = '/api/index/genres';
-    return this.fetch(url, { method: 'GET' });
+    return this.get(url);
+  }
+
+  loadPlaylist(id) {
+    const url = `/api/playlist/${id}`;
+    return this.get(url);
   }
 
   loadPlaylistTracks(playlist) {
     const url = `/api/playlist/${playlist.persistent_id}/tracks`;
-    const args = { method: 'GET' };
-    return this.fetch(url, args);
+    return this.get(url);
   }
 
   loadAlbumTracks(album) {
     const url = `/api/index/songs/artist=${escape(album.artist.sort)}&album=${escape(album.sort)}`;
-    const args = { method: 'GET' };
-    return this.fetch(url, args);
+    return this.get(url);
   }
 
   loadArtists(genre) {
@@ -104,8 +164,35 @@ export class API {
     if (genre) {
       url += `?genre=${escape(genre.sort)}`;
     }
-    const args = { method: 'GET' };
-    return this.fetch(url, args);
+    return this.get(url);
+  }
+
+  genreIndex() {
+    const url = '/api/index/genres';
+    return this.get(url);
+  }
+
+  artistIndex(genre) {
+    let url = '/api/index/artists';
+    if (genre) {
+      url += `?genre=${escape(genre.sort)}`;
+    }
+    return this.get(url);
+  }
+
+  albumIndex(artist) {
+    let url = '/api/index/';
+    if (artist) {
+      url += `albums?artist=${escape(artist.sort)}`;
+    } else {
+      url += 'album-artist';
+    }
+    return this.get(url);
+  }
+
+  songIndex(album) {
+    const url = `/api/index/songs?artist=${escape(album.artist.sort)}&album=${escape(album.sort)}`;
+    return this.get(url);
   }
 
   loadAlbums(artist) {
@@ -115,16 +202,14 @@ export class API {
     } else {
       url += `album-artist`;
     }
-    const args = { method: 'GET' };
-    return this.fetch(url, args);
+    return this.get(url);
   }
 
   queueManip(method, tracks) {
     const url = `/api/sonos/queue`;
     const args = { method };
     if (tracks !== undefined && tracks !== null) {
-      args.body = JSON.stringify(tracks.map(track => track.persistent_id));
-      args.headers = { 'Content-Type': 'application/json' };
+      args.body = tracks.map(track => track.persistent_id);
     }
     return this.fetch(url, args);
   }    
@@ -147,8 +232,7 @@ export class API {
 
   stateManip(action) {
     const url = `/api/sonos/${action}`;
-    const args = { method: 'POST' };
-    return this.fetch(url, args);
+    return this.post(url);
   }
 
   playSonos() {
@@ -163,8 +247,7 @@ export class API {
     const url = `/api/sonos/${action}`;
     const args = { method };
     if (val !== undefined && val !== null) {
-      args.body = JSON.stringify(val);
-      args.headers = { 'Content-Type': 'application/json' };
+      args.body = val;
     }   
     return this.fetch(url, args);
   }  

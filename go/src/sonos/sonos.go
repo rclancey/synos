@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	//"log"
+	"log"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -21,13 +21,20 @@ import (
 	"musicdb"
 )
 
+const (
+	PlayModeShuffle = 1
+	PlayModeRepeat = 2
+)
+
 var refTime = time.Date(0, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 type Sonos struct {
+	dev ssdp.Device
 	player *sonos.Sonos
 	reactor upnp.Reactor
 	rootUrl *url.URL
 	db *musicdb.DB
+	closed bool
 	Events chan interface{}
 }
 
@@ -45,6 +52,7 @@ func NewSonos(iface string, rootUrl *url.URL, db *musicdb.DB) (*Sonos, error) {
 	s := &Sonos{
 		rootUrl: rootUrl,
 		db: db,
+		closed: false,
 		Events: make(chan interface{}, 1024),
 	}
 	if dev_list, has := result["schemas-upnp-org-MusicServices"]; has {
@@ -61,6 +69,7 @@ func NewSonos(iface string, rootUrl *url.URL, db *musicdb.DB) (*Sonos, error) {
 						}
 					}
 				}()
+				s.dev = dev
 				s.player = sonos.Connect(dev, s.reactor, sonos.SVC_CONNECTION_MANAGER|sonos.SVC_CONTENT_DIRECTORY|sonos.SVC_RENDERING_CONTROL|sonos.SVC_AV_TRANSPORT)
 				return s, nil
 			}
@@ -89,6 +98,15 @@ func parseTime(timestr string, layouts ...string) (int, error) {
 		}
 	}
 	return -1, errors.Wrap(err, "can't parse time " + timestr)
+}
+
+func (s *Sonos) Reconnect() error {
+	s.player = sonos.Connect(s.dev, s.reactor, sonos.SVC_CONNECTION_MANAGER|sonos.SVC_CONTENT_DIRECTORY|sonos.SVC_RENDERING_CONTROL|sonos.SVC_AV_TRANSPORT)
+	return nil
+}
+
+func (s *Sonos) Closed() bool {
+	return s.closed
 }
 
 func (s *Sonos) GetPlaybackStatus() (*Queue, error) {
@@ -122,6 +140,42 @@ func (s *Sonos) GetPlaybackStatus() (*Queue, error) {
 		q.Speed = s
 	}
 	return q, nil
+}
+
+func (s *Sonos) GetPlayMode() (int, error) {
+	ts, err := s.player.GetTransportSettings(0)
+	if err != nil {
+		return 0, err
+	}
+	switch ts.PlayMode {
+	case upnp.PlayMode_NORMAL:
+		return 0, nil
+	case upnp.PlayMode_REPEAT_ALL:
+		return PlayModeRepeat, nil
+	case upnp.PlayMode_SHUFFLE_NOREPEAT:
+		// docs say this is what this means, but I'm skeptical
+		return PlayModeShuffle | PlayModeRepeat, nil
+	case upnp.PlayMode_SHUFFLE:
+		return PlayModeShuffle, nil
+	}
+	return 0, nil
+}
+
+func (s *Sonos) SetPlayMode(mode int) error {
+	var pm string
+	switch mode {
+	case 0:
+		pm = upnp.PlayMode_NORMAL
+	case PlayModeShuffle:
+		pm = upnp.PlayMode_SHUFFLE
+	case PlayModeRepeat:
+		pm = upnp.PlayMode_REPEAT_ALL
+	case PlayModeShuffle | PlayModeRepeat:
+		pm = upnp.PlayMode_SHUFFLE_NOREPEAT
+	default:
+		return fmt.Errorf("unknown play mode: %d", mode)
+	}
+	return s.player.SetPlayMode(0, pm)
 }
 
 func (s *Sonos) GetQueuePos() (*Queue, error) {
@@ -163,7 +217,30 @@ func (s *Sonos) GetQueue() (*Queue, error) {
 		if tr != nil {
 			tracks[i] = tr
 		} else {
-			tracks[i] = &musicdb.Track{Location: &res}
+			tracks[i] = &musicdb.Track{
+				Location: &res,
+			}
+			name := item.Title()
+			artist := item.Creator()
+			album := item.Album()
+			tn := item.OriginalTrackNumber()
+			cover := item.AlbumArtURI()
+			if name != "" {
+				tracks[i].Name = &name
+			}
+			if artist != "" {
+				tracks[i].Artist = &artist
+			}
+			if album != "" {
+				tracks[i].Album = &album
+			}
+			if tn != "" {
+				// TODO
+				tracks[i].Work = &tn
+			}
+			if cover != "" {
+				tracks[i].ArtworkURL = &cover
+			}
 		}
 	}
 	q, err := s.GetPlaybackStatus()
@@ -195,7 +272,7 @@ func (s *Sonos) trackUri(track *musicdb.Track) string {
 }
 
 func (s *Sonos) playlistUri(pl *musicdb.Playlist) string {
-	path := "/api/playlist/" + pl.PersistentID.String() + ".m3u"
+	path := "/api/playlist/" + pl.PersistentID.String() + "/tracks.m3u"
 	u, _ := url.Parse(path)
 	ref := s.rootUrl.ResolveReference(u)
 	return ref.String()
@@ -593,6 +670,7 @@ func (s *Sonos) prettyEvent(event upnp.Event) (interface{}, error) {
 			}
 			return evt, nil
 		default:
+			log.Printf("sonos event: %T %#v", evt, evt)
 			return evt, nil
 	}
 	return nil, nil
