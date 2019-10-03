@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { TrackBrowser } from '../../Tracks/TrackBrowser.js';
 import * as COLUMNS from '../../../../lib/columns';
-import { jookiTokenImgUrl } from './Token';
+import { jookiTokenImgUrl } from '../../../Jooki/Token';
 import { JookiPlayer } from '../../../Player/JookiPlayer';
-import { JookiControls } from './Controls';
+import { JookiControls } from '../../../Jooki/Controls';
 
 const JookiPlaylistHeader = ({
   playlist,

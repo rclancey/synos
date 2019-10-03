@@ -1,7 +1,61 @@
 import React from 'react';
+import { useTheme } from '../lib/theme';
+import { ShuffleButton, RepeatButton, CloseButton } from './Controls';
 import { CoverArt } from './CoverArt';
 import { TrackInfo, TrackTime } from './TrackInfo';
-import { useTheme } from '../lib/theme';
+
+export const QueueHeader = ({ playMode, tracks, onShuffle, onRepeat, onClose }) => {
+  const colors = useTheme();
+  const toggleStyle = { flex: 1, marginRight: '0.5em' };
+  return (
+    <div className="header">
+      <div className="title">Queue</div>
+      <QueueInfo
+        tracks={tracks}
+        style={{
+          flex: 10,
+          fontSize: '10pt',
+          whiteSpace: 'nowrap',
+          textAlign: 'center',
+        }}
+      />
+      <div className="toggles">
+        { onShuffle ? (
+          <ShuffleButton playMode={playMode} onShuffle={onShuffle} style={toggleStyle} />
+        ) : null }
+        { onRepeat ? (
+          <RepeatButton playMode={playMode} onRepeat={onRepeat} style={toggleStyle} />
+        ) : null }
+        { onClose ? (
+          <CloseButton onClose={onClose} style={toggleStyle} />
+        ) : null }
+      </div>
+      <style jsx>{`
+        .header {
+          display: flex;
+          flex-direction: row;
+          width: 100%;
+          padding: 0.5em;
+          color: ${colors.highlightText};
+        }
+        .header .title {
+          flex: 1;
+          font-size: 10pt;
+          font-weight: bold;
+          white-space: nowrap;
+          margin-top: 0;
+        }
+        .header .toggles {
+          flex: 1;
+          display: flex;
+          flex-direction: row;
+          white-space: nowrap;
+          margin-right: 0.5em;
+        }
+      `}</style>
+    </div>
+  );
+};
 
 export const QueueInfo = ({ tracks, ...props }) => {
   const durT = tracks.reduce((sum, val) => sum + val.total_time, 0) / 60000;
@@ -45,7 +99,7 @@ export const QueueItem = ({
       <CoverArt track={track} size={coverSize} radius={coverRadius} >
         { current ? (<div className="current" />) : null }
       </CoverArt>
-      <TrackInfo track={track} className={`queue ${infoClassName}`} />
+      <TrackInfo track={track} className="queue" />
       <TrackTime ms={track.total_time} className="time" />
       <style jsx>{`
         .item {

@@ -71,7 +71,6 @@ export const DesktopSkin = ({
           height: 100vh;
           display: flex;
           flex-direction: column;
-          font-family: Tahoma;
           background-color: ${colors.background};
           color: ${colors.text};
         }

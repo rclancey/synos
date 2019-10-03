@@ -2,7 +2,7 @@ import React, { useEffect} from 'react';
 import { Folder } from '../../Playlists/Folder';
 import { JookiTrackBrowser } from './TrackBrowser';
 import { JookiDevice } from './Device';
-import { jookiTokenImgUrl } from './Token';
+import { jookiTokenImgUrl } from '../../../Jooki/Token';
 
 export const JookiDevicePlaylist = ({
   device,

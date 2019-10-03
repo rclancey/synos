@@ -148,9 +148,12 @@ const ButtonMenu = ({
           border-style: solid;
           border-width: 1px;
           border-radius: 5px;
+          /*
           padding: 5px;
+          */
           box-sizing: border-box;
           background-color: ${colors.background};
+          overflow: hidden;
         }
       `}</style>
     </div>
@@ -160,18 +163,20 @@ const ButtonMenu = ({
 const AirplayButton = ({ sonos, onEnableSonos, onDisableSonos }) => {
   return (
     <ButtonMenu icon="airplay">
-      <OutputDevice
-        name="Computer"
-        icon="computer"
-        enabled={!sonos}
-        onEnable={() => { console.debug('disable sonos'); onDisableSonos(); }}
-      />
-      <OutputDevice
-        name="Sonos"
-        icon="sonos"
-        enabled={sonos}
-        onEnable={() => { console.debug('enable sonos'); onEnableSonos(); }}
-      />
+      <div style={{ padding: '5px' }}>
+        <OutputDevice
+          name="Computer"
+          icon="computer"
+          enabled={!sonos}
+          onEnable={() => { console.debug('disable sonos'); onDisableSonos(); }}
+        />
+        <OutputDevice
+          name="Sonos"
+          icon="sonos"
+          enabled={sonos}
+          onEnable={() => { console.debug('enable sonos'); onEnableSonos(); }}
+        />
+      </div>
     </ButtonMenu>
   );
 };
@@ -265,11 +270,11 @@ const NowPlaying = ({ track, currentTime, duration, onSeekTo }) => {
 
 const QueueMenu = ({ playMode, queue, queueIndex, onSkipTo, onShuffle, onRepeat }) => {
   return (
-    <ButtonMenu icon="queue">
+    <ButtonMenu icon="queue" maxWidth={375}>
       <Queue
         playMode={playMode}
-        queue={queue}
-        queueIndex={queueIndex}
+        tracks={queue}
+        index={queueIndex}
         onSkipTo={onSkipTo}
         onShuffle={onShuffle}
         onRepeat={onRepeat}
