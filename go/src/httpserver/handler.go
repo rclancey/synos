@@ -36,6 +36,7 @@ type HandlerFunc func(w http.ResponseWriter, req *http.Request) (interface{}, er
 
 type hf HandlerFunc
 func (h hf) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
 	gzrw := NewGZipResponseWriter(w, req)
 	obj, err := h(gzrw, req)
 	if err != nil {
