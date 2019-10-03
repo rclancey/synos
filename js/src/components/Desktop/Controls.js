@@ -1,4 +1,4 @@
-import React, { Fragment, useRef, useState, useEffect, useContext } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import displayTime from '../../lib/displayTime';
 import { PlayPauseSkip, Volume, Progress } from '../Controls';
 import { CoverArt } from '../CoverArt';

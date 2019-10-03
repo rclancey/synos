@@ -21,7 +21,7 @@ export const useMeasure = (w, h) => {
     });
   }
   const setNode = (n) => {
-    if (n && node.current != n) {
+    if (n && node.current !== n) {
       obs.current.disconnect();
       obs.current.observe(n);
       node.current = n;

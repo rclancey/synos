@@ -52,7 +52,7 @@ const saveState = state => {
 
 const reducer = (state, action) => {
   let update = {};
-  let n, idx;
+  let n, idx, order;
   switch (action.type) {
   case 'play':
     return Object.assign({}, state, { playStatus: 'PLAYING' });
@@ -140,7 +140,7 @@ const reducer = (state, action) => {
       queue: state.queue.concat(action.tracks),
     };
     n = state.queue.length;
-    let order = [];
+    order = [];
     idx = action.tracks.map((tr, i) => i + n);
     if (state.playMode & SHUFFLE !== 0) {
       while (idx.length > 0) {
@@ -161,7 +161,7 @@ const reducer = (state, action) => {
     };
     const orderBefore = state.queueOrder.slice(0, state.index + 1);
     const orderAfter = state.queueOrder.slice(state.index + 1);
-    let orderInsert = [];
+    order = [];
     idx = action.tracks.map((tr, i) => i + state.index + 1); 
     if (state.playMode & SHUFFLE !== 0) {
       while (idx.length > 0) {
@@ -227,6 +227,8 @@ const reducer = (state, action) => {
   case 'repeat':
     update = { playMode: state.playMode ^ REPEAT };
     return saveState(Object.assign({}, state, update));
+  default:
+    console.error("unhandled action: %o", action);
   }
   return state;
 };
@@ -341,8 +343,8 @@ export const LocalPlayer = ({
     };
   }, [api]);
 
-  useEffect(() => setControlAPI(controlAPI), [controlAPI]);
-  useEffect(() => setPlaybackInfo(Object.assign({}, state, { index: state.queueOrder[state.index] })), [state]);
+  useEffect(() => setControlAPI(controlAPI), [controlAPI, setControlAPI]);
+  useEffect(() => setPlaybackInfo(Object.assign({}, state, { index: state.queueOrder[state.index] })), [state, setPlaybackInfo]);
 
   useEffect(() => {
     players.current.filter(player => !!player).forEach(player => player.currentTime = 0);

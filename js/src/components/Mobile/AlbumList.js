@@ -1,11 +1,7 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { FixedSizeList as List } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
-//import { List, AutoSizer } from "react-virtualized";
+import React, { useState, useMemo, useEffect } from 'react';
 import { Album } from './SongList';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
-import { ScreenHeader } from './ScreenHeader';
 import { AlbumIndex } from './Index';
 import { CoverArt } from '../CoverArt';
 import { CoverList } from './CoverList';
@@ -38,10 +34,8 @@ export const AlbumList = ({
   onPlaylistMenu,
   onAdd,
 }) => {
-  const [scrollTop, setScrollTop] = useState(0);
   const [albums, setAlbums] = useState([]);
   const [album, setAlbum] = useState(null);
-  const ref = useRef(null);
   const api = useAPI(API);
   useEffect(() => {
     api.albumIndex(artist)
@@ -57,10 +51,7 @@ export const AlbumList = ({
         }
         setAlbums(albums);
       });
-  }, [artist]);
-  const onOpen = useMemo(() => {
-    return (album) => setAlbum(album);
-  }, [setAlbum]);
+  }, [api, artist]);
   const onCloseMe = useMemo(() => {
     return () => {
       if (album === null) {
@@ -70,9 +61,6 @@ export const AlbumList = ({
       }
     };
   }, [album, onClose]);
-  const onScroll = useMemo(() => {
-    return ({ scrollOffset }) => setScrollTop(scrollOffset);
-  });
   const itemRenderer = useMemo(() => {
     return ({ index, onOpen }) => {
       const album = albums[index];

@@ -30,12 +30,12 @@ export const ColumnBrowser = ({
     return () => {
       document.removeEventListener('keydown', handler, true);
     };
-  }, []);
+  }, [onKeyPress]);
   useEffect(() => {
     if (lastIndex !== lastScrollIndex.current && lastIndex >= 0) {
       setScrollToIndex(lastIndex);
       if (node.current) {
-        console.debug('focusing %o node', title);
+        //console.debug('focusing %o node', title);
         node.current.focus();
       }
     } else {
@@ -43,7 +43,7 @@ export const ColumnBrowser = ({
         setScrollToIndex(undefined);
       }
     }
-  }, [lastIndex]);
+  }, [lastIndex, scrollToIndex, setScrollToIndex]);
   return (
     <div
       ref={n => node.current = n || node.current}

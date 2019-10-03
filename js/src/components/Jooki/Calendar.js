@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { JookiToken } from './Token';
 import { PlaylistMenu } from './PlaylistMenu';
 import { useTheme } from '../../lib/theme';
 
@@ -264,17 +263,8 @@ export const Calendar = ({ wide = true }) => {
   }, [dow]);
   const sched = useMemo(() => {
     return days.map(dow => !!cal[dow % 7] ? Object.assign({}, cal[dow % 7], { dow: dow % 7 }) : null);
-  }, [days, cal, dow]);
+  }, [days, cal]);
   console.debug('calendar: %o', { cal, dow, days, sched });
-  const tokens = useMemo(() => {
-    return playlists.filter(pl => !!pl.token)
-      .map(pl => ({
-        id: pl.persistent_id,
-        name: pl.name,
-        token: pl.token,
-      }))
-      .sort((a, b) => a.token < b.token ? -1 : a.token > b.token ? 1 : 0)
-  }, [playlists]);
   return (
     <div className="calendar">
       { sched.map(day => !!day ? (

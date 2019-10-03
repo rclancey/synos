@@ -85,6 +85,8 @@ const reducer = (state, action) => {
       Math.max(0, state.currentTimeSet + Date.now() - state.currentTimeSetAt)
     );
     return Object.assign({}, state, { currentTime });
+  default:
+    console.error("unhandled action %o", action);
   }
   return state;
 };
@@ -114,7 +116,7 @@ export const SonosPlayer = ({
       clearInterval(timeKeeper.current);
       WS.off('message', wsHandler);
     };
-  }, []);
+  }, [api]);
   const controlAPI = useMemo(() => {
     return {
       onPlay: () => api.play(),
@@ -136,8 +138,8 @@ export const SonosPlayer = ({
     };
   }, [api]);
 
-  useEffect(() => setControlAPI(controlAPI), [controlAPI]);
-  useEffect(() => setPlaybackInfo(state), [state]);
+  useEffect(() => setControlAPI(controlAPI), [controlAPI, setControlAPI]);
+  useEffect(() => setPlaybackInfo(state), [state, setPlaybackInfo]);
 
   return (
     <div id="sonosPlayer" />

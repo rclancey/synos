@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React from 'react';
 //import { useDrag, useDrop } from 'react-dnd';
 import { DotsMenu } from './TrackMenu';
 import { CoverArt } from '../CoverArt';

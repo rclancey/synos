@@ -18,7 +18,7 @@ export const TrackRow = ({
     'aria-label': 'row',
     'aria-rowindex': index,
   };
-  const [dragCollect, connectDragSource] = useDrag({
+  const [, connectDragSource] = useDrag({
     item: {
       type: 'TrackList',
       device,

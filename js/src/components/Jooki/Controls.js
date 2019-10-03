@@ -145,7 +145,6 @@ export const JookiControls = ({
   const {
     onPlay,
     onPause,
-    onSkipTo,
     onSkipBy,
     onSeekTo,
     onSeekBy,

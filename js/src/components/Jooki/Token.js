@@ -22,7 +22,6 @@ export const JookiToken = ({ starId, size, className }) => {
 };
 
 export const TokenList = () => {
-  const [cal, setCal] = useState([null, null, null, null, null, null, null]);
   const [playlists, setPlaylists] = useState([]);
   useEffect(() => {
     fetch('/api/jooki/playlists', { method: 'GET' })

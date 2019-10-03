@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useReducer, useEffect } from 'react';
-import { useDarkMode, useMobile, usePWA } from '../lib/useMedia';
+import { useDarkMode, useMobile } from '../lib/useMedia';
 import { ThemeContext } from '../lib/theme';
-import { loadTheme } from '../lib/loadTheme';
 import { CheckLogin } from './Login';
 import { Player } from './Player/Player';
 import { MobileSkin } from './Mobile/Skin';
@@ -27,6 +26,8 @@ const reducer = (state, action) => {
   switch (action.type) {
   case 'set':
     return saveState(action.value || 'local');
+  default:
+    console.error("unhandled action: %o", action);
   }
   return state;
 };
@@ -35,14 +36,12 @@ export const Main = () => {
   const [player, dispatch] = useReducer(reducer, null, initState);
   const [playbackInfo, setPlaybackInfo] = useState({});
   const [controlAPI, setControlAPI] = useState({});
-  const standalone = usePWA();
   const mobile = useMobile();
   const dark = useDarkMode();
   const [installPrompt, setInstallPrompt] = useState(null);
-  const [loading, setLoading] = useState(true);
   const setPlayer = useMemo(() => {
     return (value) => dispatch({ type: 'set', value });
-  }, dispatch);
+  }, [dispatch]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -87,7 +86,7 @@ export const Main = () => {
         <InstallAppButton onInstall={onInstall} />
       ) : null }
       <ThemeContext.Provider value={theme}>
-        <CheckLogin mobile={mobile}>
+        <CheckLogin>
           <Player
             player={player}
             setPlayer={setPlayer}

@@ -9,18 +9,19 @@ export const JookiDevicePlaylist = ({
   selected,
   onSelect,
 }) => {
+  const dpls = device ? device.playlists : null;
   useEffect(() => {
-    if (!device || !device.playlists) {
+    if (!dpls) {
       return;
     }
     if (!selected) {
       return;
     }
-    const pl = device.playlists.find(x => x.persistent_id === selected);
+    const pl = dpls.find(x => x.persistent_id === selected);
     if (pl) {
       onSelect(pl, <JookiTrackBrowser device={device} playlist={pl} />);
     }
-  }, [device ? device.playlists : null]);
+  }, [device, dpls, selected, onSelect]);
   if (!device) {
     return null;
   }

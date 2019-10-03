@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useContext } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   TrackSelectionList,
   GENRE_FILTER,
@@ -9,7 +9,6 @@ import { TrackList } from './TrackList';
 import { ColumnBrowser } from './ColumnBrowser';
 import * as COLUMNS from '../../../lib/columns';
 import { useMeasure } from '../../../lib/useMeasure';
-import { PlayerContext } from '../../../lib/playerContext';
 import { useTheme } from '../../../lib/theme';
 import { useAPI } from '../../../lib/useAPI';
 import { API } from '../../../lib/api';
@@ -47,9 +46,9 @@ export const TrackBrowser = ({
   const prevTracks = useRef(null);
   const [displayTracks, setDisplayTracks] = useState(tsl.tracks);
   const [selected, setSelected] = useState([]);
-  const [genres, setGenres] = useState([]);
-  const [artists, setArtists] = useState([]);
-  const [albums, setAlbums] = useState([]);
+  //const [genres, setGenres] = useState([]);
+  //const [artists, setArtists] = useState([]);
+  //const [albums, setAlbums] = useState([]);
   const [cbWidth, cbHeight, setCBNode] = useMeasure(100, 1);
 
   const onPlay = ({ list, index }) => {
@@ -86,9 +85,9 @@ export const TrackBrowser = ({
   const update = () => {
     setDisplayTracks(tsl.tracks);
     setSelected(tsl.selected);
-    setGenres(tsl.genres);
-    setArtists(tsl.artists);
-    setAlbums(tsl.albums);
+    //setGenres(tsl.genres);
+    //setArtists(tsl.artists);
+    //setAlbums(tsl.albums);
   };
   useEffect(() => {
     console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
@@ -114,7 +113,7 @@ export const TrackBrowser = ({
         return api.deletePlaylistTracks({ ...playlist, tracks }, sel);
       };
     }
-  }, [playlist]);
+  }, [api, tracks, playlist]);
 
   const onSort = (key) => {
     tsl.sort(key);

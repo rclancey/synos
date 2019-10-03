@@ -56,7 +56,7 @@ export class JookiAPI extends APIBase {
     const payload = {
       playlist_id: pl.persistent_id,
     };
-    return this.post(url, { playlist_id: pl.persistent_id });
+    return this.post(url, payload);
   }
 
   addToPlaylist(dst, tracks) {

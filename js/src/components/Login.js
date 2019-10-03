@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { checkLoginCookie, doLogin, LoginContext } from '../lib/login';
 import { useTheme } from '../lib/theme';
 import { Center } from './Center';
 
-export const CheckLogin = ({ mobile, children }) => {
+export const CheckLogin = ({ children }) => {
   const [login, setLogin] = useState({ loggedIn: null, username: null });
   useEffect(() => {
     setLogin(checkLoginCookie());
@@ -28,16 +28,15 @@ export const CheckLogin = ({ mobile, children }) => {
     );
   }
   return (
-    <Login mobile={mobile} username={login.username} onLogin={onLogin} />
+    <Login username={login.username} onLogin={onLogin} />
   );
 };
 
-export const Login = ({ mobile, username, onLogin }) => {
+export const Login = ({ username, onLogin }) => {
   const colors = useTheme();
   const [tmpUsername, setUsername] = useState(username);
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const formFactor = mobile ? 'mobile' : 'desktop';
   return (
     <div id="login">
       <Center orientation="horizontal" style={{ height: '100vh' }}>

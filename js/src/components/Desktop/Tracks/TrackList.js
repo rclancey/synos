@@ -1,10 +1,8 @@
-import React, { useState, useRef, useEffect, useContext, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Column, Table } from "react-virtualized";
 import Draggable from "react-draggable";
-import { DragSource, DropTarget } from 'react-dnd';
 import { useColumns } from '../../../lib/colsize';
 import { useMeasure } from '../../../lib/useMeasure';
-import { PlayerContext } from '../../../lib/playerContext';
 import { TrackRow } from './TrackRow';
 import { useTheme } from '../../../lib/theme';
 
@@ -18,7 +16,6 @@ const TrackListHeader = ({
   onSort,
   onResize,
 }) => {
-  const colors = useTheme();
   return (
     <>
       <div
@@ -60,7 +57,6 @@ export const TrackList = ({
   const [cols, onResize, setColNode] = useColumns(columns);
   const [width, height, setTLNode] = useMeasure(100, 100);
   const focusRef = useRef(focused);
-  const { onReplaceQueue, onSetPlaylist } = useContext(PlayerContext);
   useEffect(() => {
     focusRef.current = focused;
   }, [focused]);

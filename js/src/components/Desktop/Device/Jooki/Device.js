@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WS } from '../../../../lib/ws';
 import { JookiPlayer } from '../../../Player/JookiPlayer';
 import { JookiControls } from '../../../Jooki/Controls';
 import { Calendar } from '../../../Jooki/Calendar';
-import { JookiToken, TokenList } from '../../../Jooki/Token';
+import { TokenList } from '../../../Jooki/Token';
 import { DeviceInfo } from '../../../Jooki/DeviceInfo';
 
 const merge = (orig, delta) => {
@@ -30,10 +30,10 @@ const merge = (orig, delta) => {
 };
 
 export const JookiDevice = ({ device }) => {
-  const [cal, setCal] = useState([]);
   const [jooki, setJooki] = useState(device.state);
   const [playbackInfo, setPlaybackInfo] = useState({});
   const [controlAPI, setControlAPI] = useState({});
+  const api = device.api;
   useEffect(() => {
     const msgHandler = msg => {
       if (msg.type === 'jooki') {
@@ -48,31 +48,11 @@ export const JookiDevice = ({ device }) => {
       }
     };
     WS.on('message', msgHandler);
-    device.api.loadState().then(setJooki);
+    api.loadState().then(setJooki);
     return () => {
       WS.off('message', msgHandler);
     };
-  }, []);
-  const playlists = useMemo(() => {
-    if (!jooki || !jooki.db || !jooki.db.playlists) {
-      return [];
-    }
-    const pls = Object.entries(jooki.db.playlists)
-      .filter(entry => entry[0] !== 'TRASH')
-      .map(entry => ({
-        persistent_id: entry[0],
-        name: entry[1].title,
-        token: entry[1].star,
-        tracks: entry[1].tracks,
-      }));
-    pls.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-    return pls;
-  }, [jooki.db]);
-  useEffect(() => {
-    fetch('/api/cron', { method: 'GET' })
-      .then(resp => resp.json())
-      .then(setCal);
-  }, []);
+  }, [api]);
   return (
     <div className="jooki device">
       <JookiPlayer
@@ -104,6 +84,7 @@ export const JookiDevice = ({ device }) => {
   );
 };
 
+/*
 const NowPlaying = ({ playlistId, source, artist, track, nfc }) => (
   <div className="current">
     { nfc && nfc.starId ? (
@@ -125,3 +106,4 @@ const NowPlaying = ({ playlistId, source, artist, track, nfc }) => (
     `}</style>
   </div>
 );
+*/

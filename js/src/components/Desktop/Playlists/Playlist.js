@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { Label } from './Label';
 import { API } from '../../../lib/api';
@@ -16,7 +16,7 @@ export const Playlist = ({
   onAddToPlaylist,
   controlAPI,
 }) => {
-  const [dragCollect, connectDragSource] = useDrag({
+  const [, connectDragSource] = useDrag({
     item: {
       type: 'Playlist',
       device,

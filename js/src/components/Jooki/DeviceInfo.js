@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useTheme } from '../../lib/theme';
+import React from 'react';
 
 export const DeviceInfo = ({ state }) => (
   <div className="deviceInfo">
@@ -45,7 +44,6 @@ const Usage = ({ available, total, used, usedPercent }) => (
 );
 
 const Battery = ({ charging, connected, level }) => {
-  const colors = useTheme();
   let icon;
   if (level.p < 125) {
     icon = 'empty';

@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect } from 'react';
 import sortBy from 'lodash.sortBy';
 
 const setsEqual = (a, b) => {
@@ -7,94 +6,6 @@ const setsEqual = (a, b) => {
   }
   return Array.from(a).every(k => b.has(k));
 };
-
-/*
-export const useTracks = (tracks, { onPlay, onSkip, onDelete }) => {
-  const tsl = useRef(TrackSelectionList(tracks, { onPlay, onSkip, onDelete }));
-  const [displayTracks, setDisplayTracks] = useState(tsl.current.tracks);
-  const [selected, setSelected] = useState(tsl.current.selected);
-  const [genres, setGenres] = useState(tsl.current.genres);
-  const [artists, setArtists] = useState(tsl.current.artists);
-  const [albums, setAlbums] = useState(tsl.current.albums);
-  const update = () => {
-    setDisplayTracks(tsl.current.tracks);
-    setSelected(tsl.current.selected);
-    setGenres(tsl.current.genres);
-    setArtists(tsl.current.artists);
-    setAlbums(tsl.current.albums);
-  };
-  useEffect(() => {
-    tsl.current.setTracks(tracks);
-    update();
-  }, [tracks]);
-  useEffect(() => {
-    tsl.current.onPlay = onPlay;
-    tsl.current.onSkip = onSkip;
-    tsl.current.onDelete = onDelete;
-  }, [onPlay, onSkip, onDelete]);
-
-  const onSearch = (query) => {
-    tsl.current.search(query);
-    update();
-  };
-  const columns = [
-    ['Genres', 'genres', GENRE_FILTER],
-    ['Artists', 'artists', ARTIST_FILTER],
-    ['Albums', 'albums', ALBUM_FILTER],
-  ].map(([name, key, f]) => ({
-    name: name,
-    rows: tsl.current[key],
-    onClick: (event, index) => {
-      const mods = { shift: event.shiftKey, meta: event.metaKey };
-      if (tsl.current.onFilterClick(f, index, mods)) {
-        event.stopPropagation();
-        event.preventDefault();
-        update();
-      }
-    },
-    onKeyPress: (event) => {
-      const mods = { shift: event.shiftKey, meta: event.metaKey };
-      if (tsl.current.onFilterKeyPress(f, event.code, mods)) {
-        event.stopPropagation();
-        event.preventDefault();
-        update();
-      }
-    },
-  }));
-  const onSort = (key) => {
-    tsl.current.sort(key);
-    setDisplayTracks(tsl.current.tracks);
-  };
-  const onClick = (event, index) => {
-    const mods = { shift: event.shiftKey, meta: event.metaKey };
-    if (tsl.current.onTrackClick(index, mods)) {
-      event.stopPropagation();
-      event.preventDefault();
-      setDisplayTracks(tsl.current.tracks);
-      setSelected(tsl.current.selected);
-    }
-  };
-  const onKeyPress = (event) => {
-    const mods = { shift: event.shiftKey, meta: event.metaKey };
-    if (tsl.current.onTrackKeyPress(event.code, mods)) {
-      event.stopPropagation();
-      event.preventDefault();
-      setDisplayTracks(tsl.current.tracks);
-      setSelected(tsl.current.selected);
-    }
-  };
-
-  return {
-    displayTracks,
-    columns,
-    selected,
-    onSearch,
-    onSort,
-    onClick,
-    onKeyPress,
-  };
-};
-*/
 
 const stringSorter = v => {
   if (v === null || v === undefined) {
@@ -191,38 +102,10 @@ export class TrackSelectionList {
   }
 
   set allTracks(tracks) {
-    /*
     if (this._allTracks === tracks) {
       return;
     }
-    */
     this._allTracks = tracks;
-    /*
-    this._allTracks = tracks.map((track, index) => {
-      const update = {};
-      let needsUpdate = false;
-      if (track.index !== index) {
-        needsUpdate = true;
-        update.index = index;
-      }
-      if (!Object.hasOwnProperty.apply(track, ['origIndex'])) {
-        needsUpdate = true;
-        update.origIndex = index;
-      }
-      if (!Object.hasOwnProperty.apply(track, ['filtered'])) {
-        needsUpdate = true;
-        update.filtered = 0;
-      }
-      if (!Object.hasOwnProperty.apply(track, ['selected'])) {
-        needsUpdate = true;
-        update.selected = false;
-      }
-      if (needsUpdate) {
-        return Object.assign({}, track, update);
-      }
-      return track;
-    });
-    */
     this.tracks = this._allTracks.filter(tr => tr.filtered === 0);
     this.displayTracks = this.tracks.map(tr => tr.track);
     console.error('updated tracks to %o, %o items', this.tracks.length, this.displayTracks.length);
@@ -293,37 +176,17 @@ export class TrackSelectionList {
       return this.allTracks;
     }
     this.appliedFilters[filter] = filts;
-    const mask = 0xffff ^ filter;
     console.error('applyFilter(%o, %o)', filter, filts);
     if (filts.size === 0) {
       return this.allTracks.map(track => this.filterTrack(track, filter, false));
     }
-    /*
-    const filterStart = Date.now();
-    const fs = this.allTracks.map(track => {
-      const f = filterKeys[filter].some(key => track[key] && filts.has(track[key].toLowerCase()));
-      this._filtered[track.origIndex] = (this._filtered[track.origIndex] & mask) | (f ? 0 : filter);
-    });
-    const filterTime = Date.now() - filterStart;
-    const updateStart = Date.now();
-    const res = this.allTracks.map((track, ix) => {
-      //return this.filterTrack(track, filter, !fs[ix]);
-      return Object.assign({}, track, { filtered: fs[ix] });
-    });
-    const updateTime = Date.now() - updateStart;
-    */
     if (filter === SEARCH_FILTER) {
       return this.applySearch(Array.from(filts)[0]);
     }
-    const res = this.allTracks.map(track => {
+    return this.allTracks.map(track => {
       const f = filterKeys[filter].some(key => track.track[key] && filts.has(track.track[key].toLowerCase()));
       return this.filterTrack(track, filter, !f);
     });
-    /*
-    console.debug('filtering took %o ms, updating took %o ms', filterTime, updateTime);
-    return res;
-    */
-    return res;
   }
 
   sort(key) {

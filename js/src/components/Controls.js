@@ -148,7 +148,7 @@ export const Seeker = ({
         }
       }, 40);
     };
-  }, [seeking, interval, onSeek, onSkip]);
+  }, [seeking, interval, onSeek, onSkip, fwd]);
   return (
     <div 
       className="seeker"
@@ -285,7 +285,6 @@ export const Volume = ({ volume, onChange, ...props }) => {
 };
 
 export const Progress = ({ currentTime, duration, onSeekTo, height = 4, ...props }) => {
-  const colors = useTheme();
   const seekTo = evt => {
     let l = 0;
     let node = evt.target;

@@ -1,9 +1,6 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { Album } from './SongList';
-import { API } from '../../lib/api';
-import { useAPI } from '../../lib/useAPI';
 import { ScreenHeader } from './ScreenHeader';
 
 export const CoverList = ({
@@ -36,7 +33,7 @@ export const CoverList = ({
   }, [selected, onSelect, onClose]);
   const onScroll = useMemo(() => {
     return ({ scrollOffset }) => setScrollTop(scrollOffset);
-  });
+  }, [setScrollTop]);
   const subRenderer = useMemo(() => {
     return ({ key, index, style }) => {
       return (

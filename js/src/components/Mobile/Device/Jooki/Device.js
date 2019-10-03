@@ -1,22 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useTheme } from '../../../../lib/theme';
 import { ScreenHeader } from '../../ScreenHeader';
 import { JookiPlayer } from '../../../Player/JookiPlayer';
 import { JookiControls } from '../../../Jooki/Controls';
 import { Calendar } from '../../../Jooki/Calendar';
-import { JookiToken, TokenList } from '../../../Jooki/Token';
+import { TokenList } from '../../../Jooki/Token';
 import { DeviceInfo } from '../../../Jooki/DeviceInfo';
 
 export const JookiDevice = ({ device, onClose }) => {
   const colors = useTheme();
-  const [cal, setCal] = useState([]);
   const [playbackInfo, setPlaybackInfo] = useState({});
   const [controlAPI, setControlAPI] = useState({});
-  useEffect(() => {
-    fetch('/api/cron', { method: 'GET' })
-      .then(resp => resp.json())
-      .then(setCal);
-  }, []);
   return (
     <div className="jooki device">
       <JookiPlayer

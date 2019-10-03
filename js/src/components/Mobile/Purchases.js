@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAPI } from '../../lib/useAPI';
 import { API } from '../../lib/api';
 import { SongList, PlaylistTitle } from './SongList';
@@ -21,7 +21,7 @@ export const Purchases = ({
         });
         setPurchases(tracks);
       });
-  }, []);
+  }, [api, setPurchases]);
 
   return (
     <SongList

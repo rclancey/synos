@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useTheme } from '../../lib/theme';
 import { HomeItem } from './HomeItem';
 import { PlaylistList } from './PlaylistList';

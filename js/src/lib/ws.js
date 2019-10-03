@@ -1,5 +1,3 @@
-const ws = [null];
-
 class WebSocketSingleton {
   constructor() {
     const loc = document.location;

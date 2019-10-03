@@ -35,7 +35,7 @@ export const PlaylistList = ({
         return false;
       }))
       .then(setPlaylists);
-  }, []);
+  }, [api]);
   const onNewPlaylist = useMemo(() => console.debug, []);
   const onOpen = useMemo(() => {
     return (pl) => {
@@ -52,7 +52,7 @@ export const PlaylistList = ({
         setPath(orig => orig.slice(0, orig.length - 1));
       }
     };
-  }, [path, setPath, setScrollTop]);
+  }, [path, setPath, setScrollTop, onClose]);
   const onScroll = useMemo(() => {
     return ({ scrollOffset }) => {
       setScrollTop(orig => orig.slice(0, orig.length - 1).concat([scrollOffset]));
@@ -93,7 +93,7 @@ export const PlaylistList = ({
         </div>
       );
     };
-  }, [folder, path, onOpen]);
+  }, [folder, path, onOpen, onNewPlaylist]);
   let title = 'Playlists';
   let prevTitle = prev;
   if (path.length > 0) {

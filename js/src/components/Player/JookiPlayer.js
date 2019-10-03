@@ -138,6 +138,8 @@ const reducer = (state, action) => {
       Math.max(0, state.currentTimeSet + Date.now() - state.currentTimeSetAt)
     );
     return Object.assign({}, state, { currentTime });
+  default:
+    console.error("unhandled action: %o", action);
   }
   return state;
 };
@@ -166,7 +168,7 @@ export const JookiPlayer = ({
       clearInterval(timeKeeper.current);
       WS.off('message', wsHandler);
     };
-  }, []);
+  }, [api]);
 
   const controlAPI = useMemo(() => {
     return {
@@ -189,8 +191,8 @@ export const JookiPlayer = ({
     };
   }, [api]);
 
-  useEffect(() => setControlAPI(controlAPI), [controlAPI]);
-  useEffect(() => setPlaybackInfo(state), [state]);
+  useEffect(() => setControlAPI(controlAPI), [controlAPI, setControlAPI]);
+  useEffect(() => setPlaybackInfo(state), [state, setPlaybackInfo]);
 
   return (
     <div id="jookiPlayer" />

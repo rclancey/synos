@@ -42,7 +42,7 @@ const extendIndex = (index) => {
       scrollTop: -1,
     });
   }
-  if (index[index.length - 1].name != '#') {
+  if (index[index.length - 1].name !== '#') {
     index.push({
       name: '#',
       scrollTop: -1,
@@ -80,7 +80,7 @@ export const AlbumIndex = ({ albums, artist, height, list }) => {
       }
     });
     return extendIndex(index);
-  }, [albums, artist]);
+  }, [albums, artist, height]);
   return (<Index index={index} list={list} />);
 };
 
@@ -102,7 +102,7 @@ export const CommonIndex = ({ items, height, list }) => {
       }
     });
     return extendIndex(index);
-  }, [items]);
+  }, [items, height]);
   return (<Index index={index} list={list} />);
 };
 

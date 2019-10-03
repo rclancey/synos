@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AlbumList } from './AlbumList';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
@@ -15,7 +15,6 @@ export const ArtistList = ({
   onTrackMenu,
   onAdd,
 }) => {
-  const [scrollTop, setScrollTop] = useState(0);
   const [artists, setArtists] = useState([]);
   const [artist, setArtist] = useState(null);
   const api = useAPI(API);
@@ -27,7 +26,7 @@ export const ArtistList = ({
         });
         setArtists(artists);
       });
-  }, [genre]);
+  }, [api, setArtists, genre]);
 
   const rowRenderer = useMemo(() => {
     return ({ key, index, style, onOpen }) => {
