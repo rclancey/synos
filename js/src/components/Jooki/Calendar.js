@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PlaylistMenu } from './PlaylistMenu';
 import { useTheme } from '../../lib/theme';
 
@@ -158,13 +158,24 @@ const CalendarDay = ({
   sleepOverride,
   wakePlaylist,
   playlists,
-  setWakeTime,
-  setWakeOverride,
-  setSleepTime,
-  setSleepOverride,
-  setWakePlaylist,
+  updateCal,
 }) => {
   const colors = useTheme();
+  const setWakeTime = useMemo(() => {
+    return t => updateCal(dow, 'wake', { time: t });
+  }, [dow, updateCal]);
+  const setWakeOverride = useMemo(() => {
+    return t => updateCal(dow, 'wake', { override: 1 });
+  }, [dow, updateCal]);
+  const setSleepTime = useMemo(() => {
+    return t => updateCal(dow, 'sleep', { time: t });
+  }, [dow, updateCal]);
+  const setSleepOverride = useMemo(() => {
+    return t => updateCal(dow, 'sleep', { override: t });
+  }, [dow, updateCal]);
+  const setWakePlaylist = useMemo(() => {
+    return id => updateCal(dow, 'wake', { playlist_id: id });
+  }, [dow, updateCal]);
   return (
     <div className="day">
       <div className="dayname">{weekdays[dow]}</div>
@@ -219,6 +230,7 @@ const CalendarDay = ({
 export const Calendar = ({ wide = true }) => {
   const [cal, setCal] = useState([null, null, null, null, null, null, null]);
   const [playlists, setPlaylists] = useState([]);
+  const days = useRef([0, 1, 2, 3, 4, 5, 6]);
   useEffect(() => {
     fetch('/api/cron', { method: 'GET' })
       .then(resp => resp.json())
@@ -229,42 +241,32 @@ export const Calendar = ({ wide = true }) => {
         pls.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
         setPlaylists(pls);
       });
+    const dow = new Date().getDay();
+    days.current = [dow, dow + 1, dow + 2, dow + 3, dow + 4, dow + 5, dow + 6];
   }, []);
-  const updateCal = (dow, k, update) => {
-    const orig = cal[dow % 7];
-    const v = {};
-    v[k] = Object.assign({}, orig[k], update);
-    const s = Object.assign({}, orig, v);
-    const c = cal.slice(0);
-    c[dow % 7] = s;
-    setCal(c);
-    fetch('/api/cron', {
-      method: 'POST',
-      body: JSON.stringify(c),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then(resp => resp.json())
-      .then(setCal);
-  };
-  useEffect(() => {
-    console.debug('calendar playlists changed');
-  }, [playlists]);
-  useEffect(() => {
-    console.debug('calendar data changed');
-  }, [cal]);
-  useEffect(() => {
-    console.debug('calendar wide changed');
-  }, [wide]);
-  const dow = new Date().getDay();
-  const days = useMemo(() => {
-    return [dow, dow + 1, dow + 2, dow + 3, dow + 4, dow + 5, dow + 6];
-  }, [dow]);
+  const updateCal = useMemo(() => {
+    return (dow, k, update) => {
+      const orig = cal[dow % 7];
+      const v = {};
+      v[k] = Object.assign({}, orig[k], update);
+      const s = Object.assign({}, orig, v);
+      const c = cal.slice(0);
+      c[dow % 7] = s;
+      setCal(c);
+      fetch('/api/cron', {
+        method: 'POST',
+        body: JSON.stringify(c),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+        .then(resp => resp.json())
+        .then(setCal);
+    };
+  }, [cal, setCal]);
   const sched = useMemo(() => {
-    return days.map(dow => !!cal[dow % 7] ? Object.assign({}, cal[dow % 7], { dow: dow % 7 }) : null);
-  }, [days, cal]);
-  console.debug('calendar: %o', { cal, dow, days, sched });
+    return days.current.map(dow => !!cal[dow % 7] ? Object.assign({}, cal[dow % 7], { dow: dow % 7 }) : null);
+  }, [cal]);
   return (
     <div className="calendar">
       { sched.map(day => !!day ? (
@@ -278,11 +280,7 @@ export const Calendar = ({ wide = true }) => {
           wakePlaylist={day.wake.playlist}
           sleepTime={day.sleep.time}
           sleepOverride={day.sleep.override}
-          setWakeTime={t => updateCal(day.dow, 'wake', { time: t })}
-          setWakeOverride={t => updateCal(day.dow, 'wake', { override: t })}
-          setSleepTime={t => updateCal(day.dow, 'sleep', { time: t })}
-          setSleepOverride={t => updateCal(day.dow, 'sleep', { override: t })}
-          setWakePlaylist={id => updateCal(day.dow, 'wake', { playlist_id: id })}
+          updateCal={updateCal}
         />
       ) : null) }
       <style jsx>{`

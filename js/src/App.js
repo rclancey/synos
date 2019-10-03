@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { DndProvider, DragDropContextProvider } from 'react-dnd';
+import { /*DndProvider,*/ DragDropContextProvider } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
 import TouchBackend from 'react-dnd-touch-backend';
 //import MultiBackend from 'react-dnd-multi-backend';
@@ -12,9 +12,11 @@ import { isMobile, getUserAgent } from './lib/useMedia';
 //const backend = MultiBackend(HTML5toTouch);
 
 class App extends Component {
+  /*
   constructor(props) {
     super(props);
   }
+  */
 
   render() {
     const backend = isMobile(getUserAgent()) ? TouchBackend : HTML5Backend;

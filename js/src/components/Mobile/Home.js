@@ -7,8 +7,8 @@ import { PlaylistList } from './PlaylistList';
 import { ArtistList } from './ArtistList';
 import { AlbumList } from './AlbumList';
 import { GenreList } from './GenreList';
-//import { PodcastList } from './PodcastList';
-//import { AudiobookList } from './AudiobookList';
+import { PodcastList } from './PodcastList';
+import { AudiobookList } from './AudiobookList';
 import { Purchases } from './Purchases';
 import { RecentAdditions } from './RecentAdditions';
 import { SonosDevicePlaylist } from './Device/Sonos/DevicePlaylist';
@@ -53,16 +53,12 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
         <HomeItem name="Genres" icon="genres" onOpen={onOpen}>
           <GenreList prev="Library" {...props} />
         </HomeItem>
-        {/*
         <HomeItem name="Podcasts" icon="podcasts" onOpen={onOpen}>
           <PodcastList prev="Library" {...props} />
         </HomeItem>
-        */}
-        {/*
         <HomeItem name="Audiobooks" icon="audiobooks" onOpen={onOpen}>
           <AudiobookList prev="Library" {...props} />
         </HomeItem>
-        */}
         <HomeItem name="Recently Added" icon="recent" onOpen={onOpen}>
           <RecentAdditions prev="Library" {...props} />
         </HomeItem>
