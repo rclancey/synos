@@ -25,7 +25,9 @@ export const DevicePlaylists = ({
           const out = Object.assign({}, dev);
           msg.deltas.forEach(delta => {
             Object.entries(delta).forEach(entry => {
-              out.state = Object.assign({}, out.state, { [entry[0]]: entry[1] });
+              if (entry[1] !== null) {
+                out.state = Object.assign({}, out.state, { [entry[0]]: entry[1] });
+              }
             });
           });
           console.debug('set jooki device to %o', out);

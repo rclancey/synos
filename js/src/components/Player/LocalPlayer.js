@@ -28,6 +28,7 @@ const initState = () => {
   return Object.assign({
     player: 'local',
     queue: [],
+    queueOrder: [],
     index: -1,
     playStatus: 'PAUSED',
     currentTime: 0,
@@ -40,8 +41,10 @@ const initState = () => {
 const saveState = state => {
   const saved = JSON.stringify({
     queue: state.queue,
+    queueOrder: state.queueOrder,
     index: state.index,
     volume: state.volume,
+    playMode: state.playMode,
   });
   window.localStorage.setItem('localPlayerState', saved);
   return state;
@@ -49,6 +52,7 @@ const saveState = state => {
 
 const reducer = (state, action) => {
   let update = {};
+  let n, idx;
   switch (action.type) {
   case 'play':
     return Object.assign({}, state, { playStatus: 'PLAYING' });
@@ -71,8 +75,22 @@ const reducer = (state, action) => {
       update.index = -1;
       update.playStatus = 'PAUSED';
     } else if (state.index + action.count >= state.queue.length) {
-      update.index = -1;
-      update.playStatus = 'PAUSED';
+      if (state.playMode & REPEAT !== 0) {
+        if (state.playMode & SHUFFLE !== 0) {
+          const idx = state.queue.map((tr, i) => i);
+          update.queueOrder = [];
+          while (idx.length > 0) {
+            const i = Math.floor(Math.random() * idx.length);
+            update.queueOrder.push(idx[i]);
+            idx.splice(i, 1);
+          }
+        }
+        update.index = (state.index + action.count) % state.queue.length;
+        update.playMode = 'PLAYING';
+      } else {
+        update.index = -1;
+        update.playStatus = 'PAUSED';
+      }
     } else {
       update.index = state.index + action.count;
       update.playStatus = 'PLAYING';
@@ -82,6 +100,18 @@ const reducer = (state, action) => {
     if (state.index + 1 <= state.queue.length) {
       update.index = state.index + 1;
       update.playStatus = 'PLAYING';
+    } else if (state.playMode & REPEAT !== 0) {
+      if (state.playMode & SHUFFLE !== 0) {
+        const idx = state.queue.map((tr, i) => i);
+        update.queueOrder = [];
+        while (idx.length > 0) {
+          const i = Math.floor(Math.random() * idx.length);
+          update.queueOrder.push(idx[i]);
+          idx.splice(i, 1);
+        }
+      }
+      update.index = 0;
+      update.playMode = 'PLAYING';
     } else {
       update.index = -1;
       update.playStatus = 'PAUSED';
@@ -93,11 +123,35 @@ const reducer = (state, action) => {
       index: action.tracks.length > 0 ? 0 : -1,
       playStatus: 'PLAYING',
     };
+    if (state.playMode & SHUFFLE !== 0) {
+      update.queueOrder = [];
+      const idx = action.tracks.map((tr, i) => i);
+      while (idx.length > 0) {
+        const i = Math.floor(Math.random() * idx.length);
+        update.queueOrder.push(idx[i]);
+        idx.splice(i, 1);
+      }
+    } else {
+      update.queueOrder = action.tracks.map((tr, i) => i);
+    }
     return saveState(Object.assign({}, state, update));
   case 'append':
     update = {
       queue: state.queue.concat(action.tracks),
     };
+    n = state.queue.length;
+    let order = [];
+    idx = action.tracks.map((tr, i) => i + n);
+    if (state.playMode & SHUFFLE !== 0) {
+      while (idx.length > 0) {
+        const i = Math.floor(Math.random() * idx.length);
+        order.push(idx[i]);
+        idx.splice(i, 1);
+      }
+    } else {
+      order = idx;
+    }
+    update.queueOrder = state.queueOrder.concat(order);
     return saveState(Object.assign({}, state, update));
   case 'insert':
     const before = state.queue.slice(0, state.index + 1);
@@ -105,6 +159,21 @@ const reducer = (state, action) => {
     update = {
       queue: before.concat(action.tracks).concat(after),
     };
+    const orderBefore = state.queueOrder.slice(0, state.index + 1);
+    const orderAfter = state.queueOrder.slice(state.index + 1);
+    let orderInsert = [];
+    idx = action.tracks.map((tr, i) => i + state.index + 1); 
+    if (state.playMode & SHUFFLE !== 0) {
+      while (idx.length > 0) {
+        const i = Math.floor(Math.random() * idx.length);
+        order.push(idx[i]);
+        idx.splice(i, 1);
+      }
+    } else {
+      order = idx;
+    }
+    n = before.length + order.length;
+    update.queueOrder = orderBefore.concat(order).concat(orderAfter.map(i => i + n));
     return saveState(Object.assign({}, state, update));
   case 'playlist':
     update = {
@@ -112,6 +181,18 @@ const reducer = (state, action) => {
       index: action.index || 0,
       playStatus: 'PLAYING',
     };
+    if (state.playMode & SHUFFLE !== 0) {
+      const before = update.queue.slice(0, update.index + 1).map((tr, i) => i);
+      const after = update.queue.slice(update.index + 1).map((tr, i) => i + update.index + 1);
+      update.queueOrder = before;
+      while (after.length > 0) {
+        const i = Math.floor(Math.random() * after.length);
+        update.queueOrder.push(after[i]);
+        after.splice(i, 1);
+      }
+    } else {
+      update.queueOrder = update.queue.map((tr, i) => i);
+    }
     return saveState(Object.assign({}, state, update));
   case 'volumeTo':
     update = { volume: Math.min(100, Math.max(0, action.volume)) };
@@ -129,6 +210,19 @@ const reducer = (state, action) => {
     return Object.assign({}, state, update);
   case 'shuffle':
     update = { playMode: state.playMode ^ SHUFFLE };
+    if (update.playMode & SHUFFLE !== 0) {
+      const before = state.queueOrder.slice(0, state.index + 1);
+      const after = state.queueOrder.slice(state.index + 1);
+      update.queueOrder = before;
+      while (after.length > 0) {
+        const i = Math.floor(Math.random() * after.length);
+        update.queueOrder.push(after[i]);
+        after.splice(i, 1);
+      }
+    } else {
+      update.index = state.queueOrder[state.index];
+      update.queueOrder = state.queue.map((tr, i) => i);
+    }
     return saveState(Object.assign({}, state, update));
   case 'repeat':
     update = { playMode: state.playMode ^ REPEAT };
@@ -248,7 +342,7 @@ export const LocalPlayer = ({
   }, [api]);
 
   useEffect(() => setControlAPI(controlAPI), [controlAPI]);
-  useEffect(() => setPlaybackInfo(state), [state]);
+  useEffect(() => setPlaybackInfo(Object.assign({}, state, { index: state.queueOrder[state.index] })), [state]);
 
   useEffect(() => {
     players.current.filter(player => !!player).forEach(player => player.currentTime = 0);
@@ -266,10 +360,10 @@ export const LocalPlayer = ({
   }, [state.playStatus, state.index]);
 
   const trackUrl = useMemo(() => {
-    const curUrl = getTrackUrl(state.queue[state.index]);
-    const nxtUrl = getTrackUrl(state.queue[state.index + 1]);
+    const curUrl = getTrackUrl(state.queue[state.queueOrder[state.index]]);
+    const nxtUrl = getTrackUrl(state.queue[state.queueOrder[state.index + 1]]);
     return state.index % 2 === 0 ? [curUrl, nxtUrl] : [nxtUrl, curUrl];
-  }, [state.queue, state.index]);
+  }, [state.queue, state.index, state.queueOrder]);
 
   const onCanPlay = useMemo(() => {
     return evt => {

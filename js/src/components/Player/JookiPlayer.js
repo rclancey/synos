@@ -1,6 +1,7 @@
 import React, { useReducer, useMemo, useRef, useEffect, useContext } from 'react';
 import { LoginContext } from '../../lib/login';
 import { WS } from '../../lib/ws';
+import { SHUFFLE, REPEAT } from '../../lib/api';
 import { JookiAPI } from '../../lib/jooki';
 
 const initState = () => {
@@ -55,6 +56,15 @@ const reducer = (state, action) => {
           out.currentTimeSetAt = Date.now();
           out.playStatus = delta.audio.playback.state;
         }
+        if (delta.audio.config) {
+          out.playMode = 0;
+          if (delta.audio.config.repeat_mode !== 0) {
+            out.playMode |= REPEAT;
+          }
+          if (delta.audio.config.shuffle_mode) {
+            out.playMode |= SHUFFLE;
+          }
+        }
       }
       if (delta.db) {
         if (delta.db.playlists) {
@@ -95,6 +105,15 @@ const reducer = (state, action) => {
         out.currentTimeSet = out.currentTime;
         out.currentTimeSetAt = Date.now();
         out.playStatus = action.state.audio.playback.state;
+      }
+      if (action.state.audio.config) {
+        out.playMode = 0;
+        if (action.state.audio.config.repeat_mode !== 0) {
+          out.playMode |= REPEAT;
+        }
+        if (action.state.audio.config.shuffle_mode) {
+          out.playMode |= SHUFFLE;
+        }
       }
     }
     if (action.state.db) {
@@ -163,6 +182,10 @@ export const JookiPlayer = ({
       onSetPlaylist: (id, idx) => api.setPlaylist(id, idx),
       onSetVolumeTo: (vol) => api.setVolumeTo(vol),
       onChangeVolumeBy: (del) => api.changeVolumeBy(del),
+      onShuffle: () => api.getPlayMode()
+        .then(mode => api.setPlayMode(mode ^ SHUFFLE)),
+      onRepeat: () => api.getPlayMode()
+        .then(mode => api.setPlayMode(mode ^ REPEAT)),
     };
   }, [api]);
 

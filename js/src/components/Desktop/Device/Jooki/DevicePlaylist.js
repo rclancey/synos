@@ -27,7 +27,7 @@ export const JookiDevicePlaylist = ({
   const playlist = {
     kind: 'device',
     folder: true,
-    children: device.playlists
+    children: (device.playlists || [])
       .sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
       .map(pl => Object.assign({}, pl, { icon: pl.token ? jookiTokenImgUrl(pl.token) : null }))
   };

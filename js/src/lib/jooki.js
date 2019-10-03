@@ -235,4 +235,14 @@ export class JookiAPI extends APIBase {
     throw new Error("queue manipulation not available on jooki");
   }
 
+  getPlayMode() {
+    const url = '/api/jooki/playmode';
+    return this.get(url);
+  }
+
+  setPlayMode(mode) {
+    const url = '/api/jooki/playmode';
+    return this.post(url, mode);
+  }
+
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { JookiToken } from './Token';
 import { PlaylistMenu } from './PlaylistMenu';
-import { useTheme } from '../../../../lib/theme';
+import { useTheme } from '../../lib/theme';
 
 const zeroPad = (v, n) => {
   let s = '' + v;
@@ -201,7 +201,7 @@ const CalendarDay = ({
           border-width: 1px;
           border-radius: 10px;
           overflow: hidden;
-          max-width: calc(${wide ? '14.14' : '100'}% - 1em);
+          max-width: calc(${wide ? '14.14' : '50'}% - 1em);
           box-sizing: border-box;
         }
         .day .dayname {
@@ -217,7 +217,7 @@ const CalendarDay = ({
   );
 };
 
-export const Calendar = () => {
+export const Calendar = ({ wide = true }) => {
   const [cal, setCal] = useState([null, null, null, null, null, null, null]);
   const [playlists, setPlaylists] = useState([]);
   useEffect(() => {
@@ -249,6 +249,15 @@ export const Calendar = () => {
       .then(resp => resp.json())
       .then(setCal);
   };
+  useEffect(() => {
+    console.debug('calendar playlists changed');
+  }, [playlists]);
+  useEffect(() => {
+    console.debug('calendar data changed');
+  }, [cal]);
+  useEffect(() => {
+    console.debug('calendar wide changed');
+  }, [wide]);
   const dow = new Date().getDay();
   const days = useMemo(() => {
     return [dow, dow + 1, dow + 2, dow + 3, dow + 4, dow + 5, dow + 6];
@@ -271,7 +280,7 @@ export const Calendar = () => {
       { sched.map(day => !!day ? (
         <CalendarDay
           key={day.dow}
-          wide={true}
+          wide={wide}
           playlists={playlists}
           dow={day.dow}
           wakeTime={day.wake.time}
@@ -289,6 +298,7 @@ export const Calendar = () => {
       <style jsx>{`
         .calendar {
           display: flex;
+          flex-wrap: wrap;
         }
       `}</style>
     </div>

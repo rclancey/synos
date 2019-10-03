@@ -1,9 +1,9 @@
 import React from 'react';
-import displayTime from '../../../../lib/displayTime';
-import { PlayPauseSkip, Volume, Progress, ShuffleButton, RepeatButton } from '../../../Controls';
+import displayTime from '../../lib/displayTime';
+import { PlayPauseSkip, Volume, Progress, ShuffleButton, RepeatButton } from '../Controls';
 import { JookiCoverArt } from './CoverArt';
-import { TrackInfo } from '../../../TrackInfo';
-import { Center } from '../../../Center';
+import { TrackInfo } from '../TrackInfo';
+import { Center } from '../Center';
 
 const Buttons = ({
   status,
@@ -16,7 +16,7 @@ const Buttons = ({
   onRepeat,
 }) => (
   <div className="playpause">
-    <Center orientation="horizontal" style={{ width: '100%' }}>
+    <Center orientation="horizontal" style={{width: '100%'}}>
       <ShuffleButton playMode={playMode} onShuffle={onShuffle} />
       <PlayPauseSkip
         width={150}
@@ -50,7 +50,7 @@ const Buttons = ({
   </div>
 );
 
-const Timer = ({ t }) => (
+const Timer = ({ t, align = 'left' }) => (
   <div className="timer">
     <div className="padding" />
     <div className="currentTime">{displayTime(t)}</div>
@@ -59,7 +59,7 @@ const Timer = ({ t }) => (
         flex: 1;
         display: flex;
         flex-direction: column;
-        height: 100%;
+        height: auto;
         min-width: 50px;
         max-width: 50px;
       }
@@ -71,9 +71,7 @@ const Timer = ({ t }) => (
         min-height: 14px;
         max-height: 14px;
         font-size: 11px;
-        text-align: right;
-        padding-right: 5px;
-        padding-bottom: 5px;
+        text-align: ${align};
       }
     `}</style>
   </div>
@@ -95,7 +93,7 @@ const NowPlaying = ({
         <div className="innerwrapper">
           <Timer t={currentTime} />
           <TrackInfo track={track} />
-          <Timer t={currentTime - duration} />
+          <Timer t={currentTime - duration} align="right" />
         </div>
         <Progress currentTime={currentTime} duration={duration} onSeekTo={onSeekTo} height={4} />
       </div>
@@ -106,12 +104,14 @@ const NowPlaying = ({
           border: none;
           overflow: hidden;
           padding: 5px;
+          box-sizing: border-box;
         }
         .outerwrapper {
           flex: 100;
           display: flex;
           flex-direction: column;
           overflow: hidden;
+          margin-bottom: 1em;
         }
         .padding {
           flex: 5;
@@ -121,6 +121,7 @@ const NowPlaying = ({
           display: flex;
           flex-direction: row;
           overflow: hidden;
+          margin-bottom: 5px;
         }
       `}</style>
     </div>
@@ -130,6 +131,7 @@ const NowPlaying = ({
 export const JookiControls = ({
   playbackInfo,
   controlAPI,
+  center,
 }) => {
   const {
     queue,
@@ -151,11 +153,16 @@ export const JookiControls = ({
     onShuffle,
     onRepeat,
   } = controlAPI;
-  console.debug('controlAPI = %o', controlAPI);
   const track = queue ? queue[index] : null;
   return (
     <>
-      <JookiCoverArt track={track} size={194} radius={0} />
+      { center ? (
+        <Center orientation="horizontal" style={{ width: '100%' }}>
+          <JookiCoverArt track={track} size={194} radius={0} />
+        </Center>
+      ) : (
+        <JookiCoverArt track={track} size={194} radius={0} />
+      ) }
       <div className="jooki controls">
         <NowPlaying
           track={track}
@@ -182,10 +189,13 @@ export const JookiControls = ({
             flex: 1;
             display: flex;
             flex-direction: column;
+            /*
             max-width: 400px;
             padding-right: 1em;
+            */
             height: auto;
             max-height: none;
+            max-width: 500px;
           }
           .controls .padding {
             flex: 100;

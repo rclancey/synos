@@ -263,13 +263,16 @@ const NowPlaying = ({ track, currentTime, duration, onSeekTo }) => {
   );
 };
 
-const QueueMenu = ({ queue, queueIndex, onSkipTo }) => {
+const QueueMenu = ({ playMode, queue, queueIndex, onSkipTo, onShuffle, onRepeat }) => {
   return (
     <ButtonMenu icon="queue">
       <Queue
+        playMode={playMode}
         queue={queue}
         queueIndex={queueIndex}
         onSkipTo={onSkipTo}
+        onShuffle={onShuffle}
+        onRepeat={onRepeat}
       />
     </ButtonMenu>
   );
@@ -337,11 +340,18 @@ const Search = ({ search, onSearch }) => {
   );
 };
 
-const Tools = ({ queue, queueIndex, search, onSkipTo, onSearch }) => (
+const Tools = ({ playMode, queue, queueIndex, search, onSkipTo, onSearch, onShuffle, onRepeat }) => (
   <div className="search">
     <div className="queuebutton">
       <div className="padding" />
-      <QueueMenu queue={queue} queueIndex={queueIndex} onSkipTo={onSkipTo} />
+      <QueueMenu
+        playMode={playMode}
+        queue={queue}
+        queueIndex={queueIndex}
+        onSkipTo={onSkipTo}
+        onShuffle={onShuffle}
+        onRepeat={onRepeat}
+      />
       <div className="padding" />
     </div>
     <div className="padding" />
@@ -381,6 +391,7 @@ export const Controls = ({
     currentTime,
     duration,
     volume,
+    playMode,
   } = playbackInfo;
   const {
     onPlay,
@@ -390,6 +401,8 @@ export const Controls = ({
     onSeekTo,
     onSeekBy,
     onSetVolumeTo,
+    onShuffle,
+    onRepeat,
   } = controlAPI;
 
   const sonos = playbackInfo.player === 'sonos';
@@ -419,9 +432,12 @@ export const Controls = ({
       <Tools
         queue={queue}
         queueIndex={index}
+        playMode={playMode}
         search={search}
         onSkipTo={onSkipTo}
         onSearch={onSearch}
+        onShuffle={onShuffle}
+        onRepeat={onRepeat}
       />
       <style jsx>{`
         .controls {

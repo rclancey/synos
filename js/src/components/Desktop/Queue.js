@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import { QueueItem } from '../Queue';
+import { ShuffleButton, RepeatButton } from '../Controls';
 import { useTheme } from '../../lib/theme';
 
-export const Queue = ({ queue, queueIndex, onSkipTo }) => {
+export const Queue = ({ playMode, queue, queueIndex, onSkipTo, onShuffle, onRepeat }) => {
   const colors = useTheme();
   const [selected, setSelected] = useState(null);
   return (
     <div className="queue">
+      <div className="header">
+        <div className="toggles">
+          <ShuffleButton playMode={playMode} onShuffle={onShuffle} />
+          <RepeatButton playMode={playMode} onRepeat={onRepeat} />
+        </div>
+      </div>
       { queue.slice(queueIndex+1).map((track, i) => (
         <QueueItem
           key={i}
@@ -27,6 +34,14 @@ export const Queue = ({ queue, queueIndex, onSkipTo }) => {
           overflow: auto;
           cursor: default;
           background-color: ${colors.background};
+        }
+        .queue .toggles {
+          display: flex;
+          flex-direction: row;
+        }
+        .queue .toggles>:global(div) {
+          flex: 1;
+          margin-right: 0.5em;
         }
         /*
         .queue :global(.trackInfo) {

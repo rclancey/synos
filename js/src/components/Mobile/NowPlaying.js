@@ -193,8 +193,11 @@ const Expanded = ({
   if (showQueue) {
     return (
       <Queue
+        playMode={playbackInfo.playMode}
         tracks={playbackInfo.queue}
         index={playbackInfo.index}
+        onShuffle={controlAPI.onShuffle}
+        onRepeat={controlAPI.onRepeat}
         onSelect={onSelect}
         onClose={onClose}
       />

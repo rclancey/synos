@@ -3,8 +3,9 @@ import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { QueueInfo, QueueItem } from '../Queue';
 import { useTheme } from '../../lib/theme';
+import { ShuffleButton, RepeatButton, CloseButton } from '../Controls';
 
-const Header = ({ tracks, onShuffle, onRepeat, onClose }) => {
+const Header = ({ playMode, tracks, onShuffle, onRepeat, onClose }) => {
   const colors = useTheme();
   return (
     <div className="header">
@@ -19,9 +20,9 @@ const Header = ({ tracks, onShuffle, onRepeat, onClose }) => {
         }}
       />
       <div className="toggles">
-        <div className="shuffle fas fa-random" onClick={onShuffle} />
-        <div className="loop fas fa-recycle" onClick={onRepeat} />
-        <div className="close fas fa-times" onClick={onClose} />
+        <ShuffleButton playMode={playMode} onShuffle={onShuffle} />
+        <RepeatButton playMode={playMode} onRepeat={onRepeat} />
+        <CloseButton onClose={onClose} />
       </div>
       <style jsx>{`
         .header {
@@ -46,7 +47,7 @@ const Header = ({ tracks, onShuffle, onRepeat, onClose }) => {
           white-space: nowrap;
           margin-right: 0.5em;
         }
-        .header .toggles>div {
+        .header .toggles>:global(div) {
           flex: 1;
           margin-right: 0.5em;
         }
@@ -55,7 +56,7 @@ const Header = ({ tracks, onShuffle, onRepeat, onClose }) => {
   );
 };
 
-export const Queue = React.memo(({ tracks, index, onSelect, onClose }) => {
+export const Queue = React.memo(({ playMode, tracks, index, onSelect, onShuffle, onRepeat, onClose }) => {
   const colors = useTheme();
   const selIdx = index;
   const curIdx = index;
@@ -75,7 +76,7 @@ export const Queue = React.memo(({ tracks, index, onSelect, onClose }) => {
   }, [tracks, selIdx, curIdx, onSelect]);
   return (
     <div className="queue">
-      <Header tracks={tracks} onClose={onClose} />
+      <Header playMode={playMode} tracks={tracks} onShuffle={onShuffle} onRepeat={onRepeat} onClose={onClose} />
       <div className="items">
         <AutoSizer>
           {({width, height}) => (

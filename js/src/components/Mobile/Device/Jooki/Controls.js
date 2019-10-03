@@ -1,19 +1,23 @@
 import React from 'react';
 import displayTime from '../../../../lib/displayTime';
-import { PlayPauseSkip, Volume, Progress } from '../../../Controls';
+import { PlayPauseSkip, Volume, Progress, ShuffleButton, RepeatButton } from '../../../Controls';
 import { JookiCoverArt } from './CoverArt';
 import { TrackInfo } from '../../../TrackInfo';
 import { Center } from '../../../Center';
 
 const Buttons = ({
   status,
+  playMode,
   onPlay,
   onPause,
   onSkipBy,
   onSeekBy,
+  onShuffle,
+  onRepeat,
 }) => (
   <div className="playpause">
     <Center orientation="horizontal" style={{width: '100%'}}>
+      <ShuffleButton playMode={playMode} onShuffle={onShuffle} />
       <PlayPauseSkip
         width={150}
         height={24}
@@ -23,6 +27,7 @@ const Buttons = ({
         onSkipBy={onSkipBy}
         onSeekBy={onSeekBy}
       />
+      <RepeatButton playMode={playMode} onRepeat={onRepeat} />
     </Center>
     <style jsx>{`
       .playpause {
@@ -30,6 +35,15 @@ const Buttons = ({
         flex: 1;
         flex-direction: row;
         padding: 5px;
+      }
+      .playpause :global(.shuffle), .playpause :global(.repeat) {
+        flex: 1;
+        line-height: 24px;
+        margin-left: 1em;
+        margin-right: 1em;
+      }
+      .playpause :global(.repeat) {
+        text-align: right;
       }
       /*
       .playpause :global(.rewind),
@@ -141,6 +155,7 @@ export const JookiControls = ({
     currentTime,
     duration,
     volume,
+    playMode,
   } = playbackInfo;
   const {
     onPlay,
@@ -150,6 +165,8 @@ export const JookiControls = ({
     onSeekTo,
     onSeekBy,
     onSetVolumeTo,
+    onShuffle,
+    onRepeat,
   } = controlAPI;
   console.debug('controlAPI = %o', controlAPI);
   const track = queue ? queue[index] : null;
@@ -167,10 +184,13 @@ export const JookiControls = ({
         />
         <Buttons
           status={playStatus}
+          playMode={playMode}
           onPlay={onPlay}
           onPause={onPause}
           onSkipBy={onSkipBy}
           onSeekBy={onSeekBy}
+          onShuffle={onShuffle}
+          onRepeat={onRepeat}
         />
         <Volume
           volume={volume}

@@ -86,6 +86,7 @@ type Queue struct {
 	State string `json:"state"`
 	Speed float64 `json:"speed"`
 	Volume int `json:"volume"`
+	PlayMode int `json:"mode"`
 }
 
 func parseTime(timestr string, layouts ...string) (int, error) {
@@ -153,10 +154,9 @@ func (s *Sonos) GetPlayMode() (int, error) {
 	case upnp.PlayMode_REPEAT_ALL:
 		return PlayModeRepeat, nil
 	case upnp.PlayMode_SHUFFLE_NOREPEAT:
-		// docs say this is what this means, but I'm skeptical
-		return PlayModeShuffle | PlayModeRepeat, nil
-	case upnp.PlayMode_SHUFFLE:
 		return PlayModeShuffle, nil
+	case upnp.PlayMode_SHUFFLE:
+		return PlayModeShuffle | PlayModeRepeat, nil
 	}
 	return 0, nil
 }
@@ -167,11 +167,11 @@ func (s *Sonos) SetPlayMode(mode int) error {
 	case 0:
 		pm = upnp.PlayMode_NORMAL
 	case PlayModeShuffle:
-		pm = upnp.PlayMode_SHUFFLE
+		pm = upnp.PlayMode_SHUFFLE_NOREPEAT
 	case PlayModeRepeat:
 		pm = upnp.PlayMode_REPEAT_ALL
 	case PlayModeShuffle | PlayModeRepeat:
-		pm = upnp.PlayMode_SHUFFLE_NOREPEAT
+		pm = upnp.PlayMode_SHUFFLE
 	default:
 		return fmt.Errorf("unknown play mode: %d", mode)
 	}
@@ -260,6 +260,11 @@ func (s *Sonos) GetQueue() (*Queue, error) {
 		return nil, errors.Wrap(err, "can't get volume")
 	}
 	q.Volume = vol
+	mode, err := s.GetPlayMode()
+	if err != nil {
+		return nil, errors.Wrap(err, "can't get play mode")
+	}
+	q.PlayMode = mode
 	return q, nil
 }
 
@@ -556,7 +561,7 @@ func ParseJSONURL(val string) (*JSONURL, error) {
 
 type AVTransportEvent struct {
 	TransportState string `json:"state"`
-	CurrentPlayMode string `json:"mode"`
+	CurrentPlayMode int `json:"mode"`
 	CurrentCrossfadeMode int `json:"crossfade_mode"`
 	QueueLength int `json:"queue_length"`
 	QueuePosition int `json:"queue_position"`
@@ -586,7 +591,16 @@ func (s *Sonos) prettyEvent(event upnp.Event) (interface{}, error) {
 			//log.Println("change =", string(data))
 			pretty := &AVTransportEvent{
 				TransportState: change.TransportState.Val,
-				CurrentPlayMode: change.CurrentPlayMode.Val,
+			}
+			switch change.CurrentPlayMode.Val {
+			case upnp.PlayMode_NORMAL:
+				pretty.CurrentPlayMode = 0
+			case upnp.PlayMode_REPEAT_ALL:
+				pretty.CurrentPlayMode = PlayModeRepeat
+			case upnp.PlayMode_SHUFFLE_NOREPEAT:
+				pretty.CurrentPlayMode = PlayModeShuffle
+			case upnp.PlayMode_SHUFFLE:
+				pretty.CurrentPlayMode = PlayModeShuffle | PlayModeRepeat
 			}
 			pretty.CurrentCrossfadeMode, _ = strconv.Atoi(change.CurrentCrossfadeMode.Val)
 			pretty.QueueLength, _ = strconv.Atoi(change.NumberOfTracks.Val)
