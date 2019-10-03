@@ -4,7 +4,6 @@ import { Folder } from './Folder';
 import { Playlist } from './Playlist';
 import { Label } from './Label';
 import { DevicePlaylists } from '../Device/Playlists';
-import { Icon } from '../../Icon';
 import { useTheme } from '../../../lib/theme';
 
 export const PlaylistBrowser = ({

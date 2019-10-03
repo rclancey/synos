@@ -93,6 +93,10 @@ func NewAPIClient(baseUrl string, cacheDir string, maxCacheTime time.Duration, m
 	return c, nil
 }
 
+func (c *APIClient) Close() {
+	c.client.CloseIdleConnections()
+}
+
 func (c *APIClient) Client() *http.Client {
 	return c.client
 }

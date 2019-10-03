@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useTheme } from '../../lib/theme';
 import { HomeItem } from './HomeItem';
 import { PlaylistList } from './PlaylistList';
 import { ArtistList } from './ArtistList';
 import { AlbumList } from './AlbumList';
 import { GenreList } from './GenreList';
-//import { PodcastList } from './PodcastList';
-//import { AudiobookList } from './AudiobookList';
+import { PodcastList } from './PodcastList';
+import { AudiobookList } from './AudiobookList';
 import { Purchases } from './Purchases';
 import { RecentAdditions } from './RecentAdditions';
 import { ScreenHeader } from './ScreenHeader';
@@ -35,6 +35,12 @@ export const Sources = React.memo(({ prev, children, onOpen, onFinish, ...props 
         </HomeItem>
         <HomeItem name="Genres" icon="genres" onOpen={onOpen}>
           <GenreList prev="Library" {...props} />
+        </HomeItem>
+        <HomeItem name="Podcasts" icon="podcasts" onOpen={onOpen}>
+          <PodcastList prev="Library" {...props} />
+        </HomeItem>
+        <HomeItem name="Audiobooks" icon="audiobooks" onOpen={onOpen}>
+          <AudiobookList prev="Library" {...props} />
         </HomeItem>
         <HomeItem name="Recently Added" icon="recent" onOpen={onOpen}>
           <RecentAdditions prev="Library" {...props} />

@@ -415,6 +415,19 @@ func (c *Client) SetRepeatMode(mode RepeatMode) (*Audio, error) {
 	return state.Audio, nil
 }
 
+func (c *Client) SetPlayMode(mode int) (*Audio, error) {
+	shuffleOn := (mode & PlayModeShuffle) != 0
+	repeatMode := RepeatModeOff
+	if (mode & PlayModeRepeat) != 0 {
+		repeatMode = RepeatModeOnce
+	}
+	_, err := c.SetShuffleMode(shuffleOn)
+	if err != nil {
+		return nil, err
+	}
+	return c.SetRepeatMode(repeatMode)
+}
+
 func (c *Client) SkipNext() (*Audio, error) {
 	before := c.GetState()
 	f := func(state *JookiState) bool {

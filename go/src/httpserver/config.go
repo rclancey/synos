@@ -16,8 +16,6 @@ import (
 	"syscall"
 	"time"
 
-	//"github.com/alexflint/go-arg"
-	//"github.com/akamensky/argparse"
 	"github.com/pkg/errors"
 
 	"argparse"

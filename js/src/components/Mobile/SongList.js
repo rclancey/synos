@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useDrag, useDrop } from 'react-dnd';
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { DotsMenu } from './TrackMenu';
@@ -9,7 +8,6 @@ import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import { Back } from './ScreenHeader';
 import { Icon } from '../Icon';
-import { AddIcon, DeleteIcon } from './ActionIcon';
 import { useTheme } from '../../lib/theme';
 import { Sources } from './Sources';
 import { SongRow } from './SongRow';
@@ -142,11 +140,11 @@ export const SongList = ({
     }
     return (track) => api.addToPlaylist(playlist, [track])
       .then(onUpdatePlaylist);
-  }, [playlist, api, onUpdatePlaylist]);
+  }, [playlist, api, onUpdatePlaylist, editing, onAdd]);
   const onDelete = useMemo(() => {
     return (track, index) => api.deletePlaylistTracks({ ...playlist, items: tracks }, [{ track: { origIndex: index } }])
       .then(onUpdatePlaylist);
-  }, [playlist, api, onUpdatePlaylist]);
+  }, [playlist, tracks, api, onUpdatePlaylist]);
   const onMove = useMemo(() => {
     return (srcIndex, dstIndex, dir) => {
       console.debug('move track %o to %o in %o', srcIndex, dstIndex, playlist);
@@ -161,7 +159,7 @@ export const SongList = ({
           }
         });
     };
-  }, [playlist, api, onUpdatePlaylist]);
+  }, [playlist, tracks, api, onUpdatePlaylist]);
 
   const rowRenderer = useMemo(() => {
     return ({ index, style }) => {
@@ -198,7 +196,7 @@ export const SongList = ({
         />
       );
     };
-  }, [playlist, tracks, withTrackNum, withCover, withArtist, withAlbum, onTrackMenu, editing, adding, onDelete, onMove, onAdd]);
+  }, [playlist, tracks, withTrackNum, withCover, withArtist, withAlbum, onTrackMenu, editing, adding, onDelete, onMove, onAddMe]);
 
   if (chooser) {
     return (
@@ -278,9 +276,10 @@ export const Playlist = ({
   const [tracks, setTracks] = useState([]);
   const [editing, setEditing] = useState(false);
   const api = useAPI(API);
+  const plid = playlist.persistent_id;
   useEffect(() => {
-    api.loadPlaylistTracks(playlist).then(setTracks);
-  }, [playlist.persistent_id]);
+    api.loadPlaylistTracks({ persistent_id: plid }).then(setTracks);
+  }, [api, plid]);
   const onUpdatePlaylist = () => {
     api.loadPlaylistTracks(playlist).then(setTracks);
   };
@@ -479,7 +478,7 @@ export const Album = ({
   const api = useAPI(API);
   useEffect(() => {
     api.songIndex(album).then(setTracks);
-  }, [album]);
+  }, [api, album]);
 
   return (
     <SongList

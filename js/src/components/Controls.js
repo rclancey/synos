@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { TrackTime } from './TrackInfo';
 import { useTheme } from '../lib/theme';
+import { SHUFFLE, REPEAT } from '../lib/api';
 
 const orientations = {
   right: ['Top', 'Bottom', 'Left'],
@@ -25,6 +26,59 @@ export const Triangle = ({ orientation, size = 24, ...props }) => {
   const d = ori[2];
   style[`border${d}`] = `solid ${colors.button} ${size}px`;
   return (<div style={style} {...props} />);
+};
+
+export const ShuffleButton = ({ playMode, onShuffle, style }) => {
+  const colors = useTheme();
+  return (
+    <div
+      className={`shuffle fas fa-random ${playMode & SHUFFLE ? 'on' : ''}`}
+      style={style}
+      onClick={onShuffle}
+    >
+      <style jsx>{`
+        .shuffle {
+          color: ${colors.text};
+        }
+        .shuffle.on {
+          color: ${colors.highlightText};
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export const RepeatButton = ({ playMode, onRepeat, style }) => {
+  const colors = useTheme();
+  return (
+    <div
+      className={`repeat fas fa-recycle ${playMode & REPEAT ? 'on' : ''}`}
+      style={style}
+      onClick={onRepeat}
+    >
+      <style jsx>{`
+        .repeat {
+          color: ${colors.text};
+        }
+        .repeat.on {
+          color: ${colors.highlightText};
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export const CloseButton = ({ onClose, style }) => {
+  const colors = useTheme();
+  return (
+    <div className="close fas fa-times" onClick={onClose} style={style}>
+      <style jsx>{`
+        .close {
+          color: ${colors.highlightText};
+        }
+      `}</style>
+    </div>
+  );
 };
 
 export const PlayButton = ({ size, onPlay }) => (
@@ -94,7 +148,7 @@ export const Seeker = ({
         }
       }, 40);
     };
-  }, [seeking, interval, onSeek, onSkip]);
+  }, [seeking, interval, onSeek, onSkip, fwd]);
   return (
     <div 
       className="seeker"
@@ -231,7 +285,6 @@ export const Volume = ({ volume, onChange, ...props }) => {
 };
 
 export const Progress = ({ currentTime, duration, onSeekTo, height = 4, ...props }) => {
-  const colors = useTheme();
   const seekTo = evt => {
     let l = 0;
     let node = evt.target;

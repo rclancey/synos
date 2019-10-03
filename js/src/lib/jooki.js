@@ -56,7 +56,7 @@ export class JookiAPI extends APIBase {
     const payload = {
       playlist_id: pl.persistent_id,
     };
-    return this.post(url, { playlist_id: pl.persistent_id });
+    return this.post(url, payload);
   }
 
   addToPlaylist(dst, tracks) {
@@ -233,6 +233,16 @@ export class JookiAPI extends APIBase {
 
   insertIntoQueue(tracks) {
     throw new Error("queue manipulation not available on jooki");
+  }
+
+  getPlayMode() {
+    const url = '/api/jooki/playmode';
+    return this.get(url);
+  }
+
+  setPlayMode(mode) {
+    const url = '/api/jooki/playmode';
+    return this.post(url, mode);
   }
 
 }

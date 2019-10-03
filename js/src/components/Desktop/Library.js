@@ -118,7 +118,7 @@ export const Library = ({
       WS.off('open', openHandler);
       WS.off('message', msgHandler);
     };
-  }, []);
+  }, [api]);
 
   const onSelectPlaylist = useMemo(() => {
     return (pl, dev) => {
@@ -168,11 +168,12 @@ export const Library = ({
           .then(pl => setPlaylist(pl));
       }
     };
-  }, [api]);
+  }, [api, setPlaylist]);
   const onDeleteTracks = useMemo(() => {
     return (playlist, selected) => {
       console.debug('onDeleteTracks: %o', { playlist, selected });
       if (playlist && selected && selected.length > 0) {
+        api.deletePlaylistTracks(playlist, selected);
       }
     };
   }, [api]);

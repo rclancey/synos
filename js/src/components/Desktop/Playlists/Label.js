@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useDrag, useDrop } from 'react-dnd';
 import { Icon } from '../../Icon';
 import { useTheme } from '../../../lib/theme';
 

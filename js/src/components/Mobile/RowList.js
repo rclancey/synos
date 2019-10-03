@@ -1,13 +1,7 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-//import { List, AutoSizer } from "react-virtualized";
-import { AlbumList } from './AlbumList';
-import { API } from '../../lib/api';
-import { useAPI } from '../../lib/useAPI';
 import { ScreenHeader } from './ScreenHeader';
-import { ArtistIndex } from './Index';
-import { ArtistImage } from './ArtistImage';
 
 export const RowList = ({
   name,

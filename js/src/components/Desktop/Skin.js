@@ -1,13 +1,10 @@
-import React, { useMemo, useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Controls } from './Controls';
 import { Library } from './Library';
 import { useTheme } from '../../lib/theme';
 
 import 'react-virtualized/styles.css';
 import 'react-sortable-tree/style.css';
-//import '../../themes/desktop/layout.css';
-
-const importedThemes = {};
 
 export const DesktopSkin = ({
   theme,
@@ -22,7 +19,6 @@ export const DesktopSkin = ({
 
   useEffect(() => {
     const handler = event => {
-      //console.debug('top level key down handler %o', event);
       if (event.ctrlKey) {
         if (event.code === 'KeyF') {
           console.debug('activate search');
@@ -44,7 +40,6 @@ export const DesktopSkin = ({
       document.removeEventListener('keydown', handler, true);
     };
   }, []);
-  //console.debug('rendering desktop skin');
 
   return (
     <div id="app" className={`desktop ${theme}`}>
@@ -71,7 +66,6 @@ export const DesktopSkin = ({
           height: 100vh;
           display: flex;
           flex-direction: column;
-          font-family: Tahoma;
           background-color: ${colors.background};
           color: ${colors.text};
         }

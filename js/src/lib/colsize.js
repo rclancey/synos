@@ -35,7 +35,7 @@ const total = (cols) => {
 };
 
 export const useColumns = (cols) => {
-  const [width, height, setNode] = useMeasure(1, 1);
+  const [width, , setNode] = useMeasure(1, 1);
   const [columns, setColumns] = useState(cols);
   useEffect(() => {
     const sum = total(cols) || 1;
@@ -63,7 +63,7 @@ export const useColumns = (cols) => {
       }
     }
     setColumns(resized);
-  }, [width]);
+  }, [width, cols]);
   const onResize = (key, deltaW) => {
     const idx = columns.findIndex(col => col.key === key);
     if (idx === -1) {
@@ -85,7 +85,7 @@ export const useColumns = (cols) => {
       dw -= (cols[i].width - w);
       cols[i] = Object.assign({}, cols[i], { width: w });
     }
-    for (let i = idx - 1; i >= 0 && dw != 0; i--) {
+    for (let i = idx - 1; i >= 0 && dw !== 0; i--) {
       const w = constrain(cols[i], cols[i].width - dw);
       dw -= (cols[i].width - w);
       cols[i] = Object.assign({}, cols[i], { width: w });

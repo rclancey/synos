@@ -32,23 +32,8 @@ export const TrackInfo = ({ track, className }) => (
         flex: 10;
         display: flex;
         flex-direction: column;
-        /*
-        border-top-style: solid;
-        border-top-width: 1px;
-        margin-top: -2px;
-        */
       }
 
-      /*
-      .trackInfo.desktop.queue {
-        padding-top: 5px;
-        padding-right: 1em;
-      }
-
-      .trackInfo.mobile.queue {
-        padding-top: 2px;
-      }
-      */
 
       .title, .artist {
         overflow: hidden;
@@ -64,8 +49,10 @@ export const TrackInfo = ({ track, className }) => (
 
       .trackInfo.queue .title {
         font-weight: bold;
+        width: 100%;
       }
 
+      /*
       .trackInfo.desktop.queue .title {
         font-size: 14px;
         width: 100%;
@@ -75,6 +62,7 @@ export const TrackInfo = ({ track, className }) => (
         font-size: 16px;
         font-size: 14px;
       }
+      */
 
       .trackInfo.controls .artist {
         font-size: 11px;
@@ -83,11 +71,14 @@ export const TrackInfo = ({ track, className }) => (
 
       .trackInfo.queue .artist {
         font-size: 12px;
+        width: 100%;
       }
 
+      /*
       .trackInfo.desktop.queue .artist {
         width: 100%;
       }
+      */
 
     `}</style>
   </div>

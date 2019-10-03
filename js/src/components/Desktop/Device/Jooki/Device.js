@@ -1,18 +1,58 @@
-import React, { useState, useEffect, useMemo, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
+import { WS } from '../../../../lib/ws';
 import { JookiPlayer } from '../../../Player/JookiPlayer';
-import { JookiControls } from './Controls';
-import { Calendar } from './Calendar';
-import { JookiToken, TokenList } from './Token';
+import { JookiControls } from '../../../Jooki/Controls';
+import { Calendar } from '../../../Jooki/Calendar';
+import { TokenList } from '../../../Jooki/Token';
+import { DeviceInfo } from '../../../Jooki/DeviceInfo';
+
+const merge = (orig, delta) => {
+  if (delta === null) {
+    return orig;
+  }
+  if (orig === null || orig === undefined) {
+    return delta;
+  }
+  if (Array.isArray(orig)) {
+    if (Array.isArray(delta)) {
+      return delta;
+    }
+    return orig.concat([delta]);
+  }
+  if (typeof delta === 'object') {
+    if (typeof orig === 'object') {
+      const out = Object.assign({}, orig);
+      Object.entries(delta).forEach(entry => out[entry[0]] = merge(orig[entry[0]], entry[1]));
+      return out;
+    }
+  }
+  return delta;
+};
 
 export const JookiDevice = ({ device }) => {
-  const [cal, setCal] = useState([]);
+  const [jooki, setJooki] = useState(device.state);
   const [playbackInfo, setPlaybackInfo] = useState({});
   const [controlAPI, setControlAPI] = useState({});
+  const api = device.api;
   useEffect(() => {
-    fetch('/api/cron', { method: 'GET' })
-      .then(resp => resp.json())
-      .then(setCal);
-  }, []);
+    const msgHandler = msg => {
+      if (msg.type === 'jooki') {
+        setJooki(state => {
+          let out = state;
+          msg.deltas.forEach(delta => {
+            out = merge(out, delta);
+          });
+          console.debug('set jooki device to %o', out);
+          return out;
+        });
+      }
+    };
+    WS.on('message', msgHandler);
+    api.loadState().then(setJooki);
+    return () => {
+      WS.off('message', msgHandler);
+    };
+  }, [api]);
   return (
     <div className="jooki device">
       <JookiPlayer
@@ -21,18 +61,13 @@ export const JookiDevice = ({ device }) => {
       />
       <div className="header">
         <JookiControls playbackInfo={playbackInfo} controlAPI={controlAPI} />
-        <div className="deviceInfo">
-          <NowPlaying nfc={device.state.nfc} {...device.state.audio.nowPlaying} />
-          <Usage {...device.state.device.diskUsage} />
-          <Battery {...device.state.power} />
-          <Network ip={device.state.device.ip} wifi={device.state.wifi.ssid} />
-          {/*JSON.stringify(device.state, null, "  ")*/}
-        </div>
+        <DeviceInfo state={jooki} />
       </div>
       <Calendar />
       <TokenList />
       <style jsx>{`
         .jooki.device {
+          width: 100%;
           max-height: 100%;
           overflow: auto;
         }
@@ -40,12 +75,8 @@ export const JookiDevice = ({ device }) => {
           display: flex;
           flex-direction: row;
         }
-        .deviceInfo {
-          /*
-          font-family: monospace;
-          white-space: pre;
-          color: white;
-          */
+        .jooki :global(.deviceInfo) {
+          margin: 0;
           padding: 1em;
         }
       `}</style>
@@ -54,122 +85,6 @@ export const JookiDevice = ({ device }) => {
 };
 
 /*
-"state": {
-    "DISABLEDsettings": {
-      "quietTime": {
-        "active": false,
-        "shutdown": {
-          "hour": 0,
-          "minute": 0
-        }
-      }
-    },
-    "audio": {
-      "config": {
-        "repeat_mode": 0,
-        "shuffle_mode": false,
-        "volume": 31
-      },
-      "nowPlaying": {
-        "album": "By Request... The Best of John Williams and the Boston Pops",
-        "artist": "John Williams & The Boston Pops Orchestra",
-        "audiobook": false,
-        "duration_ms": 335542.857,
-        "hasNext": true,
-        "hasPrev": true,
-        "image": "/artwork/3da5cb956ac0e904.jpg",
-        "playlistId": "user_1562798198",
-        "service": "FILE",
-        "source": "Classical",
-        "track": "Main Theme from STAR WARS",
-        "trackId": "3da5cb956ac0e904",
-        "trackIndex": 17,
-        "uri": "file:///jooki/external/jooki/uploads/3da5cb956ac0e904"
-      },
-      "playback": {
-        "position_ms": 0,
-        "state": "STARTING"
-      }
-    },
-    "bt": "",
-*/
-
-const formatSize = (n) => {
-  if (n < 1024) {
-    return `${n} B`;
-  }
-  if (n < 10240) {
-    return `${(n / 1024).toFixed(1)} kB`;
-  }
-  if (n < 1024 * 1024) {
-    return `${Math.round(n / 1024)} kB`;
-  }
-  if (n < 10240 * 1024) {
-    return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-  }
-  if (n < 1024 * 1024 * 1024) {
-    return `${Math.round(n / (1024 * 1024))} MB`;
-  }
-  if (n < 10240 * 1024 * 1024) {
-    return `${(n / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-  }
-  return `${Math.round(n / (1024 * 1024 * 1024))} GB`;
-};
-
-const Usage = ({ available, total, used, usedPercent }) => (
-  <div className="usage">
-    <b>Usage:</b>
-    {' '}
-    {formatSize(used * 1024)} of {formatSize(total * 1024)} ({(100 * used / total).toFixed(1)}%)
-  </div>
-);
-
-const Battery = ({ charging, connected, level }) => {
-  let icon;
-  if (level.p < 125) {
-    icon = 'empty';
-  } else if (level.p < 375) {
-    icon = 'quarter';
-  } else if (level.p < 625) {
-    icon = 'half';
-  } else if (level.p < 875) {
-    icon = 'three-quarters';
-  } else {
-    icon = 'full';
-  }
-  return (
-    <div className="battery">
-      <b>Battery:</b>
-      {' '}
-      {(level.p / 10).toFixed(1)}%
-      {' '}
-      <span className={`level fas fa-battery-${icon} ${charging ? 'charging' : ''} ${connected ? 'connected' : ''}`} />
-      {' '}
-      { connected ? <span className="fas fa-plug" /> : null }
-      {' '}
-      ({level.mv} mV / {Math.round((level.t / 1000) * 1.8 + 32)} {'\u00b0F'})
-      <style jsx>{`
-        .level {
-          color: orange;
-        }
-        .level.connected {
-          color: green;
-        }
-        .level.connected.charging {
-          color: blue;
-        }
-      `}</style>
-    </div>
-  );
-};
-
-const Network = ({ wifi, ip }) => (
-  <div className="network">
-    <b>Network:</b>
-    {' '}{ip} / {wifi}
-  </div>
-);
-
 const NowPlaying = ({ playlistId, source, artist, track, nfc }) => (
   <div className="current">
     { nfc && nfc.starId ? (
@@ -191,3 +106,4 @@ const NowPlaying = ({ playlistId, source, artist, track, nfc }) => (
     `}</style>
   </div>
 );
+*/

@@ -1,4 +1,4 @@
-import React, { Fragment, useRef, useState, useEffect, useContext } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import displayTime from '../../lib/displayTime';
 import { PlayPauseSkip, Volume, Progress } from '../Controls';
 import { CoverArt } from '../CoverArt';
@@ -148,9 +148,12 @@ const ButtonMenu = ({
           border-style: solid;
           border-width: 1px;
           border-radius: 5px;
+          /*
           padding: 5px;
+          */
           box-sizing: border-box;
           background-color: ${colors.background};
+          overflow: hidden;
         }
       `}</style>
     </div>
@@ -160,18 +163,20 @@ const ButtonMenu = ({
 const AirplayButton = ({ sonos, onEnableSonos, onDisableSonos }) => {
   return (
     <ButtonMenu icon="airplay">
-      <OutputDevice
-        name="Computer"
-        icon="computer"
-        enabled={!sonos}
-        onEnable={() => { console.debug('disable sonos'); onDisableSonos(); }}
-      />
-      <OutputDevice
-        name="Sonos"
-        icon="sonos"
-        enabled={sonos}
-        onEnable={() => { console.debug('enable sonos'); onEnableSonos(); }}
-      />
+      <div style={{ padding: '5px' }}>
+        <OutputDevice
+          name="Computer"
+          icon="computer"
+          enabled={!sonos}
+          onEnable={() => { console.debug('disable sonos'); onDisableSonos(); }}
+        />
+        <OutputDevice
+          name="Sonos"
+          icon="sonos"
+          enabled={sonos}
+          onEnable={() => { console.debug('enable sonos'); onEnableSonos(); }}
+        />
+      </div>
     </ButtonMenu>
   );
 };
@@ -263,13 +268,16 @@ const NowPlaying = ({ track, currentTime, duration, onSeekTo }) => {
   );
 };
 
-const QueueMenu = ({ queue, queueIndex, onSkipTo }) => {
+const QueueMenu = ({ playMode, queue, queueIndex, onSkipTo, onShuffle, onRepeat }) => {
   return (
-    <ButtonMenu icon="queue">
+    <ButtonMenu icon="queue" maxWidth={375}>
       <Queue
-        queue={queue}
-        queueIndex={queueIndex}
+        playMode={playMode}
+        tracks={queue}
+        index={queueIndex}
         onSkipTo={onSkipTo}
+        onShuffle={onShuffle}
+        onRepeat={onRepeat}
       />
     </ButtonMenu>
   );
@@ -337,11 +345,18 @@ const Search = ({ search, onSearch }) => {
   );
 };
 
-const Tools = ({ queue, queueIndex, search, onSkipTo, onSearch }) => (
+const Tools = ({ playMode, queue, queueIndex, search, onSkipTo, onSearch, onShuffle, onRepeat }) => (
   <div className="search">
     <div className="queuebutton">
       <div className="padding" />
-      <QueueMenu queue={queue} queueIndex={queueIndex} onSkipTo={onSkipTo} />
+      <QueueMenu
+        playMode={playMode}
+        queue={queue}
+        queueIndex={queueIndex}
+        onSkipTo={onSkipTo}
+        onShuffle={onShuffle}
+        onRepeat={onRepeat}
+      />
       <div className="padding" />
     </div>
     <div className="padding" />
@@ -381,6 +396,7 @@ export const Controls = ({
     currentTime,
     duration,
     volume,
+    playMode,
   } = playbackInfo;
   const {
     onPlay,
@@ -390,6 +406,8 @@ export const Controls = ({
     onSeekTo,
     onSeekBy,
     onSetVolumeTo,
+    onShuffle,
+    onRepeat,
   } = controlAPI;
 
   const sonos = playbackInfo.player === 'sonos';
@@ -419,9 +437,12 @@ export const Controls = ({
       <Tools
         queue={queue}
         queueIndex={index}
+        playMode={playMode}
         search={search}
         onSkipTo={onSkipTo}
         onSearch={onSearch}
+        onShuffle={onShuffle}
+        onRepeat={onRepeat}
       />
       <style jsx>{`
         .controls {

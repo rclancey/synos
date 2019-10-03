@@ -100,4 +100,15 @@ export class SonosAPI extends APIBase {
   changeVolumeBy(delta) {
     return this.posManip('volume', 'PUT', Math.round(delta));
   }
+
+  getPlayMode() {
+    const url = '/api/sonos/playmode';
+    return this.get(url);
+  }
+
+  setPlayMode(mode) {
+    const url = '/api/sonos/playmode';
+    return this.post(url, mode)
+  }
+
 }

@@ -2,6 +2,8 @@ package httpserver
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -144,40 +146,112 @@ func (h *GenericHub) BroadcastEvent(evt interface{}) {
 type Client struct {
 	hub Hub
 	conn *websocket.Conn
+	isOpen bool
 	Send chan []byte
 }
 
 func (c *Client) Open(conn *websocket.Conn) error {
 	c.conn = conn
+	c.isOpen = true
 	c.hub.Register(c)
 	return nil
 }
 
 func (c *Client) Close() {
-	if c.hub != nil {
-		c.hub.Unregister(c)
-		c.hub = nil
+	isOpen := c.isOpen
+	c.isOpen = false
+	hub := c.hub
+	c.hub = nil
+	conn := c.conn
+	c.conn = nil
+	if hub != nil {
+		hub.Unregister(c)
 	}
-	if c.conn != nil {
-		c.conn.Close()
+	if conn != nil && isOpen {
+		conn.WriteMessage(websocket.CloseMessage, []byte{})
+		conn.Close()
 	}
+}
+
+func (c *Client) SetReadLimit(size int64) {
+	conn := c.conn
+	if conn != nil && c.isOpen {
+		conn.SetReadLimit(size)
+	}
+}
+
+func (c *Client) SetReadDeadline(t time.Time) error {
+	conn := c.conn
+	if conn != nil && c.isOpen {
+		return conn.SetReadDeadline(t)
+	}
+	return nil
+}
+
+func (c *Client) SetPongHandler(f func(string) error) {
+	conn := c.conn
+	if conn != nil && c.isOpen {
+		conn.SetPongHandler(f)
+	}
+}
+
+func (c *Client) ReadMessage() (int, []byte, error) {
+	conn := c.conn
+	if conn != nil && c.isOpen {
+		return conn.ReadMessage()
+	}
+	return -1, nil, errors.New("Can't read on closed websocket")
+}
+
+func (c *Client) SetWriteDeadline(t time.Time) error {
+	conn := c.conn
+	if conn != nil && c.isOpen {
+		return conn.SetWriteDeadline(t)
+	}
+	return nil
+}
+
+func (c *Client) NextWriter(messageType int) (io.WriteCloser, error) {
+	conn := c.conn
+	if conn != nil && c.isOpen {
+		return conn.NextWriter(messageType)
+	}
+	return nil, errors.New("Can't write to a closed websocket")
+}
+
+func (c *Client) WriteMessage(messageType int, data []byte) error {
+	conn := c.conn
+	if conn != nil && c.isOpen {
+		return conn.WriteMessage(messageType, data)
+	}
+	return errors.New("Can't write to a closed websocket")
 }
 
 func (c *Client) ReadPump() {
 	defer c.Close()
-	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.SetReadLimit(maxMessageSize)
+	c.SetReadDeadline(time.Now().Add(pongWait))
+	c.SetPongHandler(func(string) error {
+		c.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 	for {
 		if c.hub == nil {
 			break
 		}
-		_, message, err := c.conn.ReadMessage()
+		_, message, err := c.ReadMessage()
 		if err != nil {
-			log.Println("websocket read error:", err)
-			break
+			if err == websocket.ErrCloseSent {
+				log.Println("client closed websocket")
+			} else {
+				log.Println("websocket read error:", err)
+			}
+			return
 		}
-		c.hub.Broadcast(message)
+		hub := c.hub
+		if hub != nil {
+			hub.Broadcast(message)
+		}
 	}
 }
 
@@ -190,20 +264,18 @@ func (c *Client) WritePump() {
 	for {
 		select {
 		case message, ok := <-c.Send:
-			//log.Println("client", c, "got message to send", string(message))
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			c.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				log.Println("source channel closed, shutting down websocket")
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				c.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-			w, err := c.conn.NextWriter(websocket.TextMessage)
+			w, err := c.NextWriter(websocket.TextMessage)
 			if err != nil {
 				log.Println("error getting websocket writer:", err)
 				return
 			}
 			w.Write(message)
-			//log.Println("ws send", string(message))
 			// flush queued messages
 			n := len(c.Send)
 			for i := 0; i < n; i++ {
@@ -216,8 +288,8 @@ func (c *Client) WritePump() {
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			err := c.conn.WriteMessage(websocket.PingMessage, nil);
+			c.SetWriteDeadline(time.Now().Add(writeWait))
+			err := c.WriteMessage(websocket.PingMessage, nil);
 			if err != nil {
 				log.Println("websocket ping error:", err)
 				return
@@ -227,21 +299,6 @@ func (c *Client) WritePump() {
 }
 
 func ServeWS(hub Hub, w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	/*
-	conn, err := upgrader.Upgrade(w, req, nil)
-	if err != nil {
-		return nil, InternalServerError.Raise(err, "Can't upgrade websocket connection")
-	}
-	*/
 	client := &Client{hub: hub, Send: make(chan []byte, 256)}
-	//client.hub.Register(client)
 	return client, nil
-	/*
-	// Allow collection of memory referenced by the caller by doing all
-	// work in new goroutines
-	go client.WritePump()
-	go client.ReadPump()
-	return WebSocket("WS"), nil
-	*/
 }
-

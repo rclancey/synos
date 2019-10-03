@@ -1,4 +1,4 @@
-import React, { useMemo, useContext } from 'react';
+import { useMemo, useContext } from 'react';
 import { LoginContext } from './login';
 
 export const useAPI = (cls) => {

@@ -1,11 +1,10 @@
-const ws = [null];
-
 class WebSocketSingleton {
   constructor() {
     const loc = document.location;
     const proto = loc.protocol === 'https:' ? 'wss://' : 'ws://';
     this.uri = `${proto}${loc.host}/api/ws`;
     this.listeners = {};
+    this.backoff = 1;
     this.reconnect();
   }
 
@@ -77,6 +76,8 @@ class WebSocketSingleton {
     this.close();
     this.ws = new WebSocket(this.uri);
     this.ws.onopen = evt => {
+      console.debug('websocket open');
+      this.backoff = 1;
       this.emit('open', evt);
     };
     this.ws.onmessage = evt => {
@@ -93,11 +94,14 @@ class WebSocketSingleton {
         });
     };
     this.ws.onerror = evt => {
+      console.debug('websocket error: %o', evt);
       this.emit('error', evt);
-      setTimeout(() => this.reconnect(), 1000);
     };
     this.ws.onclose = evt => {
+      console.debug('websocket close: %o', evt);
       this.emit('close', evt);
+      setTimeout(() => this.reconnect(), 1000 * Math.min(300, this.backoff));
+      this.backoff *= 2;
     };
   }
 }

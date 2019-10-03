@@ -19,20 +19,19 @@ export const DevicePlaylists = ({
   useEffect(() => {
     const api = new JookiAPI(onLoginRequired);
     const msgHandler = msg => {
-      console.debug('message: %o', msg);
       if (msg.type === 'jooki') {
         setJooki(dev => {
           const out = Object.assign({}, dev);
           msg.deltas.forEach(delta => {
             Object.entries(delta).forEach(entry => {
-              out.state = Object.assign({}, out.state, { [entry[0]]: entry[1] });
+              if (entry[1] !== null) {
+                out.state = Object.assign({}, out.state, { [entry[0]]: entry[1] });
+              }
             });
           });
-          console.debug('set jooki device to %o', out);
           return out;
         });
-        if (msg.deltas.filter(delta => !!(delta.db))) {
-          console.debug('update jooki playlists');
+        if (msg.deltas.some(delta => !!delta.db)) {
           api.loadPlaylists()
             .then(playlists => setJooki(dev => Object.assign({}, dev, { playlists })));
         }

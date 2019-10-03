@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { TrackMenu, PlaylistMenu } from './TrackMenu';
+import React, { useState, useMemo } from 'react';
+import { PlaylistMenu } from './TrackMenu';
 import { NowPlaying } from './NowPlaying';
-import { Icon } from '../Icon';
 import { Home } from './Home';
 import { useTheme } from '../../lib/theme';
 

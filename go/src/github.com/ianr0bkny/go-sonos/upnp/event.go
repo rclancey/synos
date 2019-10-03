@@ -197,6 +197,7 @@ func (this *upnpDefaultReactor) subscribeImpl(rec *upnpEventRecord) (err error) 
 	req.Header.Add("TIMEOUT", "900")
 	var resp *http.Response
 	if resp, err = client.Do(req); nil == err {
+		defer resp.Body.Close()
 		var sid string
 		if sid, err = this.handleAck(rec.svc, resp); nil == err {
 			this.eventMap[sid] = rec

@@ -31,7 +31,7 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
             setJooki(device);
           });
       });
-  }, []);
+  }, [api]);
   if (children) {
     return children;
   }
@@ -53,16 +53,12 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
         <HomeItem name="Genres" icon="genres" onOpen={onOpen}>
           <GenreList prev="Library" {...props} />
         </HomeItem>
-        {/*
         <HomeItem name="Podcasts" icon="podcasts" onOpen={onOpen}>
           <PodcastList prev="Library" {...props} />
         </HomeItem>
-        */}
-        {/*
         <HomeItem name="Audiobooks" icon="audiobooks" onOpen={onOpen}>
           <AudiobookList prev="Library" {...props} />
         </HomeItem>
-        */}
         <HomeItem name="Recently Added" icon="recent" onOpen={onOpen}>
           <RecentAdditions prev="Library" {...props} />
         </HomeItem>

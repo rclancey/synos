@@ -45,6 +45,7 @@ const reducer = (state, action) => {
         update.currentTimeSetAt = Date.now();
       }
       update.playStatus = action.message.state;
+      update.playMode = action.message.mode;
     } else if (Object.hasOwnProperty.call(action.message, 'tracks')) {
       update.queue = action.message.tracks;
       if (Object.hasOwnProperty.call(action.message, 'index')) {
@@ -71,6 +72,7 @@ const reducer = (state, action) => {
       currentTimeSet: action.update.time,
       currentTimeSetAt: Date.now(),
       volume: action.update.volume,
+      playMode: action.update.mode,
     };
     console.debug('sonos refresh: %o', update);
     return Object.assign({}, state, update);
@@ -83,6 +85,8 @@ const reducer = (state, action) => {
       Math.max(0, state.currentTimeSet + Date.now() - state.currentTimeSetAt)
     );
     return Object.assign({}, state, { currentTime });
+  default:
+    console.error("unhandled action %o", action);
   }
   return state;
 };
@@ -112,7 +116,7 @@ export const SonosPlayer = ({
       clearInterval(timeKeeper.current);
       WS.off('message', wsHandler);
     };
-  }, []);
+  }, [api]);
   const controlAPI = useMemo(() => {
     return {
       onPlay: () => api.play(),
@@ -127,11 +131,15 @@ export const SonosPlayer = ({
       onSetPlaylist: (id, idx) => api.setPlaylist(id, idx),
       onSetVolumeTo: (vol) => api.setVolumeTo(vol),
       onChangeVolumeBy: (del) => api.changeVolumeBy(del),
+      onShuffle: () => api.getPlayMode()
+        .then(mode => api.setPlayMode(mode ^ SHUFFLE)),
+      onRepeat: () => api.getPlayMode()
+        .then(mode => api.setPlayMode(mode ^ REPEAT)),
     };
   }, [api]);
 
-  useEffect(() => setControlAPI(controlAPI), [controlAPI]);
-  useEffect(() => setPlaybackInfo(state), [state]);
+  useEffect(() => setControlAPI(controlAPI), [controlAPI, setControlAPI]);
+  useEffect(() => setPlaybackInfo(state), [state, setPlaybackInfo]);
 
   return (
     <div id="sonosPlayer" />

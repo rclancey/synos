@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	H "httpserver"
@@ -650,3 +652,39 @@ func JookiArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	return nil, nil
 }
 
+func JookiPlayMode(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	dev, err := getJooki(false)
+	if dev == nil {
+		return nil, err
+	}
+	switch req.Method {
+	case http.MethodGet:
+		mode := 0
+		state := dev.GetState()
+		if state.Audio != nil && state.Audio.Config != nil {
+			if state.Audio.Config.ShuffleMode {
+				mode |= jooki.PlayModeShuffle
+			}
+			if state.Audio.Config.RepeatMode != jooki.RepeatModeOff {
+				mode |= jooki.PlayModeRepeat
+			}
+		}
+		return mode, nil
+	case http.MethodPost:
+		data, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		mode, err := strconv.Atoi(string(data))
+		if err != nil {
+			return nil, H.BadRequest.Raise(err, "not a number")
+		}
+		_, err = dev.SetPlayMode(mode)
+		if err != nil {
+			return nil, err
+		}
+		return mode, nil
+	default:
+		return nil, H.MethodNotAllowed.Raise(nil, "")
+	}
+}

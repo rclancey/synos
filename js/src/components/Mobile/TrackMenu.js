@@ -1,6 +1,5 @@
 import React from 'react';
 import { QueueInfo } from '../Queue';
-import { CoverArt } from '../CoverArt';
 import { MixCover } from './MixCover';
 import { useTheme } from '../../lib/theme';
 
@@ -61,48 +60,45 @@ const Replace = ({ tracks, controlAPI, onClose }) => (
   />
 );
 
-const Header = ({ tracks, name }) => {
-  const colors = useTheme();
-  return (
-    <div className="header">
-      <MixCover tracks={tracks} size={67} />
-      <div className="title">
-        <div className="name">{name}</div>
-        { tracks.length === 1 ? (
-          <div className="album">
-            {tracks[0].artist}{'\u00a0\u2219\u00a0'}{tracks[0].album}
-          </div>
-        ) : (
-          <QueueInfo tracks={tracks} />
-        ) }
-      </div>
-      <style jsx>{`
-        .header {
-          display: flex;
-          padding: 0.5em;
-          border-bottom: solid #777 1px;
-          background-color: transparent;
-        }
-        .header .title {
-          margin-left: 0.5em;
-        }
-        .header .title .name {
-          font-size: 12pt;
-          font-weight: bold;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .header .title .album, .header .title :global(.queueInfo) {
-          font-size: 10pt;
-          font-weight: normal;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          color: #999;
-        }
-      `}</style>
+const Header = ({ tracks, name }) => (
+  <div className="header">
+    <MixCover tracks={tracks} size={67} />
+    <div className="title">
+      <div className="name">{name}</div>
+      { tracks.length === 1 ? (
+        <div className="album">
+          {tracks[0].artist}{'\u00a0\u2219\u00a0'}{tracks[0].album}
+        </div>
+      ) : (
+        <QueueInfo tracks={tracks} />
+      ) }
     </div>
-  );
-};
+    <style jsx>{`
+      .header {
+        display: flex;
+        padding: 0.5em;
+        border-bottom: solid #777 1px;
+        background-color: transparent;
+      }
+      .header .title {
+        margin-left: 0.5em;
+      }
+      .header .title .name {
+        font-size: 12pt;
+        font-weight: bold;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header .title .album, .header .title :global(.queueInfo) {
+        font-size: 10pt;
+        font-weight: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #999;
+      }
+    `}</style>
+  </div>
+);
 
 const QueueActions = ({ tracks, controlAPI, onClose }) => {
   const colors = useTheme();

@@ -87,6 +87,7 @@ func main() {
 	srv.Handle("/api/jooki/skip", JookiSkip)
 	srv.Handle("/api/jooki/seek", JookiSeek)
 	srv.Handle("/api/jooki/volume", JookiVolume)
+	srv.Handle("/api/jooki/playmode", JookiPlayMode)
 	srv.Handle("/api/jooki/art/", JookiArt)
 	srv.Handle("/api/radio/", RadioHandler)
 	srv.Handle("/api/sonos/available", HasSonos)

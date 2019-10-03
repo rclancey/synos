@@ -2,32 +2,33 @@ import React, { useEffect} from 'react';
 import { Folder } from '../../Playlists/Folder';
 import { JookiTrackBrowser } from './TrackBrowser';
 import { JookiDevice } from './Device';
-import { jookiTokenImgUrl } from './Token';
+import { jookiTokenImgUrl } from '../../../Jooki/Token';
 
 export const JookiDevicePlaylist = ({
   device,
   selected,
   onSelect,
 }) => {
+  const dpls = device ? device.playlists : null;
   useEffect(() => {
-    if (!device || !device.playlists) {
+    if (!dpls) {
       return;
     }
     if (!selected) {
       return;
     }
-    const pl = device.playlists.find(x => x.persistent_id === selected);
+    const pl = dpls.find(x => x.persistent_id === selected);
     if (pl) {
       onSelect(pl, <JookiTrackBrowser device={device} playlist={pl} />);
     }
-  }, [device ? device.playlists : null]);
+  }, [device, dpls, selected, onSelect]);
   if (!device) {
     return null;
   }
   const playlist = {
     kind: 'device',
     folder: true,
-    children: device.playlists
+    children: (device.playlists || [])
       .sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
       .map(pl => Object.assign({}, pl, { icon: pl.token ? jookiTokenImgUrl(pl.token) : null }))
   };

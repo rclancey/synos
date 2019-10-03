@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { TrackBrowser } from '../../Tracks/TrackBrowser.js';
 import * as COLUMNS from '../../../../lib/columns';
-import { jookiTokenImgUrl } from './Token';
+import { jookiTokenImgUrl } from '../../../Jooki/Token';
 import { JookiPlayer } from '../../../Player/JookiPlayer';
-import { JookiControls } from './Controls';
+import { JookiControls } from '../../../Jooki/Controls';
 
 const JookiPlaylistHeader = ({
   playlist,
@@ -40,7 +40,10 @@ const JookiPlaylistHeader = ({
     <div style={{display: 'flex', flexDirection: 'row'}}>
       <div className="header">
         <div className="token">
-          <img src={playlist.token ? jookiTokenImgUrl(playlist.token) : "/nocover.jpg"} />
+          <img
+            src={playlist.token ? jookiTokenImgUrl(playlist.token) : "/nocover.jpg"}
+            alt={playlist.token || 'No Token'}
+          />
         </div>
         <div className="meta">
           <div className="title">{playlist.name}</div>

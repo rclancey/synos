@@ -144,34 +144,31 @@ const Header = ({ onCollapse, onShowQueue }) => (
   </div>
 );
 
-const SonosSwitch = ({ state, on, off }) => {
-  const colors = useTheme();
-  return (
-    <div className="sonosSwitch">
-      <Switch
-        on={state}
-        onToggle={val => {
-          if (val) { on() }
-          else { off() }
-        }}
-      />
-      <div className="label">Play on Sonos</div>
-      <style jsx>{`
-        .sonosSwitch {
-          display: flex;
-          flex-direction: row;
-          margin-top: 2em;
-        }
-        .label {
-          flex: 10;
-          padding-left: 1em;
-          font-size: 18px;
-          font-weight: bold;
-        }
-      `}</style>
-    </div>
-  );
-};
+const SonosSwitch = ({ state, on, off }) => (
+  <div className="sonosSwitch">
+    <Switch
+      on={state}
+      onToggle={val => {
+        if (val) { on() }
+        else { off() }
+      }}
+    />
+    <div className="label">Play on Sonos</div>
+    <style jsx>{`
+      .sonosSwitch {
+        display: flex;
+        flex-direction: row;
+        margin-top: 2em;
+      }
+      .label {
+        flex: 10;
+        padding-left: 1em;
+        font-size: 18px;
+        font-weight: bold;
+      }
+    `}</style>
+  </div>
+);
 
 const Expanded = ({
   playbackInfo,
@@ -193,8 +190,11 @@ const Expanded = ({
   if (showQueue) {
     return (
       <Queue
+        playMode={playbackInfo.playMode}
         tracks={playbackInfo.queue}
         index={playbackInfo.index}
+        onShuffle={controlAPI.onShuffle}
+        onRepeat={controlAPI.onRepeat}
         onSelect={onSelect}
         onClose={onClose}
       />

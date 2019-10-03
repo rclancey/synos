@@ -1,66 +1,63 @@
-import React, { useState } from 'react';
-import { QueueItem } from '../Queue';
+import React, { useMemo } from 'react';
+import { FixedSizeList as List } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import { QueueHeader, QueueItem } from '../Queue';
 import { useTheme } from '../../lib/theme';
 
-export const Queue = ({ queue, queueIndex, onSkipTo }) => {
+export const Queue = ({ playMode, tracks, index, onSelect, onShuffle, onRepeat }) => {
   const colors = useTheme();
-  const [selected, setSelected] = useState(null);
+  const selIdx = index;
+  const curIdx = index;
+  const rowRenderer = useMemo(() => {
+    return ({ index, style }) => (
+      <div style={style}>
+        <QueueItem
+          track={tracks[index]}
+          coverSize={44}
+          selected={index === selIdx}
+          current={index === curIdx}
+          infoClassName="desktop"
+          onPlay={() => onSelect(tracks[index], index)}
+        />
+      </div>
+    );
+  }, [tracks, selIdx, curIdx, onSelect]);
   return (
     <div className="queue">
-      { queue.slice(queueIndex+1).map((track, i) => (
-        <QueueItem
-          key={i}
-          track={track}
-          coverSize={44}
-          coverRadius={3}
-          selected={track.persistent_id === selected}
-          infoClassName="desktop"
-          onSelect={() => setSelected(track.persistent_id)}
-          onPlay={() => onSkipTo(queueIndex + 1 + i)}
-        />
-      )) }
+      <QueueHeader
+        playMode={playMode}
+        tracks={tracks}
+        onShuffle={onShuffle}
+        onRepeat={onRepeat}
+      />
+      <div className="items">
+        <AutoSizer>
+          {({width, height}) => (
+            <List
+              width={width}
+              height={height}
+              itemCount={tracks.length}
+              itemSize={50}
+              overscanCount={Math.ceil(height / 50)}
+              initialScrollOffset={Math.max(0, index - 2) * 50}
+            >
+              {rowRenderer}
+            </List>
+          )}
+        </AutoSizer>
+      </div>
       <style jsx>{`
         .queue {
-          padding-top: 1em;
-          padding-bottom: 1em;
           max-height: 80vh;
           overflow: auto;
           cursor: default;
           background-color: ${colors.background};
         }
-        /*
-        .queue :global(.trackInfo) {
-          flex: 10;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          border-top-style: solid;
-          border-top-width: 1px;
-          padding-top: 5px;
-          padding-right: 1em;
-          margin-top: -2px;
-        }
-        */
-        .queue :global(.item.selected .trackInfo),
-        .queue :global(.item.selected .time),
-          border-top: none;
+        .queue .items {
+          height: calc(80vh - 33px);
+          padding: 0 3px;
         }
         /*
-        .queue :global(.title) {
-          font-size: 14px;
-          width: 100%;
-          overflow: hidden;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-        }
-        .queue :global(.artist) {
-          font-size: 12px;
-          width: 100%;
-          overflow: hidden;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-        }
-        */
         .queue :global(.time) {
           flex: 1;
           border-top-style: solid;
@@ -70,6 +67,7 @@ export const Queue = ({ queue, queueIndex, onSkipTo }) => {
           text-align: right;
           margin-top: -2px;
         }
+        */
       `}</style>
     </div>
   );
