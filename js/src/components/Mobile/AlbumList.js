@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Album } from './SongList';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import { AlbumIndex } from './Index';
 import { CoverArt } from '../CoverArt';
 import { CoverList } from './CoverList';
+import { Album } from './SongList';
 
 const albumImageUrl = (album, artist) => {
   let url = '/api/art/album?';
@@ -37,6 +37,7 @@ export const AlbumList = ({
   const [albums, setAlbums] = useState([]);
   const [album, setAlbum] = useState(null);
   const api = useAPI(API);
+
   useEffect(() => {
     api.albumIndex(artist)
       .then(albums => {
@@ -52,32 +53,29 @@ export const AlbumList = ({
         setAlbums(albums);
       });
   }, [api, artist]);
-  const onCloseMe = useMemo(() => {
-    return () => {
-      if (album === null) {
-        onClose();
-      } else {
-        setAlbum(null);
-      }
-    };
+
+  const onCloseMe = useCallback(() => {
+    if (album === null) {
+      onClose();
+    } else {
+      setAlbum(null);
+    }
   }, [album, onClose]);
-  const itemRenderer = useMemo(() => {
-    return ({ index, onOpen }) => {
-      const album = albums[index];
-      if (!album) {
-        return (<div className="item" />);
-      }
-      return (
-        <div className="item" onClick={() => onOpen(album)}>
-          <AlbumImage album={album} artist={artist} size={155} />
-          <div className="title">{album.name}</div>
-        </div>
-      );
-    };
+
+  const itemRenderer = useCallback(({ index, onOpen }) => {
+    const album = albums[index];
+    if (!album) {
+      return (<div className="item" />);
+    }
+    return (
+      <div className="item" onClick={() => onOpen(album)}>
+        <AlbumImage album={album} artist={artist} size={155} />
+        <div className="title">{album.name}</div>
+      </div>
+    );
   }, [albums, artist]);
 
   if (album !== null) {
-    console.debug('rendering album %o', album);
     return (
       <Album
         prev={artist || { name: "Albums"}}

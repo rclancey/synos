@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { LoginContext } from '../../../lib/login';
+import React, { useState, useEffect } from 'react';
+import { useAPI } from '../../../lib/useAPI';
+import { JookiAPI } from '../../../lib/jooki';
+import { WS } from '../../../lib/ws';
+
 import { SonosDevicePlaylist } from './Sonos/DevicePlaylist';
 import { AirplayDevicePlaylist } from './Airplay/DevicePlaylist';
 import { JookiDevicePlaylist } from './Jooki/DevicePlaylist';
@@ -7,17 +10,14 @@ import { AppleDevicePlaylist } from './Apple/DevicePlaylist';
 import { AndroidDevicePlaylist } from './Android/DevicePlaylist';
 import { PlexDevicePlaylist } from './Plex/DevicePlaylist';
 
-import { JookiAPI } from '../../../lib/jooki';
-import { WS } from '../../../lib/ws';
 
 export const DevicePlaylists = ({
   selected,
   onSelect,
 }) => {
-  const { onLoginRequired } = useContext(LoginContext);
   const [jooki, setJooki] = useState(null);
+  const jookiAPI = useAPI(JookiAPI);
   useEffect(() => {
-    const api = new JookiAPI(onLoginRequired);
     const msgHandler = msg => {
       if (msg.type === 'jooki') {
         setJooki(dev => {
@@ -32,16 +32,16 @@ export const DevicePlaylists = ({
           return out;
         });
         if (msg.deltas.some(delta => !!delta.db)) {
-          api.loadPlaylists()
+          jookiAPI.loadPlaylists()
             .then(playlists => setJooki(dev => Object.assign({}, dev, { playlists })));
         }
       }
     };
-    api.loadState()
+    jookiAPI.loadState()
       .then(state => {
-        api.loadPlaylists()
+        jookiAPI.loadPlaylists()
           .then(playlists => {
-            const device = { api, state, playlists };
+            const device = { api: jookiAPI, state, playlists };
             setJooki(device);
           });
       });
@@ -49,7 +49,7 @@ export const DevicePlaylists = ({
     return () => {
       WS.off('message', msgHandler);
     };
-  }, [onLoginRequired]);
+  }, [jookiAPI]);
   return (
     <>
       <h1>Devices</h1>

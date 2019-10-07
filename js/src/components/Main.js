@@ -1,10 +1,11 @@
-import React, { useMemo, useState, useReducer, useEffect } from 'react';
+import React, { Suspense, useMemo, useState, useReducer, useEffect } from 'react';
 import { useDarkMode, useMobile } from '../lib/useMedia';
 import { ThemeContext } from '../lib/theme';
 import { CheckLogin } from './Login';
 import { Player } from './Player/Player';
-import { MobileSkin } from './Mobile/Skin';
-import { DesktopSkin } from './Desktop/Skin';
+
+const DesktopSkin = React.lazy(() => import('./Desktop/Skin'));
+const MobileSkin = React.lazy(() => import('./Mobile/Skin'));
 
 const InstallAppButton = ({ onInstall }) => (
   <div className="installApp" onClick={onInstall}>
@@ -70,14 +71,6 @@ export const Main = () => {
     });
   };
 
-  /*
-  useEffect(() => {
-    loadTheme(`${mobile ? 'mobile' : 'desktop'}/layout`);
-    loadTheme(`common/${dark ? 'dark' : 'light'}`);
-    loadTheme(`${mobile ? 'mobile' : 'desktop'}/${dark ? 'dark' : 'light'}`);
-  }, [dark, mobile]);
-  */
-
   const theme = dark ? 'dark' : 'light';
 
   return (
@@ -93,26 +86,27 @@ export const Main = () => {
             setPlaybackInfo={setPlaybackInfo}
             setControlAPI={setControlAPI}
           />
-          { mobile ? (
-            <MobileSkin
-              theme={theme}
-              player={player}
-              playbackInfo={playbackInfo}
-              controlAPI={controlAPI}
-              setPlayer={setPlayer}
-            />
-          ) : (
-            <DesktopSkin
-              theme={theme}
-              player={player}
-              playbackInfo={playbackInfo}
-              controlAPI={controlAPI}
-              setPlayer={setPlayer}
-            />
-          ) }
+          <Suspense fallback={<div>loading...</div>}>
+            { mobile ? (
+              <MobileSkin
+                theme={theme}
+                player={player}
+                playbackInfo={playbackInfo}
+                controlAPI={controlAPI}
+                setPlayer={setPlayer}
+              />
+            ) : (
+              <DesktopSkin
+                theme={theme}
+                player={player}
+                playbackInfo={playbackInfo}
+                controlAPI={controlAPI}
+                setPlayer={setPlayer}
+              />
+            ) }
+          </Suspense>
         </CheckLogin>
       </ThemeContext.Provider>
     </div>
   );
 };
-

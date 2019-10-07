@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import displayTime from '../../lib/displayTime';
 import { PlayPauseSkip, Volume, Progress } from '../Controls';
 import { CoverArt } from '../CoverArt';
@@ -8,7 +8,18 @@ import { Icon } from '../Icon';
 import { Cover } from '../Cover';
 import { useTheme } from '../../lib/theme';
 
-const Buttons = ({ status, sonos, volume, onPlay, onPause, onSkipBy, onSeekBy, onSetVolumeTo, onEnableSonos, onDisableSonos }) => (
+const Buttons = React.memo(({
+  status,
+  sonos,
+  volume,
+  onPlay,
+  onPause,
+  onSkipBy,
+  onSeekBy,
+  onSetVolumeTo,
+  onEnableSonos,
+  onDisableSonos,
+}) => (
   <div className="playpause">
     <div className="wrapper">
       <div className="padding" />
@@ -21,7 +32,6 @@ const Buttons = ({ status, sonos, volume, onPlay, onPause, onSkipBy, onSeekBy, o
         onSkipBy={onSkipBy}
         onSeekBy={onSeekBy}
       />
-        {/*style={{ flex: 1, paddingLeft: '4em' }}*/}
       <div className="padding" />
     </div>
     <div className="foo" style={{ flex: 8 }}>
@@ -70,38 +80,36 @@ const Buttons = ({ status, sonos, volume, onPlay, onPause, onSkipBy, onSeekBy, o
       }
     `}</style>
   </div>
-);
+));
 
-const OutputDevice = ({ name, icon, enabled, onEnable }) => {
-  return (
-    <div className="device">
-      <Icon name={icon} size={18} />
-      <div className="title">{name}</div>
-      <div className="checkbox">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={evt => onEnable(evt.target.checked)}
-        />
-      </div>
-      <style jsx>{`
-        .device {
-          display: flex;
-          flex-direction: row;
-        }
-        .device :global(.icon) {
-          flex: 1;
-          margin-right: 1em;
-          mackground-size: cover;
-        }
-        .title {
-          flex: 10;
-          font-size: 13px;
-        }
-      `}</style>
+const OutputDevice = React.memo(({ name, icon, enabled, onEnable }) => (
+  <div className="device">
+    <Icon name={icon} size={18} />
+    <div className="title">{name}</div>
+    <div className="checkbox">
+      <input
+        type="checkbox"
+        checked={enabled}
+        onChange={evt => onEnable(evt.target.checked)}
+      />
     </div>
-  );
-};
+    <style jsx>{`
+      .device {
+        display: flex;
+        flex-direction: row;
+      }
+      .device :global(.icon) {
+        flex: 1;
+        margin-right: 1em;
+        mackground-size: cover;
+      }
+      .title {
+        flex: 10;
+        font-size: 13px;
+      }
+    `}</style>
+  </div>
+));
 
 const ButtonMenu = ({
   icon,
@@ -148,9 +156,6 @@ const ButtonMenu = ({
           border-style: solid;
           border-width: 1px;
           border-radius: 5px;
-          /*
-          padding: 5px;
-          */
           box-sizing: border-box;
           background-color: ${colors.background};
           overflow: hidden;
@@ -160,29 +165,31 @@ const ButtonMenu = ({
   );
 };
 
-const AirplayButton = ({ sonos, onEnableSonos, onDisableSonos }) => {
-  return (
-    <ButtonMenu icon="airplay">
-      <div style={{ padding: '5px' }}>
-        <OutputDevice
-          name="Computer"
-          icon="computer"
-          enabled={!sonos}
-          onEnable={() => { console.debug('disable sonos'); onDisableSonos(); }}
-        />
-        <OutputDevice
-          name="Sonos"
-          icon="sonos"
-          enabled={sonos}
-          onEnable={() => { console.debug('enable sonos'); onEnableSonos(); }}
-        />
-      </div>
-    </ButtonMenu>
-  );
-};
+const AirplayButton = React.memo(({
+  sonos,
+  onEnableSonos,
+  onDisableSonos
+}) => (
+  <ButtonMenu icon="airplay">
+    <div style={{ padding: '5px' }}>
+      <OutputDevice
+        name="Computer"
+        icon="computer"
+        enabled={!sonos}
+        onEnable={() => { console.debug('disable sonos'); onDisableSonos(); }}
+      />
+      <OutputDevice
+        name="Sonos"
+        icon="sonos"
+        enabled={sonos}
+        onEnable={() => { console.debug('enable sonos'); onEnableSonos(); }}
+      />
+    </div>
+  </ButtonMenu>
+));
 
 
-const NotPlaying = () => (
+const NotPlaying = React.memo(() => (
   <span
     className="fab fa-apple"
     style={{
@@ -192,9 +199,9 @@ const NotPlaying = () => (
       padding: '4px',
     }}
   />
-);
+));
 
-const Timer = ({ t }) => (
+const Timer = React.memo(({ t }) => (
   <div className="timer">
     <div className="padding" />
     <div className="currentTime">{displayTime(t)}</div>
@@ -221,10 +228,15 @@ const Timer = ({ t }) => (
       }
     `}</style>
   </div>
-);
+));
 
-const NowPlaying = ({ track, currentTime, duration, onSeekTo }) => {
-  const colors = useTheme();
+const NowPlaying = React.memo(({
+  track,
+  currentTime,
+  duration,
+  colors,
+  onSeekTo,
+}) => {
   if (!track) {
     return (<NotPlaying />);
   }
@@ -237,7 +249,12 @@ const NowPlaying = ({ track, currentTime, duration, onSeekTo }) => {
           <TrackInfo track={track} className="desktop controls" />
           <Timer t={currentTime - duration} />
         </div>
-        <Progress currentTime={currentTime} duration={duration} onSeekTo={onSeekTo} height={4} />
+        <Progress
+          currentTime={currentTime}
+          duration={duration}
+          onSeekTo={onSeekTo}
+          height={4}
+        />
       </div>
       <style jsx>{`
         .nowplaying {
@@ -266,28 +283,32 @@ const NowPlaying = ({ track, currentTime, duration, onSeekTo }) => {
       `}</style>
     </div>
   );
-};
+});
 
-const QueueMenu = ({ playMode, queue, queueIndex, onSkipTo, onShuffle, onRepeat }) => {
-  return (
-    <ButtonMenu icon="queue" maxWidth={375}>
-      <Queue
-        playMode={playMode}
-        tracks={queue}
-        index={queueIndex}
-        onSkipTo={onSkipTo}
-        onShuffle={onShuffle}
-        onRepeat={onRepeat}
-      />
-    </ButtonMenu>
-  );
-};
+const QueueMenu = React.memo(({
+  playMode,
+  queue,
+  queueIndex,
+  onSkipTo,
+  onShuffle,
+  onRepeat,
+}) => (
+  <ButtonMenu icon="queue" maxWidth={375}>
+    <Queue
+      playMode={playMode}
+      tracks={queue}
+      index={queueIndex}
+      onSkipTo={onSkipTo}
+      onShuffle={onShuffle}
+      onRepeat={onRepeat}
+    />
+  </ButtonMenu>
+));
 
-const Search = ({ search, onSearch }) => {
+const Search = React.memo(({ search, onSearch }) => {
   const node = useRef(null);
   useEffect(() => {
     const handler = event => {
-      console.debug('search select handler');
       if (event.ctrlKey && event.code === 'KeyF') {
         event.stopPropagation();
         event.preventDefault();
@@ -343,9 +364,18 @@ const Search = ({ search, onSearch }) => {
       `}</style>
     </div>
   );
-};
+});
 
-const Tools = ({ playMode, queue, queueIndex, search, onSkipTo, onSearch, onShuffle, onRepeat }) => (
+const Tools = React.memo(({
+  playMode,
+  queue,
+  queueIndex,
+  search,
+  onSkipTo,
+  onSearch,
+  onShuffle,
+  onRepeat,
+}) => (
   <div className="search">
     <div className="queuebutton">
       <div className="padding" />
@@ -379,7 +409,7 @@ const Tools = ({ playMode, queue, queueIndex, search, onSkipTo, onSearch, onShuf
       }
     `}</style>
   </div>
-);
+));
   
 export const Controls = ({
   search,
@@ -411,8 +441,12 @@ export const Controls = ({
   } = controlAPI;
 
   const sonos = playbackInfo.player === 'sonos';
-  const onEnableSonos = () => setPlayer('sonos');
-  const onDisableSonos = () => setPlayer('local');
+  const onEnableSonos = useMemo(() => {
+    return () => setPlayer('sonos');
+  }, [setPlayer]);
+  const onDisableSonos = useMemo(() => {
+    return () => setPlayer('local');
+  }, [setPlayer]);
 
   return (
     <div className="controls">
@@ -432,6 +466,7 @@ export const Controls = ({
         track={queue ? queue[index] : null}
         currentTime={currentTime}
         duration={duration}
+        colors={colors}
         onSeekTo={onSeekTo}
       />
       <Tools

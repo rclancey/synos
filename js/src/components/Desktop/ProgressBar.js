@@ -1,7 +1,7 @@
 import React from 'react';
 import logo from '../../logo.svg';
 
-export const ProgressBar = ({ total, complete }) => {
+export const ProgressBar = React.memo(({ total, complete }) => {
   if (total <= 0) {
     return null;
   }
@@ -69,5 +69,4 @@ export const ProgressBar = ({ total, complete }) => {
       `}</style>
     </div>
   );
-}
-
+});

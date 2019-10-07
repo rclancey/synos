@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { FixedSizeList as List } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
-import { DotsMenu } from './TrackMenu';
-import { CoverArt } from '../CoverArt';
-import { MixCover } from './MixCover';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useTheme } from '../../lib/theme';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
-import { Back } from './ScreenHeader';
+import { AutoSizeList } from '../AutoSizeList';
+import { CoverArt } from '../CoverArt';
 import { Icon } from '../Icon';
-import { useTheme } from '../../lib/theme';
+import { DotsMenu } from './TrackMenu';
+import { MixCover } from './MixCover';
+import { Back } from './ScreenHeader';
 import { Sources } from './Sources';
 import { SongRow } from './SongRow';
 
@@ -118,21 +117,20 @@ export const SongList = ({
   children,
 }) => {
   const colors = useTheme();
+  const api = useAPI(API);
   const [chooser, setChooser] = useState(false);
   const [chooserSource, setChooserSource] = useState(null);
   const [scrollTop, setScrollTop] = useState(0);
   const scrollTopRef = useRef(scrollTop);
+  const ref = useRef(null);
+
   useEffect(() => {
     scrollTopRef.current = scrollTop;
   }, [scrollTop]);
-  const ref = useRef(null);
-  const onScroll = useMemo(() => {
-    return ({ scrollOffset }) => {
-      console.debug('setScrollTop(%o)', scrollOffset);
-      setScrollTop(scrollOffset);
-    };
+
+  const onScroll = useCallback(({ scrollOffset }) => {
+    setScrollTop(scrollOffset);
   }, [setScrollTop]);
-  const api = useAPI(API);
 
   const onAddMe = useMemo(() => {
     if (!editing) {
@@ -141,61 +139,59 @@ export const SongList = ({
     return (track) => api.addToPlaylist(playlist, [track])
       .then(onUpdatePlaylist);
   }, [playlist, api, onUpdatePlaylist, editing, onAdd]);
-  const onDelete = useMemo(() => {
-    return (track, index) => api.deletePlaylistTracks({ ...playlist, items: tracks }, [{ track: { origIndex: index } }])
+
+  const onDelete = useCallback((track, index) => {
+    return api.deletePlaylistTracks(
+      { ...playlist, items: tracks },
+      [{ track: { origIndex: index } }]
+    )
       .then(onUpdatePlaylist);
   }, [playlist, tracks, api, onUpdatePlaylist]);
-  const onMove = useMemo(() => {
-    return (srcIndex, dstIndex, dir) => {
-      console.debug('move track %o to %o in %o', srcIndex, dstIndex, playlist);
-      api.reorderTracks({ ...playlist, items: tracks }, dstIndex, [srcIndex])
-        .then(onUpdatePlaylist)
-        .then(() => {
-          if (ref.current) {
-            console.debug('scrollTo(%o + %o * %o)', scrollTopRef.current + dir * 63);
-            ref.current.scrollTo(scrollTopRef.current + dir * 63);
-          } else {
-            console.debug('no ref to scroll');
-          }
-        });
-    };
+
+  const onMove = useCallback((srcIndex, dstIndex, dir) => {
+    console.debug('move track %o to %o in %o', srcIndex, dstIndex, playlist);
+    api.reorderTracks({ ...playlist, items: tracks }, dstIndex, [srcIndex])
+      .then(onUpdatePlaylist)
+      .then(() => {
+        if (ref.current) {
+          ref.current.scrollTo(scrollTopRef.current + dir * 63);
+        }
+      });
   }, [playlist, tracks, api, onUpdatePlaylist]);
 
-  const rowRenderer = useMemo(() => {
-    return ({ index, style }) => {
-      if (editing && index === 0) {
-        return (
-          <div
-            className="item add"
-            style={style}
-            onClick={() => setChooser(true)}
-          >
-            <Icon name="add" size={36} />
-            <div className="action">Add Music</div>
-          </div>
-        );
-      }
-      const track = editing ? tracks[index - 1] : tracks[index];
+  const rowRenderer = useCallback(({ index, style }) => {
+    if (editing && index === 0) {
       return (
-        <SongRow
+        <div
+          className="item add"
           style={style}
-          index={editing ? index - 1 : index}
-          len={tracks.length}
-          playlist={playlist}
-          track={track}
-          withTrackNum={withTrackNum}
-          withCover={withCover}
-          withArtist={withArtist}
-          withAlbum={withAlbum}
-          editing={editing}
-          adding={adding}
-          onTrackMenu={onTrackMenu}
-          onAdd={onAddMe}
-          onMove={onMove}
-          onDelete={onDelete}
-        />
+          onClick={() => setChooser(true)}
+        >
+          <Icon name="add" size={36} />
+          <div className="action">Add Music</div>
+        </div>
       );
-    };
+    }
+    const track = editing ? tracks[index - 1] : tracks[index];
+    return (
+      <SongRow
+        style={style}
+        index={editing ? index - 1 : index}
+        len={tracks.length}
+        playlist={playlist}
+        track={track}
+        withTrackNum={withTrackNum}
+        withCover={withCover}
+        withArtist={withArtist}
+        withAlbum={withAlbum}
+        editing={editing}
+        adding={adding}
+        onTrackMenu={onTrackMenu}
+        onAdd={onAddMe}
+        onMove={onMove}
+        onDelete={onDelete}
+      />
+    );
   }, [playlist, tracks, withTrackNum, withCover, withArtist, withAlbum, onTrackMenu, editing, adding, onDelete, onMove, onAddMe]);
 
   if (chooser) {
@@ -216,26 +212,20 @@ export const SongList = ({
   return (
     <div className={`songList ${editing ? 'editing' : ''}`}>
       <Back onClose={onClose}>{prev}</Back>
-      <Header>
+      <Header colors={colors}>
         {children}
       </Header>
       <div className="items">
-        <AutoSizer>
-          {({width, height}) => (
-            <List
-              ref={ref}
-              width={width}
-              height={height}
-              itemCount={tracks.length + (editing ? 1 : 0)}
-              itemSize={63}
-              overscanCount={Math.ceil(height / 63)}
-              initialScrollOffset={scrollTop}
-              onScroll={onScroll}
-            >
-              {rowRenderer}
-            </List>
-          )}
-        </AutoSizer>
+        <AutoSizeList
+          xref={ref}
+          itemCount={tracks.length + (editing ? 1 : 0)}
+          itemSize={63}
+          offset={0}
+          initialScrollOffset={scrollTop}
+          onScroll={onScroll}
+        >
+          {rowRenderer}
+        </AutoSizeList>
       </div>
 
       <style jsx>{`
@@ -277,12 +267,14 @@ export const Playlist = ({
   const [editing, setEditing] = useState(false);
   const api = useAPI(API);
   const plid = playlist.persistent_id;
+
   useEffect(() => {
     api.loadPlaylistTracks({ persistent_id: plid }).then(setTracks);
   }, [api, plid]);
-  const onUpdatePlaylist = () => {
+
+  const onUpdatePlaylist = useCallback(() => {
     api.loadPlaylistTracks(playlist).then(setTracks);
-  };
+  }, [api, playlist, setTracks]);
 
   return (
     <SongList
@@ -311,102 +303,9 @@ export const Playlist = ({
       />
     </SongList>
   );
-
-/*
-  const rowRenderer = useMemo(() => {
-    return ({ index, style }) => {
-      const track = tracks[index];
-      return (
-        <div className="item" style={style}>
-          <CoverArt track={track} size={48} radius={4} />
-          <div className="title">
-            <div className="song">{track.name}</div>
-            <div className="artist">{track.artist}</div>
-          </div>
-          <DotsMenu track={track} onOpen={onTrackMenu} />
-        </div>
-      );
-    };
-  }, [tracks, onTrackMenu]);
-
-  return (
-    <div className="songList">
-      <Back onClose={onClose}>{prev}</Back>
-      <Header>
-        <MixCover tracks={tracks} radius={5} />
-        <PlaylistTitle
-          tracks={tracks}
-          playlist={playlist}
-          onPlaylistMenu={onPlaylistMenu}
-        />
-      </Header>
-      <div className="items">
-        <AutoSizer>
-          {({width, height}) => (
-            <List
-              width={width}
-              height={height}
-              itemCount={tracks.length}
-              itemSize={63}
-              overscanCount={Math.ceil(height / 58)}
-            >
-              {rowRenderer}
-            </List>
-          )}
-        </AutoSizer>
-      </div>
-
-      <style jsx>{`
-        .songList {
-          width: 100vw;
-          height: calc(100vh - 69px);
-          box-sizing: border-box;
-          overflow: hidden;
-        }
-        .songList .items {
-          height: calc(100vh - 273px);
-        }
-        .songList :global(.item) {
-          display: flex;
-          padding: 9px 9px 0px 9px;
-          box-sizing: border-box;
-          white-space: nowrap;
-          overflow: hidden;
-        }
-        .songList :global(.item .title) {
-          flex: 10;
-          font-size: 18px;
-          padding: 9px 0px 0px 0px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          margin-left: 9px;
-        }
-        .songList :globa(.item .title .song) {
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .songList :global(.item .title .artist) {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          font-size: 14px;
-        }
-        .songList :global(.item .tracknum) {
-          flex: 1;
-          width: 24px;
-          min-width: 24px;
-          max-width: 24px;
-          font-size: 18px;
-          padding-top: 9px;
-          text-align: right;
-        }
-      `}</style>
-
-    </div>
-  );
-*/
 };
 
-const AlbumTitle = ({
+const AlbumTitle = React.memo(({
   tracks,
   adding,
   onPlaylistMenu,
@@ -462,7 +361,7 @@ const AlbumTitle = ({
       `}</style>
     </div>
   );
-};
+});
 
 export const Album = ({
   prev,
@@ -473,7 +372,6 @@ export const Album = ({
   onClose,
   onAdd,
 }) => {
-  console.debug('show album %o', album);
   const [tracks, setTracks] = useState([]);
   const api = useAPI(API);
   useEffect(() => {
@@ -497,115 +395,19 @@ export const Album = ({
       <AlbumTitle tracks={tracks} adding={adding} onPlaylistMenu={onPlaylistMenu} />
     </SongList>
   );
-
-  /*
-  const rowRenderer = useMemo(() => {
-    return ({ index, style }) => {
-      const track = tracks[index];
-      return (
-        <div className="item" style={style}>
-          <div className="tracknum">{track.track_number}</div>
-          <div className="title">
-            <div className="song">{track.name}</div>
-            { (track.compilation || (track.album_artist && track.album_artist !== track.artist)) ? (
-              <div className="artist">{track.artist}</div>
-            ) : null }
-          </div>
-          <DotsMenu track={track} onOpen={onTrackMenu} />
-        </div>
-      );
-    };
-  }, [tracks, onTrackMenu]);
-
-  return (
-    <div className="songList">
-      <Back onClose={onClose}>{prev.name}</Back>
-      <Header>
-        <CoverArt track={tracks[0]} size={140} radius={5} />
-        <AlbumTitle tracks={tracks} onPlaylistMenu={onPlaylistMenu} />
-      </Header>
-      <div className="items">
-        <AutoSizer>
-          {({width, height}) => (
-            <List
-              width={width}
-              height={height}
-              itemCount={tracks.length}
-              itemSize={63}
-              overscanCount={Math.ceil(height / 63)}
-            >
-              {rowRenderer}
-            </List>
-          )}
-        </AutoSizer>
-      </div>
-
-      <style jsx>{`
-        .songList {
-          width: 100vw;
-          height: calc(100vh - 69px);
-          box-sizing: border-box;
-          overflow: hidden;
-        }
-        .songList .items {
-          height: calc(100vh - 273px);
-        }
-        .songList :global(.item) {
-          display: flex;
-          padding: 9px 9px 0px 9px;
-          box-sizing: border-box;
-          white-space: nowrap;
-          overflow: hidden;
-        }
-        .songList :global(.item .title) {
-          flex: 10;
-          font-size: 18px;
-          padding: 9px 0px 0px 0px;
-          border-bottom-style: solid;
-          border-bottom-width: 1px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          margin-left: 9px;
-        }
-        .songList :globa(.item .title .song) {
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .songList :global(.item .title .artist) {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          font-size: 14px;
-        }
-        .songList :global(.item .tracknum) {
-          flex: 1;
-          width: 24px;
-          min-width: 24px;
-          max-width: 24px;
-          font-size: 18px;
-          padding-top: 9px;
-          text-align: right;
-        }
-      `}</style>
-    </div>
-  );
-  */
 };
 
-const Header = ({ children }) => {
-  const colors = useTheme();
-  return (
-    <div className="header">
-      {children}
-      <style jsx>{`
-        .header {
-          display: flex;
-          flex-direction: row;
-          padding: 0.5em;
-          padding-top: 54px;
-          background-color: ${colors.sectionBackground};
-        }
-      `}</style>
-    </div>
-  );
-};
-
+const Header = React.memo(({ colors, children }) => (
+  <div className="header">
+    {children}
+    <style jsx>{`
+      .header {
+        display: flex;
+        flex-direction: row;
+        padding: 0.5em;
+        padding-top: 54px;
+        background-color: ${colors.sectionBackground};
+      }
+    `}</style>
+  </div>
+));

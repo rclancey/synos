@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { PlaylistMenu } from './TrackMenu';
 import { NowPlaying } from './NowPlaying';
 import { Home } from './Home';
@@ -18,22 +18,14 @@ export const MobileSkin = ({
   const [playlistMenuTitle, setPlaylistMenuTitle] = useState(null);
 
   const onOpen = setChildren;
-  const onClose = useMemo(() => {
-    return () => setChildren(null);
-  }, [setChildren]);
+  const onClose = useCallback(() => setChildren(null), [setChildren]);
   const onTrackMenu = setTrackMenuTrack;
-  const onPlaylistMenu = useMemo(() => {
-    return (title, tracks) => {
-      setPlaylistMenuTitle(title);
-      setPlaylistMenuTracks(tracks);
-    };
+  const onPlaylistMenu = useCallback((title, tracks) => {
+    setPlaylistMenuTitle(title);
+    setPlaylistMenuTracks(tracks);
   }, [setPlaylistMenuTitle, setPlaylistMenuTracks]);
-  const onEnableSonos = useMemo(() => {
-    return () => setPlayer('sonos');
-  }, [setPlayer]);
-  const onDisableSonos = useMemo(() => {
-    return () => setPlayer('local');
-  }, [setPlayer]);
+  const onEnableSonos = useCallback(() => setPlayer('sonos'), [setPlayer]);
+  const onDisableSonos = useCallback(() => setPlayer('local'), [setPlayer]);
 
   return (
     <div id="app" className={`mobile ${theme}`}>

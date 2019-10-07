@@ -108,7 +108,7 @@ export class TrackSelectionList {
     this._allTracks = tracks;
     this.tracks = this._allTracks.filter(tr => tr.filtered === 0);
     this.displayTracks = this.tracks.map(tr => tr.track);
-    console.error('updated tracks to %o, %o items', this.tracks.length, this.displayTracks.length);
+    //console.error('updated tracks to %o, %o items', this.tracks.length, this.displayTracks.length);
     this.genres = this.filters(GENRE_FILTER);
     this.artists = this.filters(ARTIST_FILTER);
     this.albums = this.filters(ALBUM_FILTER);

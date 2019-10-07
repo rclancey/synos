@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { AlbumList } from './AlbumList';
+import React, { useState, useCallback, useEffect } from 'react';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import { ArtistIndex } from './Index';
 import { ArtistImage } from './ArtistImage';
+import { AlbumList } from './AlbumList';
 import { RowList } from './RowList';
 
 export const ArtistList = ({
@@ -28,16 +28,14 @@ export const ArtistList = ({
       });
   }, [api, setArtists, genre]);
 
-  const rowRenderer = useMemo(() => {
-    return ({ key, index, style, onOpen }) => {
-      const artist = artists[index];
-      return (
-        <div key={key} className="item" style={style} onClick={() => onOpen(artist)}>
-          <ArtistImage artist={artist} size={36} />
-          <div className="title">{artist.name}</div>
-        </div>
-      );
-    };
+  const rowRenderer = useCallback(({ key, index, style, onOpen }) => {
+    const artist = artists[index];
+    return (
+      <div key={key} className="item" style={style} onClick={() => onOpen(artist)}>
+        <ArtistImage artist={artist} size={36} />
+        <div className="title">{artist.name}</div>
+      </div>
+    );
   }, [artists]);
 
   return (

@@ -1,8 +1,8 @@
-import React, { useMemo, useState, useRef, useEffect, useContext } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { trackDB } from '../../lib/trackdb';
 import { WS } from '../../lib/ws';
 import { API } from '../../lib/api';
-import { LoginContext } from '../../lib/login';
+import { useAPI } from '../../lib/useAPI';
 import { PlaylistBrowser } from './Playlists/PlaylistBrowser';
 import { TrackBrowser } from './Tracks/TrackBrowser';
 import { ProgressBar } from './ProgressBar';
@@ -41,8 +41,7 @@ export const Library = ({
   controlAPI,
   setPlaylist,
 }) => {
-  const { onLoginRequired } = useContext(LoginContext);
-  const api = useMemo(() => new API(onLoginRequired), [onLoginRequired]);
+  const api = useAPI(API);
   const [loadedCount, setLoadedCount] = useState(0);
   const [loadingCount, setLoadingCount] = useState(0);
   const [loadingComplete, setLoadingComplete] = useState(false);

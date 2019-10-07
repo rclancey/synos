@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { useTheme } from '../../lib/theme';
 import { TrackInfo } from '../TrackInfo';
-import { Queue } from './Queue';
 import { CoverArt } from '../CoverArt';
 import { PlayPauseSkip, Volume, Progress, Timers } from '../Controls';
 import { Switch } from '../Switch';
 import { Center } from '../Center';
-import { useTheme } from '../../lib/theme';
+import { Queue } from './Queue';
 
 const Expander = ({ onExpand }) => {
   const colors = useTheme();
@@ -65,12 +65,8 @@ export const NowPlaying = ({
     }
     return playbackInfo.queue[playbackInfo.index] || {};
   }, [playbackInfo.queue, playbackInfo.index]);
-  const onCollapse = useMemo(() => {
-    return () => setExpanded(false);
-  }, [setExpanded]);
-  const onExpand = useMemo(() => {
-    return () => setExpanded(true);
-  }, [setExpanded]);
+  const onCollapse = useCallback(() => setExpanded(false), [setExpanded]);
+  const onExpand = useCallback(() => setExpanded(true), [setExpanded]);
 
   if (expanded) {
     return (
@@ -181,12 +177,8 @@ const Expanded = ({
 }) => {
   const colors = useTheme();
   const [showQueue, setShowQueue] = useState(false);
-  const onSelect = useMemo(() => {
-    return (track, i) => controlAPI.onSkipTo(i);
-  }, [controlAPI]);
-  const onClose = useMemo(() => {
-    return () => setShowQueue(false);
-  }, [setShowQueue]);
+  const onSelect = useCallback((track, i) => controlAPI.onSkipTo(i), [controlAPI]);
+  const onClose = useCallback(() => setShowQueue(false), [setShowQueue]);
   if (showQueue) {
     return (
       <Queue

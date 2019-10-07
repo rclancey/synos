@@ -1,6 +1,5 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { FixedSizeList as List } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import React, { useState, useCallback, useRef } from 'react';
+import { AutoSizeList } from '../AutoSizeList';
 import { ScreenHeader } from './ScreenHeader';
 
 export const RowList = ({
@@ -22,20 +21,21 @@ export const RowList = ({
 }) => {
   const [scrollTop, setScrollTop] = useState(0);
   const ref = useRef(null);
-  const onCloseMe = useMemo(() => {
-    return () => {
-      if (selected === null) {
-        onClose();
-      } else {
-        onSelect(null);
-      }
-    };
+
+  const onCloseMe = useCallback(() => {
+    if (selected === null) {
+      onClose();
+    } else {
+      onSelect(null);
+    }
   }, [selected, onSelect, onClose]);
-  const onScroll = useMemo(() => {
-    return ({ scrollOffset }) => setScrollTop(scrollOffset);
+
+  const onScroll = useCallback(({ scrollOffset }) => {
+    setScrollTop(scrollOffset);
   }, [setScrollTop]);
-  const subRenderer = useMemo(() => {
-    return ({ key, index, style }) => rowRenderer({ key, index, style, onOpen: onSelect });
+
+  const subRenderer = useCallback(({ key, index, style }) => {
+    return rowRenderer({ key, index, style, onOpen: onSelect });
   }, [rowRenderer, onSelect]);
 
   if (selected !== null) {
@@ -51,6 +51,7 @@ export const RowList = ({
       />
     );
   }
+
   return (
     <div className="rowList">
       <ScreenHeader
@@ -60,22 +61,16 @@ export const RowList = ({
       />
       <Indexer {...indexerArgs} height={45} list={ref} />
       <div className="items">
-        <AutoSizer>
-          {({width, height}) => (
-            <List
-              ref={ref}
-              width={width}
-              height={height}
-              itemCount={items.length}
-              itemSize={45}
-              overscanCount={Math.ceil(height / 45)}
-              initialScrollOffset={scrollTop}
-              onScroll={onScroll}
-            >
-              {subRenderer}
-            </List>
-          )}
-        </AutoSizer>
+        <AutoSizeList
+          xref={ref}
+          itemCount={items.length}
+          itemSize={45}
+          offset={0}
+          initialScrollOffset={scrollTop}
+          onScroll={onScroll}
+        >
+          {subRenderer}
+        </AutoSizeList>
       </div>
 
       <style jsx>{`

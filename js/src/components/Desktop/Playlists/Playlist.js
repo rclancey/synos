@@ -1,7 +1,8 @@
 import React from 'react';
 import { useDrag, useDrop } from 'react-dnd';
-import { Label } from './Label';
+import { useAPI } from '../../../lib/useAPI';
 import { API } from '../../../lib/api';
+import { Label } from './Label';
 
 export const Playlist = ({
   device,
@@ -16,6 +17,7 @@ export const Playlist = ({
   onAddToPlaylist,
   controlAPI,
 }) => {
+  const api = useAPI(API);
   const [, connectDragSource] = useDrag({
     item: {
       type: 'Playlist',
@@ -52,7 +54,6 @@ export const Playlist = ({
         if (controlAPI.onSetPlaylist) {
           controlAPI.setPlaylist(playlist, 0);
         } else if (controlAPI.onReplaceQueue) {
-          const api = new API(() => console.error("login required"));
           api.loadPlaylistTracks(playlist)
             .then(tracks => controlAPI.onReplaceQueue(tracks));
         }

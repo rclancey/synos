@@ -1,27 +1,24 @@
-import React, { useMemo } from 'react';
-import { FixedSizeList as List } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
-import { QueueHeader, QueueItem } from '../Queue';
+import React, { useCallback } from 'react';
 import { useTheme } from '../../lib/theme';
+import { AutoSizeList } from '../AutoSizeList';
+import { QueueHeader, QueueItem } from '../Queue';
 
 export const Queue = React.memo(({ playMode, tracks, index, onSelect, onShuffle, onRepeat, onClose }) => {
   const colors = useTheme();
   const selIdx = index;
   const curIdx = index;
-  const rowRenderer = useMemo(() => {
-    return ({ index, style }) => (
-      <div style={style}>
-        <QueueItem
-          track={tracks[index]}
-          coverSize={44}
-          selected={index === selIdx}
-          current={index === curIdx}
-          infoClassName="mobile"
-          onPlay={() => onSelect(tracks[index], index)}
-        />
-      </div>
-    );
-  }, [tracks, selIdx, curIdx, onSelect]);
+  const rowRenderer = useCallback(({ index, style }) => (
+    <div style={style}>
+      <QueueItem
+        track={tracks[index]}
+        coverSize={44}
+        selected={index === selIdx}
+        current={index === curIdx}
+        infoClassName="mobile"
+        onPlay={() => onSelect(tracks[index], index)}
+      />
+    </div>
+  ), [tracks, selIdx, curIdx, onSelect]);
   return (
     <div className="queue">
       <QueueHeader
@@ -32,20 +29,14 @@ export const Queue = React.memo(({ playMode, tracks, index, onSelect, onShuffle,
         onClose={onClose}
       />
       <div className="items">
-        <AutoSizer>
-          {({width, height}) => (
-            <List
-              width={width}
-              height={height}
-              itemCount={tracks.length}
-              itemSize={50}
-              overscanCount={Math.ceil(height / 50)}
-              initialScrollOffset={Math.max(0, index - 2) * 50}
-            >
-              {rowRenderer}
-            </List>
-          )}
-        </AutoSizer>
+        <AutoSizeList
+          itemCount={tracks.length}
+          itemSize={50}
+          offset={0}
+          initialScrollOffset={Math.max(0, index - 2) * 50}
+        >
+          {rowRenderer}
+        </AutoSizeList>
       </div>
       <style jsx>{`
         .queue {
