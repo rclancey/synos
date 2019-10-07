@@ -17,14 +17,14 @@ js:
 
 build-synology: go-synology js
 	mkdir -p build/synology/synos/bin build/synology/synos/htdocs
-	cp go/synology/server go/synology/preview_musicdb build/synology/synos/bin/
+	cp go/synology/server build/synology/synos/bin/
 	rsync -a js/build/ build/synology/synos/htdocs/
 
 .PHONY: build-synology
 
 build-macos: go-macos js
 	mkdir -p build/macos/synos/bin build/macos/synos/htdocs
-	cp go/macos/server go/macos/preview_musicdb build/macos/synos/bin/
+	cp go/macos/server build/macos/synos/bin/
 	rsync -a js/build/ build/macos/synos/htdocs/
 
 .PHONY: build-macos

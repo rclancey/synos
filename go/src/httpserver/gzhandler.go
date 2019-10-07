@@ -3,6 +3,7 @@ package httpserver
 import (
 	"bufio"
 	"compress/gzip"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -14,6 +15,7 @@ type GZipResponseWriter struct {
 	w http.ResponseWriter
 	acceptGzip bool
 	gzw *gzip.Writer
+	path string
 }
 
 func NewGZipResponseWriter(w http.ResponseWriter, r *http.Request) *GZipResponseWriter {
@@ -29,7 +31,8 @@ func NewGZipResponseWriter(w http.ResponseWriter, r *http.Request) *GZipResponse
 			}
 		}
 	}
-	return &GZipResponseWriter{w: w, acceptGzip: accept, gzw: nil}
+	log.Printf("request %s allows gzip", r.URL.Path)
+	return &GZipResponseWriter{w: w, acceptGzip: accept, gzw: nil, path: r.URL.Path}
 }
 
 func (w *GZipResponseWriter) Header() http.Header {
@@ -40,12 +43,18 @@ func (w *GZipResponseWriter) WriteHeader(statusCode int) {
 	if statusCode == http.StatusOK && w.acceptGzip {
 		h := w.w.Header()
 		ct := strings.Split(h.Get("Content-Type"), ";")[0]
-		if strings.HasPrefix(ct, "text/") || ct == "application/json" {
+		if strings.HasPrefix(ct, "text/") || ct == "application/json" || ct == "application/javascript" {
 			enc := strings.ToLower(h.Get("Content-Encoding"))
 			if enc == "" {
+				log.Printf("response for %s can be gzipped", w.path)
 				h.Set("Content-Encoding", "gzip")
+				h.Del("Content-Length")
 				w.gzw = gzip.NewWriter(w.w)
+			} else {
+				log.Printf("response for %s already has content encoding", w.path)
 			}
+		} else {
+			log.Printf("response for %s can't be compressed (type = %s)", w.path, ct)
 		}
 	}
 	w.w.WriteHeader(statusCode)

@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -133,8 +135,17 @@ func (srv *Server) Handle(pattern string, handler HandlerFunc) {
 	srv.mux.Handle(pattern, hf(handler))
 }
 
+func FileServer(docRoot string) HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+		rel := filepath.FromSlash(path.Clean(req.URL.Path))
+		fn := filepath.Join(docRoot, rel)
+		return StaticFile(fn), nil
+	}
+}
+
 func (srv *Server) ListenAndServe() error {
-	srv.mux.Handle("/", http.FileServer(http.Dir(srv.cfg.DocumentRoot)))
+	//srv.mux.Handle("/", http.FileServer(http.Dir(srv.cfg.DocumentRoot)))
+	srv.Handle("/", FileServer(srv.cfg.DocumentRoot))
 	al, err := srv.cfg.Logging.AccessLogger(srv.mux)
 	if err != nil {
 		return errors.Wrap(err, "can't get access logger")

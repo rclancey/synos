@@ -15,8 +15,5 @@ src/itunes/enums.go: make_enums src/itunes/enums.json
 $(PLATFORM):
 	mkdir $(PLATFORM)
 
-$(PLATFORM)/server: $(PLATFORM) make_enums src/itunes_dump.go src/itunes/enums.go $(ITUNES_SRC)
+$(PLATFORM)/server: $(PLATFORM) make_enums src/itunes/enums.go $(ITUNES_SRC)
 	go build -o $(PLATFORM)/server server
-
-$(PLATFORM)/preview_musicdb: $(PLATFORM) make_enums src/itunes_dump.go src/itunes/enums.go $(ITUNES_SRC)
-	go build -o $(PLATFORM)/preview_musicdb src/preview_musicdb.go
