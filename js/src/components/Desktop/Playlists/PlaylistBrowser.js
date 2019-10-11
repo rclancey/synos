@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
+import { useTheme } from '../../../lib/theme';
+import { useFocus } from '../../../lib/useFocus';
 import { PLAYLIST_ORDER } from '../../../lib/distinguished_kinds';
 import { Folder } from './Folder';
 import { Playlist } from './Playlist';
 import { Label } from './Label';
 import { DevicePlaylists } from '../Device/Playlists';
-import { useTheme } from '../../../lib/theme';
 
 export const PlaylistBrowser = ({
   devices,
@@ -16,15 +17,11 @@ export const PlaylistBrowser = ({
   controlAPI,
 }) => {
   const colors = useTheme();
-  const [focused, setFocused] = useState(false);
-  const focusRef = useRef(focused);
-  const node = useRef(null);
-  useEffect(() => {
-    focusRef.current = focused;
-  }, [focused]);
+  const { focused, node, focus, onFocus, onBlur } = useFocus();
+
   useEffect(() => {
     const handler = event => {
-      if (focusRef.current) {
+      if (focused.current) {
         console.debug('playlist browser got key press %o', event);
         if (event.metaKey) {
           if (event.code === 'KeyN') {
@@ -43,24 +40,24 @@ export const PlaylistBrowser = ({
     return () => {
       document.removeEventListener('keydown', handler, true);
     };
-  }, []);
-  const wrappedOnSelect = pl => {
-    if (node.current) {
-      node.current.focus();
-    }
+  }, [focused]);
+
+  const wrappedOnSelect = useCallback((pl) => {
+    focus();
     onSelect(pl);
-  };
-  const onRename = (pl, name) => {
+  }, [focus, onSelect]);
+
+  const onRename = useCallback((pl, name) => {
     console.debug('rename playlist %o to %o', pl, name);
-  };
+  }, []);
 
   return (
     <div
-      ref={n => node.current = n || node.current}
+      ref={node}
       tabIndex={10}
       className="playlistBrowser"
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
+      onFocus={onFocus}
+      onBlur={onBlur}
     >
       <h1>Library</h1>
       <div className="groups">

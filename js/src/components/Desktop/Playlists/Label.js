@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Icon } from '../../Icon';
 import { useTheme } from '../../../lib/theme';
+import { Icon } from '../../Icon';
 
 const FolderToggle = ({
   folder,

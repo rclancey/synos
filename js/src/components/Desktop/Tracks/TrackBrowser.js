@@ -1,17 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useMeasure } from '../../../lib/useMeasure';
+import { useTheme } from '../../../lib/theme';
+import { useAPI } from '../../../lib/useAPI';
+import { API } from '../../../lib/api';
 import {
   TrackSelectionList,
   GENRE_FILTER,
   ARTIST_FILTER,
   ALBUM_FILTER
 } from '../../../lib/trackList';
+import * as COLUMNS from '../../../lib/columns';
 import { TrackList } from './TrackList';
 import { ColumnBrowser } from './ColumnBrowser';
-import * as COLUMNS from '../../../lib/columns';
-import { useMeasure } from '../../../lib/useMeasure';
-import { useTheme } from '../../../lib/theme';
-import { useAPI } from '../../../lib/useAPI';
-import { API } from '../../../lib/api';
 
 const tsl = new TrackSelectionList([], {});
 window.tsl = tsl;
@@ -43,20 +43,17 @@ export const TrackBrowser = ({
   controlAPI,
 }) => {
   const colors = useTheme();
+  const api = useAPI(API);
   const prevTracks = useRef(null);
   const [displayTracks, setDisplayTracks] = useState(tsl.tracks);
   const [selected, setSelected] = useState([]);
-  //const [genres, setGenres] = useState([]);
-  //const [artists, setArtists] = useState([]);
-  //const [albums, setAlbums] = useState([]);
   const [cbWidth, cbHeight, setCBNode] = useMeasure(100, 1);
 
-  const onPlay = ({ list, index }) => {
+  const onPlay = useCallback(({ list, index }) => {
     console.debug('onPlay %o', { list, index, playlist, controlAPI });
     if (playlist) {
       if (controlAPI.onSetPlaylist) {
         const origIndex = tsl.displayTracks[index].origIndex;
-        //const origIndex = list[index].origIndex;
         controlAPI.onSetPlaylist(playlist.persistent_id, origIndex);
       } else if (controlAPI.onReplaceQueue) {
         let tracks = [];
@@ -80,31 +77,31 @@ export const TrackBrowser = ({
     } else {
       console.debug('no way to play %o', { list, index, playlist, controlAPI });
     }
-  };
+  }, [controlAPI, playlist]);
 
-  const update = () => {
+  const update = useCallback(() => {
     setDisplayTracks(tsl.tracks);
     setSelected(tsl.selected);
-    //setGenres(tsl.genres);
-    //setArtists(tsl.artists);
-    //setAlbums(tsl.albums);
-  };
+  }, [setDisplayTracks, setSelected]);
+
   useEffect(() => {
     console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
     prevTracks.current = tracks;
     tsl.setTracks(tracks);
     update();
-  }, [tracks]);
+  }, [tracks, update]);
+
   useEffect(() => {
     tsl.onPlay = controlAPI.onPlay;
     tsl.onSkip = controlAPI.onSkipBy;
     //tsl.onDelete = controlAPI.onDelete;
   }, [controlAPI]);
+
   useEffect(() => {
     tsl.search(search);
     update();
-  }, [search]);
-  const api = useAPI(API);
+  }, [search, update]);
+
   useEffect(() => {
     if (playlist === null) {
       tsl.onDelete = null;
@@ -115,11 +112,12 @@ export const TrackBrowser = ({
     }
   }, [api, tracks, playlist]);
 
-  const onSort = (key) => {
+  const onSort = useCallback((key) => {
     tsl.sort(key);
     setDisplayTracks(tsl.tracks);
-  };
-  const onClick = (event, index) => {
+  }, [setDisplayTracks]);
+
+  const onClick = useCallback((event, index) => {
     const mods = { shift: event.shiftKey, meta: event.metaKey };
     if (tsl.onTrackClick(index, mods)) {
       //event.stopPropagation();
@@ -127,8 +125,9 @@ export const TrackBrowser = ({
       setDisplayTracks(tsl.tracks);
       setSelected(tsl.selected);
     }
-  };
-  const onKeyPress = (event) => {
+  }, [setDisplayTracks, setSelected]);
+
+  const onKeyPress = useCallback((event) => {
     const mods = { shift: event.shiftKey, meta: event.metaKey };
     if (tsl.onTrackKeyPress(event.code, mods)) {
       event.stopPropagation();
@@ -136,42 +135,49 @@ export const TrackBrowser = ({
       setDisplayTracks(tsl.tracks);
       setSelected(tsl.selected);
     }
-  };
+  }, [setDisplayTracks, setSelected]);
 
-  const colBrowsers = [
-    ['Genres',  'genres',  GENRE_FILTER],
-    ['Artists', 'artists', ARTIST_FILTER],
-    ['Albums',  'albums',  ALBUM_FILTER],
-  ].map(([name, key, f]) => ({
-    name: name,
-    rows: tsl[key],
-    lastIndex: tsl.lastFilterIndex[f],
-    onClick: (event, index) => {
-      const mods = { shift: event.shiftKey, meta: event.metaKey };
-      if (tsl.onFilterClick(f, index, mods)) {
-        event.stopPropagation();
-        event.preventDefault();
-        update();
-      }
-    },
-    onKeyPress: (event) => {
-      const mods = { shift: event.shiftKey, meta: event.metaKey, chr: event.key };
-      if (tsl.onFilterKeyPress(f, event.code, mods)) {
-        event.stopPropagation();
-        event.preventDefault();
-        event.target.focus();
-        update();
-      }
-    },
-  }));
+  const genres = tsl.genres;
+  const artists = tsl.artists;
+  const albums = tsl.albums;
+
+  const colBrowsers = useMemo(() => {
+    return [
+      ['Genres',  genres,  GENRE_FILTER],
+      ['Artists', artists, ARTIST_FILTER],
+      ['Albums',  albums,  ALBUM_FILTER],
+    ].map(([name, key, f]) => ({
+      name: name,
+      rows: key,
+      lastIndex: tsl.lastFilterIndex[f],
+      onClick: (event, index) => {
+        const mods = { shift: event.shiftKey, meta: event.metaKey };
+        if (tsl.onFilterClick(f, index, mods)) {
+          event.stopPropagation();
+          event.preventDefault();
+          update();
+        }
+      },
+      onKeyPress: (event) => {
+        const mods = { shift: event.shiftKey, meta: event.metaKey, chr: event.key };
+        if (tsl.onFilterKeyPress(f, event.code, mods)) {
+          event.stopPropagation();
+          event.preventDefault();
+          //event.target.focus();
+          update();
+        }
+      },
+    }));
+  }, [update, genres, artists, albums]);
 
   return (
     <div className="trackBrowser">
       { columnBrowser ? (
         <div ref={setCBNode} className="columnBrowserContainer">
-          { colBrowsers.map(cb => (
+          { colBrowsers.map((cb, i) => (
             <ColumnBrowser
               key={cb.name}
+              tabIndex={i + 2}
               title={cb.name}
               items={cb.rows}
               width={Math.floor(cbWidth / 3) - 1}

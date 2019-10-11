@@ -3,7 +3,6 @@ import { Controls } from './Controls';
 import { Library } from './Library';
 import { useTheme } from '../../lib/theme';
 
-import 'react-virtualized/styles.css';
 import 'react-sortable-tree/style.css';
 
 export const DesktopSkin = ({

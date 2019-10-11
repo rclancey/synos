@@ -1,12 +1,13 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Column, Table } from "react-virtualized";
-import Draggable from "react-draggable";
+import React, { useCallback } from 'react';
+import Draggable from 'react-draggable';
+import { useTheme } from '../../../lib/theme';
 import { useColumns } from '../../../lib/colsize';
 import { useMeasure } from '../../../lib/useMeasure';
+import { useFocus } from '../../../lib/useFocus';
+import { AutoSizeList } from '../../AutoSizeList';
 import { TrackRow } from './TrackRow';
-import { useTheme } from '../../../lib/theme';
 
-const TrackListHeader = ({
+const TrackListHeader = React.memo(({
   columnData,
   dataKey,
   disableSort,
@@ -15,29 +16,40 @@ const TrackListHeader = ({
   sortDirection,
   onSort,
   onResize,
-}) => {
-  return (
-    <>
-      <div
-        key={dataKey}
-        className="ReactVirtualized__Table__headerTruncatedText"
-        onClick={() => onSort(dataKey)}
-      >
-        {label}
-      </div>
-      <Draggable
-        axis="x"
-        defaultClassName="DragHandle"
-        defaultClassNameDragging="DragHandleActive"
-        onDrag={(event, { deltaX }) => onResize(dataKey, deltaX)}
-        position={{ x: 0 }}
-        zIndex={999}
-      >
-        <span className="DragHandleIcon">⋮</span>
-      </Draggable>
-    </>
-  );
-};
+}) => (
+  <div className="col">
+    <div
+      key={dataKey}
+      className="ReactVirtualized__Table__headerTruncatedText"
+      onClick={() => onSort(dataKey)}
+    >
+      {label}
+    </div>
+    <Draggable
+      axis="x"
+      defaultClassName="DragHandle"
+      defaultClassNameDragging="DragHandleActive"
+      onDrag={(event, { deltaX }) => onResize(dataKey, deltaX)}
+      position={{ x: 0 }}
+      zIndex={999}
+    >
+      <span className="DragHandleIcon">⋮</span>
+    </Draggable>
+    <style jsx>{`
+      .col {
+        flex: 0 0 ${columnData.width}px;
+        width: ${columnData.width}px;
+        min-width: ${columnData.width}px;
+        max-width: ${columnData.width}px;
+        display: flex;
+        flex-direction: row;
+        font-weight: bold;
+        box-sizing: border-box;
+        padding: 1px 0px 1px 5px;
+      }
+    `}</style>
+  </div>
+));
 
 export const TrackList = ({
   type,
@@ -53,141 +65,95 @@ export const TrackList = ({
   onDelete,
 }) => {
   const colors = useTheme();
-  const [focused, setFocused] = useState(false);
+  const { focused, focus, node, onFocus, onBlur } = useFocus(onKeyPress);
   const [cols, onResize, setColNode] = useColumns(columns);
-  const [width, height, setTLNode] = useMeasure(100, 100);
-  const focusRef = useRef(focused);
-  useEffect(() => {
-    focusRef.current = focused;
-  }, [focused]);
-  useEffect(() => {
-    const onKeyPressWithFocus = event => {
-      if (focusRef.current) {
-        onKeyPress(event);
+  const [, , setTLNode] = useMeasure(100, 100);
+
+  const setNode = useCallback((xnode) => {
+    if (xnode) {
+      if (node.current !== xnode) {
+        console.debug('track list node changing from %o to %o', node.current, xnode);
+        node.current = xnode;
+        if (focused.current) {
+          focus();
+        }
+        setColNode(xnode);
+        setTLNode(xnode);
       }
-    };
-    document.addEventListener('keydown', onKeyPressWithFocus, true);
-    return () => {
-      document.removeEventListener('keydown', onKeyPressWithFocus, true);
-    };
-  });
-  const setNode = node => {
-    setColNode(node);
-    setTLNode(node);
-  };
-  const renderHeader = (props) => (
-    <TrackListHeader
-      onSort={onSort}
-      onResize={onResize}
-      {...props}
-    />
-  );
-  const renderRow = (props) => (
+    }
+  }, [setColNode, setTLNode, focus, focused, node]);
+
+  const rowRenderer = useCallback(({ index, style }) => (
     <TrackRow
-      type={type}
-      selected={selected}
+      device={type}
+      selected={tracks[index].selected}
       playlist={playlist}
+      index={index}
+      rowData={tracks[index].track}
+      className={`row ${index % 2 === 0 ? 'even' : 'odd'} ${tracks[index].selected ? 'selected' : ''}`}
+      style={style}
+      columns={cols}
       onReorder={onReorder}
-      onClick={onClick}
+      onClick={(event, index) => {
+        event.preventDefault();
+        event.stopPropagation();
+        focus();
+        onClick(event, index);
+      }}
       onPlay={onPlay}
-      {...props}
     />
-  );
+  ), [type, playlist, tracks, cols, onReorder, onClick, onPlay, focus]);
+
   return (
     <div
       ref={setNode}
+      tabIndex={0}
       className="trackList"
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
+      onFocus={onFocus}
+      onBlur={onBlur}
     >
-      <Table
-        width={width}
-        height={height}
-        headerHeight={20}
-        rowHeight={20}
-        rowCount={tracks.length}
-        rowGetter={({ index }) => tracks[index].track}
-        rowClassName={({ index }) => {
-          if (index < 0) {
-            return 'header';
-          }
-          const cls = [index % 2 === 0 ? 'even' : 'odd'];
-          if (tracks[index].selected) {
-            cls.push('selected');
-          }
-          return cls.join(' ');
-        }}
-        onRowClick={args => console.debug('row click %o', args)}
-        onRowDoubleClick={args => console.debug('row double click %o', args)}
-        rowRenderer={renderRow}
-      >
+      <div className="header">
         { cols.map(col => (
-          <Column
+          <TrackListHeader
             key={col.key}
-            headerRenderer={renderHeader}
+            columnData={col}
             dataKey={col.key}
             label={col.label}
-            width={col.width}
-            className={col.className}
-            cellDataGetter={col.formatter ? props => col.formatter(props) : undefined}
+            onSort={onSort}
+            onResize={onResize}
           />
         )) }
-      </Table>
+      </div>
+      <AutoSizeList itemCount={tracks.length} itemSize={20}>
+        {rowRenderer}
+      </AutoSizeList>
       <style jsx>{`
         .trackList {
           flex: 10;
           width: 100%;
           overflow: hidden;
           background-color: ${colors.trackList.background};
+          font-size: 12px;
+          color: ${colors.trackList.text};
         }
-        .trackList :global(.ReactVirtualized__Table__headerRow) {
+        .trackList .header {
           border-bottom-color: ${colors.trackList.border};
           background-color: ${colors.trackList.background};
           color: ${colors.trackList.text};
+          display: flex;
+          flex-direction: row;
+          border-bottom: solid ${colors.trackList.border} 1px;
         }
         .trackList :global(.ReactVirtualized__Table__headerColumn) {
           border-right-color: ${colors.trackList.separator};
         }
-        .trackList :global(.ReactVirtualized__Table__row) {
-          box-sizing: border-box;
-          border-bottom-style: solid;
-          border-bottom-width: 1px;
-          background-color: ${colors.trackList.background};
-          color: ${colors.trackList.text};
-          border-color: transparent;
+        .trackList:focus {
+          outline: none;
         }
-        .trackList :global(.ReactVirtualized__Table__row.dropTarget) {
-          border-bottom-color: blue;
-        }
-        .trackList :global(.ReactVirtualized__Table__row.even) {
-          background-color: ${colors.trackList.evenBg};
-        }
-        .trackList :global(.ReactVirtualized__Table__row.selected),
-        .trackList :global(.ReactVirtualized__Table__row.selected.even) {
-          background-color: ${colors.blurHighlight};
-        }
-        .trackList:focus-within :global(.ReactVirtualized__Table__row.selected) {
+        .trackList:focus :global(.row.selected),
+        .trackList:focus-within :global(.row.selected) {
           background-color: ${colors.highlightText};
           color: ${colors.highlightInverse};
-        }
-        .trackList :global(.ReactVirtualized__Table__row.dropTarget) {
-          border-bottom-style: solid;
-          border-bottom-width: 2px;
-          z-index: 1;
-        }
-        .trackList :global(.ReactVirtualized__Table__rowColumn.num),
-        .trackList :global(.ReactVirtualized__Table__rowColumn.time) {
-          text-align: right;
-        }
-        .trackList :global(.ReactVirtualized__Table__rowColumn.num),
-        .trackList :global(.ReactVirtualized__Table__rowColumn.time),
-        .trackList :global(.ReactVirtualized__Table__rowColumn.date) {
-          font-family: sans-serif;
-          white-space: pre;
-        }
-        .trackList :global(.ReactVirtualized__Table__rowColumn.stars) {
-          font-family: monospace;
-          color: ${colors.highlightText};
         }
         .trackList :global(.DragHandle) {
           flex: 0 0 16px;

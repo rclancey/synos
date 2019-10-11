@@ -1,8 +1,39 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Column, Table } from "react-virtualized";
+import React, { useRef, useEffect, useCallback } from 'react';
 import { useTheme } from '../../../lib/theme';
+import { useFocus } from '../../../lib/useFocus';
+import { AutoSizeList } from '../../AutoSizeList';
+
+const ColBrowserRow = React.memo(({
+  index,
+  item,
+  style,
+  nodeRef,
+  onClick,
+}) => (
+  <div
+    className={`row ${item && item.selected ? 'selected' : ''}`}
+    style={style}
+    onClick={(event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (nodeRef.current) {
+        nodeRef.current.focus();
+      }
+      onClick(event, index);
+    }}
+  >
+    {item.name}
+    <style jsx>{`
+      .row {
+        padding: 0px 10px;
+        line-height: 18px;
+      }
+    `}</style>
+  </div>
+));
 
 export const ColumnBrowser = ({
+  tabIndex,
   title,
   items,
   width,
@@ -12,77 +43,47 @@ export const ColumnBrowser = ({
   onKeyPress,
 }) => {
   const colors = useTheme();
-  const node = useRef(null);
-  const [focused, setFocused] = useState(false);
-  const [scrollToIndex, setScrollToIndex] = useState(-1);
+  const { node, onFocus, onBlur } = useFocus(onKeyPress);
   const lastScrollIndex = useRef(lastIndex);
-  const focusRef = useRef(focused);
-  useEffect(() => {
-    focusRef.current = focused;
-  }, [focused]);
-  useEffect(() => {
-    const handler = (event) => {
-      if (focusRef.current) {
-        onKeyPress(event);
-      }
-    };
-    document.addEventListener('keydown', handler, true);
-    return () => {
-      document.removeEventListener('keydown', handler, true);
-    };
-  }, [onKeyPress]);
+  const listRef = useRef(null);
+
   useEffect(() => {
     if (lastIndex !== lastScrollIndex.current && lastIndex >= 0) {
-      setScrollToIndex(lastIndex);
-      if (node.current) {
-        //console.debug('focusing %o node', title);
-        node.current.focus();
+      if (listRef.current) {
+        listRef.current.scrollToItem(lastIndex, 'center');
       }
-    } else {
-      if (scrollToIndex !== undefined) {
-        setScrollToIndex(undefined);
-      }
+    } else if (listRef.current) {
+      listRef.current.scrollToItem(0);
     }
-  }, [lastIndex, scrollToIndex, setScrollToIndex]);
+  }, [lastIndex]);
+
+  const rowRenderer = useCallback(({ index, style }) => (
+    <ColBrowserRow
+      index={index}
+      item={items[index]}
+      style={style}
+      nodeRef={node}
+      onClick={onClick}
+    />
+  ), [items, onClick, node]);
+
   return (
     <div
-      ref={n => node.current = n || node.current}
+      ref={node}
       className="columnBrowser"
-      width={`${width}px`}
-      onFocus={() => setFocused(true)}
-      onBlur={() => { console.debug('%o node losing focus', title); setFocused(false); }}
+      tabIndex={tabIndex}
+      style={{ width: `${width}px` }}
+      onFocus={onFocus}
+      onBlur={onBlur}
     >
-      <Table
-        width={width}
-        height={height}
-        headerHeight={20}
-        rowHeight={18}
-        rowCount={items.length}
-        rowGetter={({ index }) => items[index]}
-        rowClassName={({index}) => {
-          if (index < 0) {
-            return 'header';
-          }
-          const item = items[index];
-          return `row ${item && item.selected ? 'selected' : ''}`;
-        }}
-        scrollToIndex={scrollToIndex}
-        onRowClick={({ event, index, rowData }) => onClick(event, index)}
-        onScroll={() => {
-          console.debug('%o table scrolled', title);
-          if (focused && node.current) {
-            console.debug('forcing focus on %o', title);
-            node.current.firstElementChild.children[1].focus();
-          }
-        }}
+      <div className="header">{title}</div>
+      <AutoSizeList
+        ref={listRef}
+        itemCount={items.length}
+        itemSize={18}
       >
-        <Column
-          headerRenderer={undefined}
-          dataKey="name"
-          label={title}
-          width={width}
-        />
-      </Table>
+        {rowRenderer}
+      </AutoSizeList>
       <style jsx>{`
         .columnBrowser {
           border-right-style: solid;
@@ -91,19 +92,28 @@ export const ColumnBrowser = ({
           background-color: ${colors.trackList.background};
           border-right-color: ${colors.trackList.separator};
           color: ${colors.trackList.text};
+          font-size: 12px;
+          cursor: default;
         }
-        .columnBrowser :global(.ReactVirtualized__Table__headerRow) {
+        .columnBrowser:focus {
+          outline: none;
+        }
+        .columnBrowser .header {
           background-color: ${colors.trackList.background};
           color: ${colors.trackList.text};
-          border-bottom-color: ${colors.trackList.border};
-        }
-        .columnBrowser :global(.ReactVirtualized__Table__headerColumn) {
+          border-bottom: solid ${colors.trackList.border} 1px;
           border-right: none !important;
+          font-weight: bold;
+          white-space: nowrap;
+          line-height: 18px;
+          padding: 0px 10px;
+          box-sizing: border-box;
+          height: 18px;
         }
-        .columnBrowser :global(.ReactVirtualized__Table__row.selected) {
+        .columnBrowser :global(.row.selected) {
           background-color: ${colors.blurHighlight};
         }
-        .columnBrowser:focus-within :global(.ReactVirtualized__Table__row.selected) {
+        .columnBrowser:focus-within :global(.row.selected) {
           background-color: ${colors.highlightText};
           color: ${colors.highlightInverse};
         }

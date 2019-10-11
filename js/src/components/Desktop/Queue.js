@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { FixedSizeList as List } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import { AutoSizeList } from '../AutoSizeList';
 import { QueueHeader, QueueItem } from '../Queue';
 import { useTheme } from '../../lib/theme';
 
@@ -31,20 +30,13 @@ export const Queue = ({ playMode, tracks, index, onSelect, onShuffle, onRepeat }
         onRepeat={onRepeat}
       />
       <div className="items">
-        <AutoSizer>
-          {({width, height}) => (
-            <List
-              width={width}
-              height={height}
-              itemCount={tracks.length}
-              itemSize={50}
-              overscanCount={Math.ceil(height / 50)}
-              initialScrollOffset={Math.max(0, index - 2) * 50}
-            >
-              {rowRenderer}
-            </List>
-          )}
-        </AutoSizer>
+        <AutoSizeList
+          itemCount={tracks.length}
+          itemSize={50}
+          initialScrollOffset={Math.max(0, index - 2) * 50}
+        >
+          {rowRenderer}
+        </AutoSizeList>
       </div>
       <style jsx>{`
         .queue {
@@ -57,17 +49,6 @@ export const Queue = ({ playMode, tracks, index, onSelect, onShuffle, onRepeat }
           height: calc(80vh - 33px);
           padding: 0 3px;
         }
-        /*
-        .queue :global(.time) {
-          flex: 1;
-          border-top-style: solid;
-          border-top-width: 1px;
-          font-size: 12px;
-          padding-top: 14px;
-          text-align: right;
-          margin-top: -2px;
-        }
-        */
       `}</style>
     </div>
   );
