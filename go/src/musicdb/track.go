@@ -21,7 +21,7 @@ import (
 
 type Track struct {
 	PersistentID     PersistentID `json:"persistent_id" db:"id"`
-	JookiID          *string      `json:"jooki_id" db:"jooki_id"`
+	JookiID          *string      `json:"jooki_id,omitempty" db:"jooki_id"`
 	Album            *string      `json:"album,omitempty" db:"album"`
 	AlbumArtist      *string      `json:"album_artist,omitempty" db:"album_artist"`
 	AlbumRating      *uint8       `json:"album_rating,omitempty" db:"album_rating"`

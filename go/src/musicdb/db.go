@@ -1313,3 +1313,51 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) (bool, error) {
 	return true, tx.Commit()
 }
 
+func (db *DB) FindTrack(tr *Track) {
+	if uint64(tr.PersistentID) != 0 {
+		xtr, err := db.GetTrack(tr.PersistentID)
+		if err == nil {
+			*tr = *xtr
+			return
+		}
+	}
+	if tr.JookiID != nil {
+		qs := `SELECT * FROM track WHERE jooki_id = ?`
+		row := db.QueryRow(qs, tr.JookiID)
+		var xtr Track
+		err := row.StructScan(&xtr)
+		if err == nil {
+			*tr = xtr
+			return
+		}
+	}
+	where := []string{}
+	args := []interface{}{}
+	if tr.Artist != nil {
+		where = append(where, "artist = ?")
+		args = append(args, *tr.Artist)
+	}
+	if tr.Album != nil {
+		where = append(where, "album = ?")
+		args = append(args, *tr.Album)
+	}
+	if tr.Name != nil {
+		where = append(where, "name = ?")
+		args = append(args, *tr.Name)
+	}
+	if tr.Size != nil {
+		where = append(where, "size >= ? AND size <= ?")
+		args = append(args, *tr.Size - 102400, *tr.Size + 102400)
+	}
+	if tr.TotalTime != nil {
+		where = append(where, "total_time >= ? AND total_time <= ?")
+		args = append(args, *tr.TotalTime - 1000, *tr.TotalTime + 1000)
+	}
+	qs := fmt.Sprintf(`SELECT * FROM track WHERE %s ORDER BY rating DESC, play_count DESC LIMIT 1`, strings.Join(where, " AND "))
+	row := db.QueryRow(qs, args...)
+	var xtr Track
+	err := row.StructScan(&xtr)
+	if err == nil {
+		*tr = xtr
+	}
+}

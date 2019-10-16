@@ -31,7 +31,7 @@ func NewGZipResponseWriter(w http.ResponseWriter, r *http.Request) *GZipResponse
 			}
 		}
 	}
-	log.Printf("request %s allows gzip", r.URL.Path)
+	//log.Printf("request %s allows gzip", r.URL.Path)
 	return &GZipResponseWriter{w: w, acceptGzip: accept, gzw: nil, path: r.URL.Path}
 }
 
@@ -46,15 +46,15 @@ func (w *GZipResponseWriter) WriteHeader(statusCode int) {
 		if strings.HasPrefix(ct, "text/") || ct == "application/json" || ct == "application/javascript" {
 			enc := strings.ToLower(h.Get("Content-Encoding"))
 			if enc == "" {
-				log.Printf("response for %s can be gzipped", w.path)
+				//log.Printf("response for %s can be gzipped", w.path)
 				h.Set("Content-Encoding", "gzip")
 				h.Del("Content-Length")
 				w.gzw = gzip.NewWriter(w.w)
 			} else {
 				log.Printf("response for %s already has content encoding", w.path)
 			}
-		} else {
-			log.Printf("response for %s can't be compressed (type = %s)", w.path, ct)
+		//} else {
+		//	log.Printf("response for %s can't be compressed (type = %s)", w.path, ct)
 		}
 	}
 	w.w.WriteHeader(statusCode)

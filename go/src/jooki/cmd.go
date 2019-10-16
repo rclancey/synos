@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
 	"net/url"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -131,7 +133,7 @@ func (c *Client) CreatePlaylist(title string) (*Playlist, error) {
 }
 
 func (c *Client) PlayPlaylist(id string, idx int) (*Audio, error) {
-	msg := &PlaylistPlay{ID: id, TrackIndex: idx}
+	msg := &PlaylistPlay{ID: id, TrackIndex: idx + 1}
 	f := func(state *JookiState) bool {
 		if state == nil || state.Audio == nil {
 			return false
@@ -212,7 +214,7 @@ func (c *Client) UpdatePlaylistToken(id, token string) (*Playlist, error) {
 }
 
 func (c *Client) UploadToPlaylist(id string, track TrackUpload) (*Track, error) {
-	uploadId := rand.Int()
+	uploadId := int(rand.Int31())
 	u := &url.URL{
 		Scheme: "http",
 		Host: c.device.Hostname,
@@ -253,11 +255,14 @@ func (c *Client) UploadToPlaylist(id string, track TrackUpload) (*Track, error) 
 
 	res, err := hc.Do(req)
 	if err != nil {
+		log.Printf("error uploading %d: %s", uploadId, err)
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
+		log.Println("track upload failed with HTTP %d", res.StatusCode)
 		return nil, fmt.Errorf("track upload failed with HTTP %d", res.StatusCode)
 	}
+	log.Println("track upload %d success", uploadId)
 	msg := &PlaylistAddUpload{
 		ID: id,
 		UploadID: uploadId,
@@ -268,6 +273,7 @@ func (c *Client) UploadToPlaylist(id string, track TrackUpload) (*Track, error) 
 		return nil, err
 	}
 	defer a.Close()
+	log.Printf("send mqtt message: %#v", msg)
 	err = c.publish("/j/web/input/PLAYLIST_ADD_UPLOAD", msg)
 	if err != nil {
 		return nil, err
@@ -276,6 +282,7 @@ func (c *Client) UploadToPlaylist(id string, track TrackUpload) (*Track, error) 
 	for {
 		update, ok := a.Read(timer)
 		if !ok {
+			log.Println("read failed, can't find newly uploaded track")
 			return nil, errors.New("can't find newly uploaded track")
 		}
 		if update.After.Library == nil || update.After.Library.Tracks == nil {
@@ -284,11 +291,14 @@ func (c *Client) UploadToPlaylist(id string, track TrackUpload) (*Track, error) 
 		for k, v := range update.After.Library.Tracks {
 			if _, ok := prevTracks[k]; !ok {
 				if v.Size != nil && int64(*v.Size) == size {
+					v.ID = &k
+					log.Printf("found uploaded track %#v", v)
 					return v, nil
 				}
 			}
 		}
 	}
+	log.Println("failed to find newly uploaded track")
 	return nil, errors.New("can't find newly uploaded track")
 }
 

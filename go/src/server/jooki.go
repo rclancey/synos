@@ -6,12 +6,12 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"time"
 
@@ -134,45 +134,22 @@ func GetJookiTokens(w http.ResponseWriter, req *http.Request) (interface{}, erro
 	return lib.Tokens, nil
 }
 
-type JookiTrack struct {
-	ID string `json:"persistent_id"`
-	Artist string `json:"artist"`
-	Album string `json:"album"`
-	Name string `json:"name"`
-	Size int `json:"size"`
-	TotalTime int `json:"total_time"`
-}
-
-
-func NewJookiTrack(id string, jtr *jooki.Track) *JookiTrack {
-	tr := &JookiTrack{ID: id}
-	if jtr.Artist != nil {
-		tr.Artist = *jtr.Artist
-	}
-	if jtr.Album != nil {
-		tr.Album = *jtr.Album
-	}
-	if jtr.Name != nil {
-		tr.Name = *jtr.Name
-	}
-	if jtr.Size != nil {
-		tr.Size = int(*jtr.Size)
-	}
-	if jtr.Duration != nil {
-		tr.TotalTime = int(*jtr.Duration * 1000)
-	}
-	return tr
-}
 
 type JookiPlaylist struct {
 	ID string `json:"persistent_id"`
 	Name string `json:"name"`
 	Token *string `json:"token"`
-	TrackIDs []string `json:"track_ids,omitempty"`
-	Tracks []*JookiTrack `json:"tracks,omitempty"`
+	Tracks []*musicdb.Track `json:"tracks,omitempty"`
 }
 
-func GetJookiPlaylists(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+type sortablePlaylists []*JookiPlaylist
+func (s sortablePlaylists) Len() int { return len(s) }
+func (s sortablePlaylists) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s sortablePlaylists) Less(i, j int) bool {
+	return s[i].Name < s[j].Name
+}
+
+func ListJookiPlaylists(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	lib, err := getJookiLibrary()
 	if err != nil {
 		return nil, err
@@ -183,108 +160,228 @@ func GetJookiPlaylists(w http.ResponseWriter, req *http.Request) (interface{}, e
 			ID: plid,
 			Name: jpl.Name,
 			Token: jpl.Token,
-			Tracks: make([]*JookiTrack, len(jpl.Tracks)),
+			Tracks: make([]*musicdb.Track, len(jpl.Tracks)),
 		}
 		for i, trid := range jpl.Tracks {
 			jtr, ok := lib.Tracks[trid]
 			if !ok {
 				continue
 			}
-			pl.Tracks[i] = NewJookiTrack(trid, jtr)
+			jtr.ID = &trid
+			pl.Tracks[i] = jtr.Track(db)
 		}
 		pls = append(pls, pl)
 	}
+	sort.Sort(sortablePlaylists(pls))
 	return pls, nil
 }
 
-type jookiPlReq struct {
-	PlaylistID *musicdb.PersistentID `json:"playlist_id"`
-	JookiPlaylistID *string `json:"jooki_playlist_id"`
-	Name *string `json:"name"`
-	Token *string `json:"token"`
-	Tracks *[]*musicdb.Track `json:"tracks"`
-	Index *int `json:"index"`
+func JookiPlaylistHandler(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	switch req.Method {
+	case http.MethodGet:
+		return GetJookiPlaylist(w, req)
+	case http.MethodPost:
+		return CreateJookiPlaylist(w, req)
+	case http.MethodPut:
+		return EditJookiPlaylist(w, req)
+	case http.MethodPatch:
+		return AppendJookiPlaylistTracks(w, req)
+	case http.MethodDelete:
+		return DeleteJookiPlaylist(w, req)
+	default:
+		return nil, H.MethodNotAllowed
+	}
 }
 
-func findJookiTrack(lib *jooki.Library, tr *musicdb.Track) *JookiTrack {
-	if tr.JookiID != nil {
-		jtr, ok := lib.Tracks[*tr.JookiID]
-		if ok {
-			return NewJookiTrack(*tr.JookiID, jtr)
-		}
+func getJookiPlaylist(lib *jooki.Library, id string) *JookiPlaylist {
+	jpl, ok := lib.Playlists[id]
+	if !ok {
+		return nil
 	}
+	pl := &JookiPlaylist{
+		ID: id,
+		Name: jpl.Name,
+		Token: jpl.Token,
+		Tracks: make([]*musicdb.Track, len(jpl.Tracks)),
+	}
+	for i, trid := range jpl.Tracks {
+		jtr, ok := lib.Tracks[trid]
+		if !ok {
+			continue
+		}
+		jtr.ID = &trid
+		pl.Tracks[i] = jtr.Track(db)
+	}
+	return pl
+}
 
-	for k, jtr := range lib.Tracks {
-		if tr.Name == nil || *tr.Name == "" {
-			if jtr.Name != nil && *jtr.Name != "" {
-				continue
-			}
-		} else {
-			if jtr.Name == nil || *jtr.Name != *tr.Name {
-				continue
-			}
-		}
-		if tr.Album == nil || *tr.Album == "" {
-			if jtr.Album != nil && *jtr.Album != "" {
-				continue
-			}
-		} else {
-			if jtr.Album == nil || *jtr.Album != *tr.Album {
-				continue
-			}
-		}
-		if tr.Artist == nil || *tr.Artist == "" {
-			if jtr.Artist != nil && *jtr.Artist != "" {
-				continue
-			}
-		} else {
-			if jtr.Artist == nil || *jtr.Artist != *tr.Artist {
-				continue
-			}
-		}
-		if tr.Size != nil && jtr.Size != nil {
-			if int64(*tr.Size) != int64(*jtr.Size) {
-				continue
-			}
-		}
-		if tr.TotalTime != nil && jtr.Duration != nil {
-			if math.Abs(float64(*tr.TotalTime) - float64(*jtr.Duration) * 1000) > 500 {
-				continue
-			}
-		}
-		return NewJookiTrack(k, jtr)
+func getJookiTrackId(lib *jooki.Library, tr *musicdb.Track) (string, bool, error) {
+	if tr.JookiID != nil {
+		return *tr.JookiID, true, nil
 	}
+	if tr.Name == nil || tr.Album == nil || tr.Artist == nil || tr.Size == nil || tr.TotalTime == nil {
+		xtr, err := db.GetTrack(tr.PersistentID)
+		if err != nil {
+			return "", false, err
+		}
+		if xtr == nil {
+			return "", false, H.NotFound.Raise(nil, "track %s does not exist", tr.PersistentID)
+		}
+		tr = xtr
+	}
+	jtr := lib.FindTrack(tr)
+	if jtr != nil {
+		return *jtr.ID, true, nil
+	}
+	return "", false, nil
+}
+
+func uploadJookiTrack(client *jooki.Client, plid string, tr *musicdb.Track) error {
+	upload := NewJookiUpload(tr)
+	jtr, err := client.UploadToPlaylist(plid, upload)
+	if err != nil {
+		return err
+	}
+	tr.JookiID = jtr.ID
+	db.SaveTrack(tr)
 	return nil
 }
 
-func CopyPlaylistToJooki(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	cp := &jookiPlReq{}
-	err := H.ReadJSON(req, cp)
+func addJookiTracks(client *jooki.Client, plid string, tracks []*musicdb.Track) ([]string, error) {
+	ids := []string{}
+	lib := client.GetState().Library
+	for _, tr := range tracks {
+		jookiId, found, err := getJookiTrackId(lib, tr)
+		if err != nil {
+			return nil, err
+		}
+		if found {
+			_, err := client.AddTrackToPlaylist(plid, jookiId)
+			if err != nil {
+				return nil, err
+			}
+			ids = append(ids, jookiId)
+		} else {
+			err := uploadJookiTrack(client, plid, tr)
+			if err != nil {
+				return nil, err
+			}
+			ids = append(ids, *tr.JookiID)
+			lib = client.GetState().Library
+		}
+
+	}
+	return ids, nil
+}
+
+func GetJookiPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	lib, err := getJookiLibrary()
 	if err != nil {
 		return nil, err
 	}
-	var tracks []*musicdb.Track
-	var pl *musicdb.Playlist
-	if cp.PlaylistID != nil {
-		pl, err = db.GetPlaylist(*cp.PlaylistID)
+	plid := path.Base(req.URL.Path)
+	pl := getJookiPlaylist(lib, plid)
+	if pl == nil {
+		return nil, H.NotFound
+	}
+	return pl, nil
+}
+
+func CreateJookiPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	_, err := cfg.Auth.Authenticate(w, req)
+	if err != nil {
+		return nil, err
+	}
+	client, err := getJooki(false)
+	if err != nil {
+		return nil, err
+	}
+	pl := &JookiPlaylist{}
+	err = H.ReadJSON(req, pl)
+	if err != nil {
+		return nil, err
+	}
+	jpl, err := client.CreatePlaylist(pl.Name)
+	if err != nil {
+		return nil, err
+	}
+	if pl.Token != nil {
+		_, err = client.UpdatePlaylistToken(*jpl.ID, *pl.Token)
 		if err != nil {
 			return nil, err
 		}
-		if pl.Folder {
-			return nil, errors.New("Can't copy a playlist folder")
-		}
-		if pl.Smart != nil {
-			tracks, err = db.SmartTracks(pl.Smart)
-		} else {
-			tracks, err = db.PlaylistTracks(pl)
-		}
+	}
+	if pl.Tracks != nil && len(pl.Tracks) > 0 {
+		_, err = addJookiTracks(client, *jpl.ID, pl.Tracks)
 		if err != nil {
 			return nil, err
 		}
-	} else if cp.Tracks != nil {
-		tracks = *cp.Tracks
-	} else {
-		return nil, H.BadRequest.Raise(nil, "missing playlist source")
+	}
+	lib := client.GetState().Library
+	pl = getJookiPlaylist(lib, *jpl.ID)
+	if pl == nil {
+		return nil, H.NotFound
+	}
+	return pl, nil
+}
+
+func EditJookiPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	_, err := cfg.Auth.Authenticate(w, req)
+	if err != nil {
+		return nil, err
+	}
+	client, err := getJooki(false)
+	if err != nil {
+		return nil, err
+	}
+	plid := path.Base(req.URL.Path)
+	pl := &JookiPlaylist{}
+	err = H.ReadJSON(req, pl)
+	if err != nil {
+		return nil, err
+	}
+	update := &jooki.PlaylistUpdate{
+		ID: plid,
+		Title: &pl.Name,
+		Token: pl.Token,
+	}
+	lib := client.GetState().Library
+	if pl.Tracks != nil && len(pl.Tracks) > 0 {
+		trackIds := []string{}
+		for _, tr := range pl.Tracks {
+			jookiId, found, err := getJookiTrackId(lib, tr)
+			if err != nil {
+				return nil, err
+			}
+			if found {
+				trackIds = append(trackIds, jookiId)
+			} else {
+				err := uploadJookiTrack(client, plid, tr)
+				if err != nil {
+					return nil, err
+				}
+				trackIds = append(trackIds, *tr.JookiID)
+				lib = client.GetState().Library
+			}
+		}
+		update.Tracks = trackIds
+	}
+	_, err = client.UpdatePlaylist(update)
+	if err != nil {
+		return nil, err
+	}
+	lib = client.GetState().Library
+	pl = getJookiPlaylist(lib, plid)
+	if pl == nil {
+		return nil, H.NotFound
+	}
+	return pl, nil
+}
+
+func AppendJookiPlaylistTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	_, err := cfg.Auth.Authenticate(w, req)
+	if err != nil {
+		return nil, err
 	}
 	client, err := getJooki(false)
 	if err != nil {
@@ -294,109 +391,66 @@ func CopyPlaylistToJooki(w http.ResponseWriter, req *http.Request) (interface{},
 	if err != nil {
 		return nil, err
 	}
-	update := &jooki.PlaylistUpdate{
-		Tracks: make([]string, len(tracks)),
+	plid := path.Base(req.URL.Path)
+	_, ok := lib.Playlists[plid]
+	if !ok {
+		return nil, H.NotFound
 	}
-	if cp.JookiPlaylistID == nil {
-		if pl == nil || pl.JookiID == nil {
-			name := "Untitled Playlist"
-			if cp.Name != nil {
-				name = *cp.Name
-			} else if pl != nil {
-				name = pl.Name
-			}
-			jpl, err := client.CreatePlaylist(name)
-			if err != nil {
-				return nil, err
-			}
-			update.ID = *jpl.ID
-			if pl != nil {
-				pl.JookiID = jpl.ID
-				db.SavePlaylist(pl)
-			}
-		} else {
-			update.ID = *pl.JookiID
-		}
-	} else {
-		update.ID = *cp.JookiPlaylistID
-	}
-	for i, tr := range tracks {
-		if tr.JookiID != nil {
-			update.Tracks[i] = *tr.JookiID
-		} else {
-			if tr.Name == nil || tr.Album == nil || tr.Artist == nil || tr.Size == nil {
-				xtr, err := db.GetTrack(tr.PersistentID)
-				if err != nil {
-					return nil, err
-				}
-				if xtr == nil {
-					return nil, H.NotFound.Raise(nil, "track %s does not exist", tr.PersistentID)
-				}
-				tr = xtr
-			}
-			jtr := findJookiTrack(lib, tr)
-			if jtr != nil {
-				update.Tracks[i] = jtr.ID
-				if tr.JookiID == nil {
-					id := jtr.ID
-					tr.JookiID = &id
-					db.SaveTrack(tr)
-				}
-			} else {
-				upload := NewJookiUpload(tr)
-				jtr, err := client.UploadToPlaylist(update.ID, upload)
-				if err != nil {
-					return nil, err
-				}
-				update.Tracks[i] = *jtr.ID
-				tr.JookiID = jtr.ID
-				db.SaveTrack(tr)
-				lib = client.GetState().Library
-			}
-		}
-	}
-	jpl, err := client.UpdatePlaylist(update)
+	tracks := []*musicdb.Track{}
+	err = H.ReadJSON(req, &tracks)
 	if err != nil {
 		return nil, err
 	}
+	_, err = addJookiTracks(client, plid, tracks)
 	lib = client.GetState().Library
-	xpl := &JookiPlaylist{
-		ID: update.ID,
-		Name: jpl.Name,
-		Token: jpl.Token,
-		TrackIDs: jpl.Tracks,
+	pl := getJookiPlaylist(lib, plid)
+	if pl == nil {
+		return nil, H.NotFound
 	}
-	xpl.Tracks = make([]*JookiTrack, len(jpl.Tracks))
-	for i, trid := range jpl.Tracks {
-		jtr, ok := lib.Tracks[trid]
-		if !ok {
-			continue
-		}
-		xpl.Tracks[i] = NewJookiTrack(trid, jtr)
-	}
-	return xpl, nil
+	return pl, nil
 }
 
-func PlayJookiPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	cp := &jookiPlReq{}
-	err := H.ReadJSON(req, cp)
+func DeleteJookiPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	_, err := cfg.Auth.Authenticate(w, req)
 	if err != nil {
 		return nil, err
-	}
-	var idx int
-	if cp.Index == nil {
-		idx = 0
-	} else {
-		idx = *cp.Index
 	}
 	client, err := getJooki(false)
 	if err != nil {
 		return nil, err
 	}
-	if cp.JookiPlaylistID == nil {
+	plid := path.Base(req.URL.Path)
+	err = client.DeletePlaylist(plid)
+	if err != nil {
+		return nil, err
+	}
+	return H.JSONStatusOK, nil
+}
+
+func JookiPlay(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	client, err := getJooki(false)
+	if err != nil {
+		return nil, err
+	}
+	plid := path.Base(req.URL.Path)
+	if plid == "play" {
 		return client.Play()
 	}
-	return client.PlayPlaylist(*cp.JookiPlaylistID, idx)
+	index, err := strconv.Atoi(plid)
+	if err == nil {
+		plid = path.Base(path.Dir(req.URL.Path))
+	} else {
+		index = 0
+	}
+	return client.PlayPlaylist(plid, index)
+}
+
+func JookiPause(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	client, err := getJooki(false)
+	if err != nil {
+		return nil, err
+	}
+	return client.Pause()
 }
 
 func JookiSkip(w http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -472,80 +526,6 @@ func JookiSeek(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		return client.Seek(ms)
 	}
 	return nil, H.MethodNotAllowed.Raise(nil, "method %s not allowed", req.Method)
-}
-
-func RenameJookiPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	cp := &jookiPlReq{}
-	err := H.ReadJSON(req, cp)
-	if err != nil {
-		return nil, err
-	}
-	client, err := getJooki(false)
-	if err != nil {
-		return nil, err
-	}
-	if cp.JookiPlaylistID == nil {
-		return nil, H.BadRequest.Raise(nil, "no jooki playlist specified")
-	}
-	if cp.Name == nil {
-		return nil, H.BadRequest.Raise(nil, "no playlist name specified")
-	}
-	jpl, err := client.RenamePlaylist(*cp.JookiPlaylistID, *cp.Name)
-	if err != nil {
-		return nil, err
-	}
-	pl := &JookiPlaylist{
-		ID: *cp.JookiPlaylistID,
-		Name: jpl.Name,
-		Token: jpl.Token,
-		TrackIDs: jpl.Tracks,
-	}
-	return pl, nil
-}
-
-func SetJookiPlaylistToken(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	cp := &jookiPlReq{}
-	err := H.ReadJSON(req, cp)
-	if err != nil {
-		return nil, err
-	}
-	client, err := getJooki(false)
-	if err != nil {
-		return nil, err
-	}
-	if cp.JookiPlaylistID == nil {
-		return nil, H.BadRequest.Raise(nil, "no jooki playlist specified")
-	}
-	if cp.Token == nil {
-		return nil, H.BadRequest.Raise(nil, "no token specified")
-	}
-	jpl, err := client.UpdatePlaylistToken(*cp.JookiPlaylistID, *cp.Token)
-	if err != nil {
-		return nil, err
-	}
-	pl := &JookiPlaylist{
-		ID: *cp.JookiPlaylistID,
-		Name: jpl.Name,
-		Token: jpl.Token,
-		TrackIDs: jpl.Tracks,
-	}
-	return pl, nil
-}
-
-func JookiPlay(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	client, err := getJooki(false)
-	if err != nil {
-		return nil, err
-	}
-	return client.Play()
-}
-
-func JookiPause(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	client, err := getJooki(false)
-	if err != nil {
-		return nil, err
-	}
-	return client.Pause()
 }
 
 func JookiVolume(w http.ResponseWriter, req *http.Request) (interface{}, error) {
