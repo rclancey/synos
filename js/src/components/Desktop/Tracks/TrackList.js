@@ -87,6 +87,7 @@ export const TrackList = ({
     <TrackRow
       device={type}
       selected={tracks[index].selected}
+      selection={tracks.filter(tr => tr.selected)}
       playlist={playlist}
       index={index}
       rowData={tracks[index].track}

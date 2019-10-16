@@ -5,6 +5,7 @@ import { useTheme } from '../../../lib/theme';
 export const TrackRow = ({
   device,
   selected,
+  selection,
   playlist,
   index,
   rowData,
@@ -22,7 +23,7 @@ export const TrackRow = ({
       type: 'TrackList',
       device,
       playlist,
-      tracks: selected,
+      tracks: selection && selection.length > 0 ? selection : [{ index, track: rowData }],
     },
     isDragging(monitor) {
       return selected.some(tr => tr.track.origIndex === rowData.origIndex);
@@ -32,8 +33,9 @@ export const TrackRow = ({
   const [dropCollect, connectDropTarget] = useDrop({
     accept: ['TrackList'],
     drop(item, monitor) {
+      console.debug('drop %o', item);
       if (onReorder) {
-        onReorder(playlist, index + 1, item.tracks.map(t => t.index));
+        onReorder(playlist, index + 1, item.tracks.map(t => t.track.origIndex));
       }
     },
     canDrop(item, monitor) {
@@ -68,7 +70,7 @@ export const TrackRow = ({
     <div
       className={`${className} ${dropCollect.isOver ? 'dropTarget' : ''}`}
       style={style}
-      onMouseDown={onMouseDown}
+      onClick={onMouseDown}
       onDoubleClick={onDoubleClick}
     >
       { columns.map(col => (

@@ -101,6 +101,7 @@ export const PlaylistTitle = ({
 };
 
 export const SongList = ({
+  api,
   prev,
   playlist,
   tracks,
@@ -117,7 +118,6 @@ export const SongList = ({
   children,
 }) => {
   const colors = useTheme();
-  const api = useAPI(API);
   const [chooser, setChooser] = useState(false);
   const [chooserSource, setChooserSource] = useState(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -132,17 +132,18 @@ export const SongList = ({
     setScrollTop(scrollOffset);
   }, [setScrollTop]);
 
-  const onAddMe = useMemo(() => {
-    if (!editing) {
-      return onAdd
+  const onAddMe = useCallback((track) => {
+    console.error("%o onAddMe(%o): %o", playlist, track, editing);
+    if (editing) {
+      api.addToPlaylist(playlist, [track])
+        .then(onUpdatePlaylist);
     }
-    return (track) => api.addToPlaylist(playlist, [track])
-      .then(onUpdatePlaylist);
-  }, [playlist, api, onUpdatePlaylist, editing, onAdd]);
+    return onAdd(track);
+  }, [api, playlist, editing, onUpdatePlaylist, onAdd]);
 
   const onDelete = useCallback((track, index) => {
     return api.deletePlaylistTracks(
-      { ...playlist, items: tracks },
+      { ...playlist, tracks, items: tracks },
       [{ track: { origIndex: index } }]
     )
       .then(onUpdatePlaylist);
@@ -150,7 +151,7 @@ export const SongList = ({
 
   const onMove = useCallback((srcIndex, dstIndex, dir) => {
     console.debug('move track %o to %o in %o', srcIndex, dstIndex, playlist);
-    api.reorderTracks({ ...playlist, items: tracks }, dstIndex, [srcIndex])
+    api.reorderTracks({ ...playlist, tracks, items: tracks }, dstIndex, [srcIndex])
       .then(onUpdatePlaylist)
       .then(() => {
         if (ref.current) {
@@ -268,16 +269,17 @@ export const Playlist = ({
   const api = useAPI(API);
   const plid = playlist.persistent_id;
 
-  useEffect(() => {
-    api.loadPlaylistTracks({ persistent_id: plid }).then(setTracks);
-  }, [api, plid]);
-
   const onUpdatePlaylist = useCallback(() => {
     api.loadPlaylistTracks(playlist).then(setTracks);
   }, [api, playlist, setTracks]);
 
+  useEffect(() => {
+    api.loadPlaylistTracks({ persistent_id: plid }).then(setTracks);
+  }, [api, plid]);
+
   return (
     <SongList
+      api={api}
       prev={prev}
       tracks={tracks}
       playlist={playlist}
@@ -380,6 +382,7 @@ export const Album = ({
 
   return (
     <SongList
+      api={api}
       prev={prev.name}
       tracks={tracks}
       adding={adding}

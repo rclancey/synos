@@ -25,6 +25,7 @@ export const RecentAdditions = ({
 
   return (
     <SongList
+      api={api}
       prev={prev}
       tracks={recents}
       withTrackNum={false}

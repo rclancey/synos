@@ -11,15 +11,24 @@ export const MixCover = ({ tracks, size = 140, radius = 5 }) => {
   if (isAlbum) {
     return <CoverArt track={tracks[0]} size={size} />;
   }
+  const seen = new Set();
+  const covers = tracks.filter(tr => {
+    const k = (tr.album_artist || tr.artist) + '||' + tr.album;
+    if (seen.has(k)) {
+      return false;
+    }
+    seen.add(k);
+    return true;
+  });
   return (
     <div className="cover">
       <div className="row">
-        <CoverArt track={tracks[0]} size={size / 2} />
-        <CoverArt track={tracks[1]} size={size / 2} />
+        <CoverArt track={covers[0]} size={size / 2} />
+        <CoverArt track={covers[1]} size={size / 2} />
       </div>
       <div className="row">
-        <CoverArt track={tracks[2]} size={size / 2} />
-        <CoverArt track={tracks[3]} size={size / 2} />
+        <CoverArt track={covers[2]} size={size / 2} />
+        <CoverArt track={covers[3]} size={size / 2} />
       </div>
       <style jsx>{`
         .cover {

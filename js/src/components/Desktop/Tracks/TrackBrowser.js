@@ -107,10 +107,10 @@ export const TrackBrowser = ({
       tsl.onDelete = null;
     } else {
       tsl.onDelete = (sel) => {
-        return api.deletePlaylistTracks({ ...playlist, tracks }, sel);
+        return onDelete({ ...playlist, tracks, items: tracks }, sel);
       };
     }
-  }, [api, tracks, playlist]);
+  }, [onDelete, tracks, playlist]);
 
   const onSort = useCallback((key) => {
     tsl.sort(key);

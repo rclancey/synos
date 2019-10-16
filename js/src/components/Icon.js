@@ -15,22 +15,25 @@ const loaded = {};
 
 export const Icon = ({ name, src, size = 16, style, ...props }) => {
   const theme = useContext(ThemeContext);
-  const [icon, setIcon] = useState(MusicIcon);
+  let modSrc = src;
+  if (!src) {
+    modSrc = `${icons[name] || name}${theme === 'dark' ? '-dark' : ''}`;
+  }
+  const [icon, setIcon] = useState(src || loaded[modSrc] || MusicIcon);
   useEffect(() => {
     if (src) {
       setIcon(src);
     } else {
-      const src = `${icons[name] || name}${theme === 'dark' ? '-dark' : ''}`;
-      if (loaded[src]) {
-        setIcon(loaded[src]);
+      if (loaded[modSrc]) {
+        setIcon(loaded[modSrc]);
       } else {
-        import(`../icons/${src}.png`)
+        import(`../icons/${modSrc}.png`)
           .then(mod => {
-            loaded[src] = mod.default;
+            loaded[modSrc] = mod.default;
             setIcon(mod.default);
           })
           .catch(err => {
-            console.error("error loading %o: %o", src, err);
+            console.error("error loading %o: %o", modSrc, err);
             setIcon(MusicIcon);
           });
       }

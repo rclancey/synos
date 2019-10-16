@@ -25,6 +25,7 @@ export const Purchases = ({
 
   return (
     <SongList
+      api={api}
       prev={prev}
       tracks={purchases}
       withTrackNum={false}

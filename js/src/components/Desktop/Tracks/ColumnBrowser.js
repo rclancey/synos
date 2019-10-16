@@ -50,7 +50,7 @@ export const ColumnBrowser = ({
   useEffect(() => {
     if (lastIndex !== lastScrollIndex.current && lastIndex >= 0) {
       if (listRef.current) {
-        listRef.current.scrollToItem(lastIndex, 'center');
+        listRef.current.scrollToItem(lastIndex, 'smart');
       }
     } else if (listRef.current) {
       listRef.current.scrollToItem(0);
@@ -78,7 +78,7 @@ export const ColumnBrowser = ({
     >
       <div className="header">{title}</div>
       <AutoSizeList
-        ref={listRef}
+        xref={listRef}
         itemCount={items.length}
         itemSize={18}
       >

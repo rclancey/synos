@@ -43,6 +43,9 @@ export const JookiDevicePlaylist = ({
   };
   const onAddToPlaylist = ({ source, target }) => {
     console.debug('onAddToPlaylist(%o)', { source, target });
+    if (source.type === 'TrackList') {
+      device.api.addToPlaylist(target.playlist, source.tracks.map(tr => tr.track));
+    }
   };
   return (
     <Folder

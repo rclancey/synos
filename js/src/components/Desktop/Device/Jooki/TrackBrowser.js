@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { TrackBrowser } from '../../Tracks/TrackBrowser.js';
 import * as COLUMNS from '../../../../lib/columns';
-import { jookiTokenImgUrl } from '../../../Jooki/Token';
+import { JookiToken, jookiTokenImgUrl } from '../../../Jooki/Token';
 import { JookiPlayer } from '../../../Player/JookiPlayer';
 import { JookiControls } from '../../../Jooki/Controls';
+import { MixCover } from '../../../Mobile/MixCover';
 
 const JookiPlaylistHeader = ({
   playlist,
@@ -39,12 +40,19 @@ const JookiPlaylistHeader = ({
   return (
     <div style={{display: 'flex', flexDirection: 'row'}}>
       <div className="header">
+        { playlist.token ? (
+          <JookiToken starId={playlist.token} size={200} />
+        ) : (
+          <MixCover tracks={playlist.tracks} size={200} radius={0} />
+        ) }
+        {/*
         <div className="token">
           <img
             src={playlist.token ? jookiTokenImgUrl(playlist.token) : "/nocover.jpg"}
             alt={playlist.token || 'No Token'}
           />
         </div>
+        */}
         <div className="meta">
           <div className="title">{playlist.name}</div>
           <div className="size">
@@ -80,13 +88,13 @@ export const JookiTrackBrowser = ({
   const [playbackInfo, setPlaybackInfo] = useState({});
   const [controlAPI, setControlAPI] = useState({});
 
-  const onDelete = (tracks) => {
+  const onDelete = (pl, tracks) => {
     console.debug('jooki %o onDelete(%o)', playlist, tracks);
-    device.api.deletePlaylistTracks(playlist, tracks);
+    return device.api.deletePlaylistTracks(playlist, tracks);
   };
   const onReorder = (pl, index, tracks) => {
     console.debug('jooki %o onReorder(%o)', playlist, { pl, index, tracks });
-    device.api.reorderTracks(pl, index, tracks);
+    return device.api.reorderTracks(pl, index, tracks);
   };
 
   return (

@@ -49,11 +49,13 @@ const reducer = (state, action) => {
     } else if (Object.hasOwnProperty.call(action.message, 'tracks')) {
       update.queue = action.message.tracks;
       if (Object.hasOwnProperty.call(action.message, 'index')) {
-        update.index = action.message.index;
-        update.duration = action.message.tracks[action.message.index].total_time;
-        update.currentTime = action.message.time;
-        update.currentTimeSet = action.message.time;
-        update.currentTimeSetAt = Date.now();
+        if (action.message.index >= 0) {
+          update.index = action.message.index;
+          update.duration = action.message.tracks[action.message.index].total_time;
+          update.currentTime = action.message.time;
+          update.currentTimeSet = action.message.time;
+          update.currentTimeSetAt = Date.now();
+        }
       }
     } else if (Object.hasOwnProperty.call(action.message, 'volume')) {
       update.volume = action.message.volume;
