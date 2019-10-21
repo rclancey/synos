@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Controls } from './Controls';
 import { Library } from './Library';
+import { ProgressBar } from './ProgressBar';
 import { useTheme } from '../../lib/theme';
+import { WS } from '../../lib/ws';
 
 import 'react-sortable-tree/style.css';
 
@@ -15,6 +17,38 @@ export const DesktopSkin = ({
   const colors = useTheme();
   const [search, setSearch] = useState({});
   const [playlist, setPlaylist] = useState(null);
+  const [progress, setProgress] = useState(null);
+  const progRef = useRef(progress);
+
+  useEffect(() => {
+    progRef.current = progress;
+  }, [progress]);
+
+  useEffect(() => {
+    const onMessage = msg => {
+      if (msg.type === 'jooki_progress') {
+        //console.debug(msg);
+        const timestamp = Date.now();
+        const total = msg.tracks.length;
+        const complete = msg.tracks.reduce((p, tr) => p + (tr.upload_progress || 0), 0);
+        const errs = msg.tracks.filter(tr => tr.error || false).length;
+        const ids = msg.tracks.filter(tr => tr.jooki_id).length;
+        console.debug('%o (%o) / %o => %o%', ids, complete, msg.tracks.length, 100 * complete / total);
+        setProgress({ ...msg, total, complete, timestamp });
+        if (errs !== 0 || (complete >= total && ids === msg.tracks.length)) {
+          setTimeout(() => {
+            if (progRef.current !== null && progRef.current.timestamp === timestamp) {
+              setProgress(null);
+            }
+          }, 3000);
+        }
+      }
+    };
+    WS.on('message', onMessage);
+    return () => {
+      WS.off('message', onMessage);
+    };
+  }, []);
 
   useEffect(() => {
     const handler = event => {
@@ -56,6 +90,9 @@ export const DesktopSkin = ({
         controlAPI={controlAPI}
         setPlaylist={setPlaylist}
       />
+      { progress !== null ? (
+        <ProgressBar total={progress.total} complete={progress.complete} />
+      ) : null }
       <style jsx>{`
         #app {
           position: fixed;

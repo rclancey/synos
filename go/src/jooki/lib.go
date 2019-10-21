@@ -2,8 +2,10 @@ package jooki
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"strconv"
+	"strings"
 
 	"musicdb"
 )
@@ -18,6 +20,27 @@ type Playlist struct {
 }
 
 //http://streams.calmradio.com/api/303/128/stream
+
+func (p *Playlist) String() string {
+	parts := []string{}
+	if p.ID != nil {
+		parts = append(parts, fmt.Sprintf(`ID:"%s"`, *p.ID))
+	}
+	if p.Audiobook != nil {
+		parts = append(parts, fmt.Sprintf(`Audiobook:"%t"`, *p.Audiobook))
+	}
+	if p.Token != nil {
+		parts = append(parts, fmt.Sprintf(`Token:"%s"`, *p.Token))
+	}
+	parts = append(parts, fmt.Sprintf(`Name:"%s"`, p.Name))
+	if p.Tracks != nil {
+		parts = append(parts, fmt.Sprintf(`Tracks:"[%d]"`, len(p.Tracks)))
+	}
+	if p.URL != nil {
+		parts = append(parts, fmt.Sprintf(`URL:"%s"`, *p.URL))
+	}
+	return fmt.Sprintf("&jooki.Playlist{%s}", strings.Join(parts, ", "))
+}
 
 func (p *Playlist) Clone() *Playlist {
 	clone := &Playlist{}
@@ -102,6 +125,39 @@ type Track struct {
 	HasImage bool `json:"hasImage"`
 	Size *IntStr `json:"size"`
 	Name *string `json:"title"`
+}
+
+func (t *Track) String() string {
+	parts := []string{}
+	if t.ID != nil {
+		parts = append(parts, fmt.Sprintf(`ID:"%s"`, *t.ID))
+	}
+	if t.Album != nil {
+		parts = append(parts, fmt.Sprintf(`Album:"%s"`, *t.Album))
+	}
+	if t.Artist != nil {
+		parts = append(parts, fmt.Sprintf(`Artist:"%s"`, *t.Artist))
+	}
+	if t.Codec != nil {
+		parts = append(parts, fmt.Sprintf(`Codec:"%s"`, *t.Codec))
+	}
+	if t.Duration != nil {
+		parts = append(parts, fmt.Sprintf(`Duration:"%.3f"`, *t.Duration))
+	}
+	if t.Location != nil {
+		parts = append(parts, fmt.Sprintf(`Location:"%s"`, *t.Location))
+	}
+	if t.Format != nil {
+		parts = append(parts, fmt.Sprintf(`Format:"%s"`, *t.Format))
+	}
+	parts = append(parts, fmt.Sprintf(`HasImage:"%s"`, t.HasImage))
+	if t.Size != nil {
+		parts = append(parts, fmt.Sprintf(`Size:"%d"`, *t.Size))
+	}
+	if t.Name != nil {
+		parts = append(parts, fmt.Sprintf(`Name:"%s"`, *t.Name))
+	}
+	return fmt.Sprintf("&jooki.Track{%s}", strings.Join(parts, ", "))
 }
 
 func (t *Track) Clone() *Track {

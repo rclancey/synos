@@ -1346,8 +1346,8 @@ func (db *DB) FindTrack(tr *Track) {
 		args = append(args, *tr.Name)
 	}
 	if tr.Size != nil {
-		where = append(where, "size >= ? AND size <= ?")
-		args = append(args, *tr.Size - 102400, *tr.Size + 102400)
+		where = append(where, "size = ?")
+		args = append(args, *tr.Size)
 	}
 	if tr.TotalTime != nil {
 		where = append(where, "total_time >= ? AND total_time <= ?")

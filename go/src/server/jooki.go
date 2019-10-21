@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -25,6 +27,19 @@ var jookiDevice *jooki.Client
 type JookiEvent struct {
 	Type string `json:"type"`
 	Deltas []*jooki.JookiState `json:"deltas"`
+}
+
+type TrackProgress struct {
+	PersistentID musicdb.PersistentID `json:"persistent_id"`
+	JookiID *string `json:"jooki_id,omitempty"`
+	UploadID *int `json:"upload_id,omitempty"`
+	UploadProgress *float64 `json:"upload_progress,omitempty"`
+	Error bool `json:"error,omitempty"`
+}
+
+type ProgressEvent struct {
+	Type string `json:"type"`
+	Tracks []TrackProgress `json:"tracks"`
 }
 
 func getJooki(quick bool) (*jooki.Client, error) {
@@ -80,11 +95,25 @@ func NewJookiUpload(tr *musicdb.Track) *JookiUpload {
 }
 
 func (up *JookiUpload) ContentType() string {
-	return up.tr.ContentType()
+	ct := up.tr.ContentType()
+	if ct == "audio/mp4a-latm" {
+		return "audio/x-m4a"
+	}
+	return ct
 }
 
 func (up *JookiUpload) FileName() string {
 	return filepath.Base(up.tr.Path())
+}
+
+func (up *JookiUpload) MD5() string {
+	h := md5.New()
+	r, err := up.Reader()
+	if err == nil {
+		io.Copy(h, r)
+		r.Close()
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func (up *JookiUpload) Reader() (io.ReadCloser, error) {
@@ -236,10 +265,11 @@ func getJookiTrackId(lib *jooki.Library, tr *musicdb.Track) (string, bool, error
 	return "", false, nil
 }
 
-func uploadJookiTrack(client *jooki.Client, plid string, tr *musicdb.Track) error {
+func uploadJookiTrack(client *jooki.Client, plid string, tr *musicdb.Track, ch chan jooki.ProgressUpdate) error {
 	upload := NewJookiUpload(tr)
-	jtr, err := client.UploadToPlaylist(plid, upload)
+	jtr, err := client.UploadToPlaylist(plid, upload, ch)
 	if err != nil {
+		log.Println("error uploading track to jooki", err)
 		return err
 	}
 	tr.JookiID = jtr.ID
@@ -248,29 +278,70 @@ func uploadJookiTrack(client *jooki.Client, plid string, tr *musicdb.Track) erro
 }
 
 func addJookiTracks(client *jooki.Client, plid string, tracks []*musicdb.Track) ([]string, error) {
+	hub, _ := getWebsocketHub()
+	event := ProgressEvent{
+		Type: "jooki_progress",
+		Tracks: make([]TrackProgress, len(tracks)),
+	}
+	hub.BroadcastEvent(event)
 	ids := []string{}
 	lib := client.GetState().Library
-	for _, tr := range tracks {
+	for i, tr := range tracks {
+		event.Tracks[i].PersistentID = tr.PersistentID
 		jookiId, found, err := getJookiTrackId(lib, tr)
 		if err != nil {
+			event.Tracks[i].Error = true
+			hub.BroadcastEvent(event)
+			log.Println("error looking for jooki track")
 			return nil, err
 		}
 		if found {
+			event.Tracks[i].JookiID = &jookiId
+			hub.BroadcastEvent(event)
+			log.Println("track already exists on jooki")
 			_, err := client.AddTrackToPlaylist(plid, jookiId)
 			if err != nil {
+				event.Tracks[i].Error = true
 				return nil, err
 			}
+			p := float64(1)
+			event.Tracks[i].UploadProgress = &p
+			hub.BroadcastEvent(event)
 			ids = append(ids, jookiId)
 		} else {
-			err := uploadJookiTrack(client, plid, tr)
+			ch := make(chan jooki.ProgressUpdate, 100)
+			go func(i int) {
+				for {
+					update, ok := <-ch
+					if !ok {
+						hub.BroadcastEvent(event)
+						break
+					}
+					event.Tracks[i].UploadID = &(update.UploadID)
+					event.Tracks[i].UploadProgress = &(update.UploadProgress)
+					if update.Track != nil {
+						event.Tracks[i].JookiID = update.Track.ID
+					}
+					if update.Err != nil {
+						event.Tracks[i].Error = true
+					}
+					hub.BroadcastEvent(event)
+				}
+			}(i)
+			log.Println("uploading track to jooki")
+			err := uploadJookiTrack(client, plid, tr, ch)
 			if err != nil {
+				event.Tracks[i].Error = true
+				hub.BroadcastEvent(event)
 				return nil, err
 			}
+			event.Tracks[i].JookiID = tr.JookiID
+			hub.BroadcastEvent(event)
 			ids = append(ids, *tr.JookiID)
 			lib = client.GetState().Library
 		}
-
 	}
+	log.Println("tracks added")
 	return ids, nil
 }
 
@@ -347,19 +418,57 @@ func EditJookiPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, e
 	}
 	lib := client.GetState().Library
 	if pl.Tracks != nil && len(pl.Tracks) > 0 {
+		hub, _ := getWebsocketHub()
+		event := ProgressEvent{
+			Type: "jooki_progress",
+			Tracks: make([]TrackProgress, len(pl.Tracks)),
+		}
+		hub.BroadcastEvent(event)
 		trackIds := []string{}
-		for _, tr := range pl.Tracks {
+		for i, tr := range pl.Tracks {
+			event.Tracks[i].PersistentID = tr.PersistentID
+			hub.BroadcastEvent(event)
 			jookiId, found, err := getJookiTrackId(lib, tr)
 			if err != nil {
+				event.Tracks[i].Error = true
+				hub.BroadcastEvent(event)
 				return nil, err
 			}
 			if found {
+				event.Tracks[i].JookiID = &jookiId
+				p := float64(1)
+				event.Tracks[i].UploadProgress = &p
+				hub.BroadcastEvent(event)
 				trackIds = append(trackIds, jookiId)
 			} else {
-				err := uploadJookiTrack(client, plid, tr)
+				ch := make(chan jooki.ProgressUpdate, 100)
+				go func(i int) {
+					for {
+						update, ok := <-ch
+						if !ok {
+							hub.BroadcastEvent(event)
+							break
+						}
+						event.Tracks[i].UploadID = &(update.UploadID)
+						event.Tracks[i].UploadProgress = &(update.UploadProgress)
+						if update.Track != nil {
+							event.Tracks[i].JookiID = update.Track.ID
+						}
+						if update.Err != nil {
+							event.Tracks[i].Error = true
+						}
+						hub.BroadcastEvent(event)
+					}
+				}(i)
+				log.Println("uploading track to jooki")
+				err := uploadJookiTrack(client, plid, tr, ch)
 				if err != nil {
+					event.Tracks[i].Error = true
+					hub.BroadcastEvent(event)
 					return nil, err
 				}
+				event.Tracks[i].JookiID = tr.JookiID
+				hub.BroadcastEvent(event)
 				trackIds = append(trackIds, *tr.JookiID)
 				lib = client.GetState().Library
 			}
@@ -381,30 +490,40 @@ func EditJookiPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, e
 func AppendJookiPlaylistTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	_, err := cfg.Auth.Authenticate(w, req)
 	if err != nil {
+		log.Println("auth error", err)
 		return nil, err
 	}
 	client, err := getJooki(false)
 	if err != nil {
+		log.Println("error getting jooki client", err)
 		return nil, err
 	}
 	lib, err := getJookiLibrary()
 	if err != nil {
+		log.Println("error getting jooki library", err)
 		return nil, err
 	}
 	plid := path.Base(req.URL.Path)
 	_, ok := lib.Playlists[plid]
 	if !ok {
+		log.Println("jooki playlist", plid, "not found")
 		return nil, H.NotFound
 	}
 	tracks := []*musicdb.Track{}
 	err = H.ReadJSON(req, &tracks)
 	if err != nil {
+		log.Println("error reading request payload", err)
 		return nil, err
 	}
 	_, err = addJookiTracks(client, plid, tracks)
+	if err != nil {
+		log.Println("error adding tracks", err)
+		return nil, err
+	}
 	lib = client.GetState().Library
 	pl := getJookiPlaylist(lib, plid)
 	if pl == nil {
+		log.Println("can't find playlist", plid)
 		return nil, H.NotFound
 	}
 	return pl, nil
