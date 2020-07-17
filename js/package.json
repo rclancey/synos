@@ -6,7 +6,7 @@
     "@fortawesome/fontawesome-free": "^5.8.1",
     "base-64": "^0.1.0",
     "fontawesome": "^5.6.3",
-    "lodash": "^4.17.13",
+    "lodash": "^4.17.19",
     "lodash.reverse": "^4.0.1",
     "lodash.sortby": "^4.7.0",
     "moment": "^2.24.0",
