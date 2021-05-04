@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useRef, useState, useEffect, useContext } from 'react';
 import { ThemeContext } from '../lib/theme';
 import MusicIcon from '../icons/music.png';
 
@@ -20,6 +20,7 @@ export const Icon = ({ name, src, size = 16, style, ...props }) => {
     modSrc = `${icons[name] || name}${theme === 'dark' ? '-dark' : ''}`;
   }
   const [icon, setIcon] = useState(src || loaded[modSrc] || MusicIcon);
+  const mounted = useRef(true);
   useEffect(() => {
     if (src) {
       setIcon(src);
@@ -30,15 +31,22 @@ export const Icon = ({ name, src, size = 16, style, ...props }) => {
         import(`../icons/${modSrc}.png`)
           .then(mod => {
             loaded[modSrc] = mod.default;
-            setIcon(mod.default);
+            if (mounted.current) {
+              setIcon(mod.default);
+            }
           })
           .catch(err => {
             console.error("error loading %o: %o", modSrc, err);
-            setIcon(MusicIcon);
+            if (mounted.current) {
+              setIcon(MusicIcon);
+            }
           });
       }
     }
-  }, [name, src, theme]);
+    return () => {
+      mounted.current = false;
+    };
+  }, [name, src, modSrc, theme]);
   return (
     <div className="icon" style={style} {...props}>
       <style jsx>{`

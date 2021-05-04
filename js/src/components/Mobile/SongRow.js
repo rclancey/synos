@@ -1,12 +1,51 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 //import { useDrag, useDrop } from 'react-dnd';
+import { areEqual } from 'react-window';
 import { DotsMenu } from './TrackMenu';
 import { CoverArt } from '../CoverArt';
+import { Icon } from '../Icon';
 import { AddIcon, DeleteIcon } from './ActionIcon';
 import { useTheme } from '../../lib/theme';
 
-export const SongRow = ({
+export const SongRow = React.memo(({
+  data,
+  index,
   style,
+}) => {
+  if (data.onBeginAdd && index === 0) {
+    return (
+      <div className="item add" style={style} onClick={() => data.onBeginAdd()}>
+        <Icon name="add" size={36} />
+        <div className="action">Add Music</div>
+      </div>
+    );
+  }
+  const track = useMemo(() => {
+    return data.tracks[data.editing ? index + 1 : index];
+  }, [data, index]);
+
+  return (
+    <div className="item" style={style}>
+      <InteriorRow
+        index={index}
+        len={data.len}
+        playlist={data.playlist}
+        track={track}
+        withTrackNum={data.withTrackNum}
+        withCover={data.withCover}
+        withArtist={data.withArtist}
+        withAlbum={data.withAlbum}
+        editing={data.editing}
+        onTrackMenu={data.onTrackMenu}
+        onAdd={data.onAdd}
+        onMove={data.onMove}
+        onDelete={data.onDelete}
+      />
+    </div>
+  );
+}, areEqual);
+
+const InteriorRow = React.memo(({
   index,
   len,
   playlist,
@@ -16,7 +55,6 @@ export const SongRow = ({
   withArtist = false,
   withAlbum = false,
   editing = false,
-  adding = false,
   onTrackMenu,
   onAdd,
   onMove,
@@ -58,32 +96,46 @@ export const SongRow = ({
   });
   return connectDropTarget(
   */
-  return (
-    <div className={`item ${editing ? 'editing' : ''}`} style={style}>
-      { editing ? (
-        <DeleteIcon size={36} onDelete={() => onDelete(track, index)} />
-      ) : null }
-      { adding ? (
-        <AddIcon size={36} onAdd={() => onAdd(track)} />
-      ) : null }
-      { withCover ? (
-        <CoverArt track={track} size={48} radius={4} />
-      ) : null }
-      <div className="title">
-        { withTrackNum ? (
-          <div className="tracknum">{track.track_number}</div>
-        ) : null }
-        <div className="songArtistAlbum">
-          <div className="song">{track.name}</div>
-          { (withArtist || track.compilation || (track.album_artist && track.album_artist !== track.artist)) ? (
-            <div className="artist">
-              {track.artist}
-              { withAlbum ? `\u00a0\u2219\u00a0${track.album}` : ''}
-            </div>
-          ) : null }
+  const del = useMemo(() => {
+    if (editing) {
+      return <DeleteIcon size={36} onDelete={() => onDelete(track, index)} />
+    }
+    return null;
+  }, [editing, onDelete, track, index]);
+  const add = useMemo(() => {
+    if (onAdd !== null && onAdd !== undefined) {
+      return <AddIcon size={36} onAdd={() => onAdd(track)} />
+    }
+    return null;
+  }, [onAdd, track]);
+
+  const cover = useMemo(() => {
+    if (withCover) {
+      return <CoverArt track={track} size={48} radius={4} />;
+    }
+    return null;
+  }, [withCover, track]);
+  const tnum = useMemo(() => {
+    if (withTrackNum) {
+      return <div className="tracknum">{track.track_number}</div>
+    }
+    return null;
+  }, [withTrackNum, track]);
+  const artalb = useMemo(() => {
+    if (withArtist || track.compilation || (track.album_artist && track.album_artist !== track.artist)) {
+      return (
+        <div className="artist">
+          {track.artist}
+          { withAlbum ? `\u00a0\u2219\u00a0${track.album}` : ''}
         </div>
-      </div>
-      { editing ? (
+      );
+    }
+    return null;
+  }, [withArtist, withAlbum, track]);
+
+  const updn = useMemo(() => {
+    if (editing) {
+      return (
         <div className="move">
           <div
             className={`fas fa-angle-up ${index === 0 ? 'disabled' : ''}`}
@@ -102,10 +154,27 @@ export const SongRow = ({
             }}
           />
         </div>
-      ) : adding ? null : (
-        <DotsMenu track={track} onOpen={onTrackMenu} />
-      ) }
+      );
+    }
+    if (onAdd !== null && onAdd !== undefined) {
+      return null;
+    }
+    return <DotsMenu track={track} onOpen={onTrackMenu} />
+  }, [editing, onAdd, onMove, onTrackMenu, track, index, len]);
 
+  return (
+    <div className={`item ${editing ? 'editing' : ''}`}>
+      {del}
+      {add}
+      {cover}
+      <div className="title">
+        {tnum}
+        <div className="songArtistAlbum">
+          <div className="song">{track.name}</div>
+          {artalb}
+        </div>
+      </div>
+      {updn}
       <style jsx>{`
         .item {
           display: flex;
@@ -117,10 +186,10 @@ export const SongRow = ({
         .item.editing {
           border-bottom: solid ${colors.trackList.border} 1px;
         }
-        .fa-bars {
+        .item :global(.fa-bars) {
           line-height: 44px;
         }
-        .icon {
+        .item :global(.icon) {
           margin-top: 4px;
         }
         .title {
@@ -131,20 +200,22 @@ export const SongRow = ({
           overflow: hidden;
           text-overflow: ellipsis;
           margin-left: 9px;
+          margin-right: 0.5em;
         }
         .title .song {
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .title .artist {
+        .title :global(.artist) {
           overflow: hidden;
           text-overflow: ellipsis;
           font-size: 14px;
         }
         .songArtistAlbum {
           flex: 10;
+          overflow: hidden;
         }
-        .tracknum {
+        .title :global(.tracknum) {
           flex: 1;
           width: 24px;
           min-width: 24px;
@@ -153,15 +224,15 @@ export const SongRow = ({
           font-size: 18px;
           text-align: right;
         }
-        .move {
+        .item :global(.move) {
           display: flex;
           flex-direction: column;
           color: ${colors.highlightText};
         }
-        .move .disabled {
+        .item :global(.move) .disabled {
           color: ${colors.text};
         }
       `}</style>
     </div>
   );
-};
+});

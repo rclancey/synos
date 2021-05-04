@@ -48,10 +48,10 @@ export const doLogin = (username, password) => {
       throw new Error(resp.statusText);
     })
     .then(resp => {
-      if (resp.status !== 'OK') {
+      if (!resp.username) {
         throw new Error("Login Incorrect");
       }
-      return { loggedIn: true, username };
+      return { loggedIn: true, ...resp };
     });
 };
 

@@ -1,14 +1,13 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMeasure } from '../../../lib/useMeasure';
 import { useTheme } from '../../../lib/theme';
-import { useAPI } from '../../../lib/useAPI';
-import { API } from '../../../lib/api';
 import {
   TrackSelectionList,
   GENRE_FILTER,
   ARTIST_FILTER,
   ALBUM_FILTER
 } from '../../../lib/trackList';
+import { PlaylistHeader } from '../Playlists/PlaylistHeader';
 import * as COLUMNS from '../../../lib/columns';
 import { TrackList } from './TrackList';
 import { ColumnBrowser } from './ColumnBrowser';
@@ -41,9 +40,10 @@ export const TrackBrowser = ({
   onDelete,
   onReorder,
   controlAPI,
+  onShowInfo,
+  onShowMultiInfo,
 }) => {
   const colors = useTheme();
-  const api = useAPI(API);
   const prevTracks = useRef(null);
   const [displayTracks, setDisplayTracks] = useState(tsl.tracks);
   const [selected, setSelected] = useState([]);
@@ -71,9 +71,11 @@ export const TrackBrowser = ({
       if (list.length <= 1) {
         tracks = tsl.displayTracks.slice(index, index + 100);
       } else {
-        tracks = tsl.displayTracks.filter(tr => tr.selected);
+        tracks = list.map(tr => tr.track);
+        //tracks = tsl.displayTracks.filter(tr => tr.selected);
       }
-      controlAPI.onReplaceQueue(tracks.map(tr => tr.track));
+      console.debug('onReplaceQueue(%o)', tracks);
+      controlAPI.onReplaceQueue(tracks);
     } else {
       console.debug('no way to play %o', { list, index, playlist, controlAPI });
     }
@@ -85,7 +87,7 @@ export const TrackBrowser = ({
   }, [setDisplayTracks, setSelected]);
 
   useEffect(() => {
-    console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
+    //console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
     prevTracks.current = tracks;
     tsl.setTracks(tracks);
     update();
@@ -119,6 +121,7 @@ export const TrackBrowser = ({
 
   const onClick = useCallback((event, index) => {
     const mods = { shift: event.shiftKey, meta: event.metaKey };
+    console.debug('onClick: tsl = %o, index: %o, mods: %o', tsl, index, mods);
     if (tsl.onTrackClick(index, mods)) {
       //event.stopPropagation();
       //event.preventDefault();
@@ -129,13 +132,38 @@ export const TrackBrowser = ({
 
   const onKeyPress = useCallback((event) => {
     const mods = { shift: event.shiftKey, meta: event.metaKey };
-    if (tsl.onTrackKeyPress(event.code, mods)) {
+    if ((event.metaKey || event.ctrlKey) && (event.key === 'i' || event.key === 'I')) {
+      if (tsl.selected && tsl.selected.length > 1) {
+        if (event.shiftKey) {
+          onShowMultiInfo(tsl.selected.map(tr => tr.track));
+        } else {
+          onShowInfo(tsl.selected.map(tr => tr.track), 0);
+        }
+      } else {
+        const tracks = tsl.tracks.map(tr => tr.track);
+        if (tsl.selected && tsl.selected.length > 0) {
+          console.debug(tsl.selected);
+          if (event.shiftKey) {
+            onShowMultiInfo(tracks);
+          } else {
+            const idx = tsl.tracks.findIndex(tr => tr.index === tsl.selected[0].index);
+            onShowInfo(tracks, idx);
+          }
+        } else {
+          if (event.shiftKey) {
+            onShowMultiInfo(tracks);
+          } else {
+            onShowInfo(tracks, 0);
+          }
+        }
+      }
+    } else if (tsl.onTrackKeyPress(event.code, mods)) {
       event.stopPropagation();
       event.preventDefault();
       setDisplayTracks(tsl.tracks);
       setSelected(tsl.selected);
     }
-  }, [setDisplayTracks, setSelected]);
+  }, [setDisplayTracks, setSelected, onShowInfo, onShowMultiInfo]);
 
   const genres = tsl.genres;
   const artists = tsl.artists;
@@ -172,7 +200,8 @@ export const TrackBrowser = ({
 
   return (
     <div className="trackBrowser">
-      { columnBrowser ? (
+      { playlist && (<PlaylistHeader playlist={playlist} controlAPI={controlAPI} />) }
+      { columnBrowser && !playlist ? (
         <div ref={setCBNode} className="columnBrowserContainer">
           { colBrowsers.map((cb, i) => (
             <ColumnBrowser
@@ -200,6 +229,7 @@ export const TrackBrowser = ({
         onPlay={onPlay}
         onReorder={onReorder}
         onDelete={onDelete}
+        onShowInfo={onShowInfo}
       />
       <style jsx>{`
         .trackBrowser {

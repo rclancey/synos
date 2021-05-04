@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { usePlaybackInfo } from '../Player/Context';
 import { Controls } from './Controls';
 import { Library } from './Library';
 import { ProgressBar } from './ProgressBar';
 import { useTheme } from '../../lib/theme';
 import { WS } from '../../lib/ws';
+import { trackDB } from '../../lib/trackdb';
+import { EditSingleTrackInfo } from './Tracks/Edit/EditSingleTrack';
+import { EditMultiTrackInfo } from './Tracks/Edit/EditMultiTrack';
 
 import 'react-sortable-tree/style.css';
 
@@ -11,13 +15,14 @@ export const DesktopSkin = ({
   theme,
   player,
   setPlayer,
-  playbackInfo,
-  controlAPI,
+  setPlaybackInfo,
+  setControlAPI,
 }) => {
   const colors = useTheme();
   const [search, setSearch] = useState({});
   const [playlist, setPlaylist] = useState(null);
   const [progress, setProgress] = useState(null);
+  const [showInfo, setShowInfo] = useState(null);
   const progRef = useRef(progress);
 
   useEffect(() => {
@@ -74,22 +79,59 @@ export const DesktopSkin = ({
     };
   }, []);
 
+  const [reload, setReload] = useState(false);
+  const onReload = useCallback(() => {
+    setReload(true);
+    trackDB.clear().then(() => setReload(false));
+  }, []);
+
+  const nonDevice = useRef(player);
+  useEffect(() => {
+    switch (player) {
+    case 'local':
+      nonDevice.current = player;
+      break;
+    case 'sonos':
+      nonDevice.current = player;
+      break;
+    case null:
+      setPlayer(nonDevice.current);
+      break;
+    default:
+      break;
+    }
+  }, [player, setPlayer]);
+
+  const onSearch = useCallback((query) => setSearch(Object.assign({}, search, { [playlist]: query })), [search, playlist, setSearch]);
+  const clearInfo = useCallback(() => setShowInfo(null), []);
+  const onShowInfo = useCallback((tracks, index) => setShowInfo({ tracks, index }), []);
+  const onShowMultiInfo = useCallback((tracks) => setShowInfo({ tracks, multi: true }), []);
+
+  const playbackInfo = usePlaybackInfo();
+
   return (
     <div id="app" className={`desktop ${theme}`}>
       <Controls
+        player={player}
         search={search[playlist]}
-        playbackInfo={playbackInfo}
-        controlAPI={controlAPI}
         setPlayer={setPlayer}
-        onSearch={(query) => setSearch({}, search, { [playlist]: query })}
+        setControlAPI={setControlAPI}
+        setPlaybackInfo={setPlaybackInfo}
+        onSearch={onSearch}
+        onReload={onReload}
       />
-      <Library 
-        playlist={playlist}
-        track={playbackInfo && playbackInfo.queue ? playbackInfo.queue[playbackInfo.index] : null}
-        search={search[playlist]}
-        controlAPI={controlAPI}
-        setPlaylist={setPlaylist}
-      />
+      {!reload && (
+        <Library
+          playlist={playlist}
+          track={playbackInfo && playbackInfo.queue ? playbackInfo.queue[playbackInfo.index] : null}
+          search={search[playlist]}
+          setPlaylist={setPlaylist}
+          setPlayer={setPlayer}
+          onShowInfo={onShowInfo}
+          onShowMultiInfo={onShowMultiInfo}
+        />
+      )}
+      { showInfo && showInfo.tracks && showInfo.tracks.length ? (showInfo.multi ? <EditMultiTrackInfo tracks={showInfo.tracks} onClose={clearInfo} /> : <EditSingleTrackInfo tracks={showInfo.tracks} index={showInfo.index} onClose={clearInfo} />) : null }
       { progress !== null ? (
         <ProgressBar total={progress.total} complete={progress.complete} />
       ) : null }

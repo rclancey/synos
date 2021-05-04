@@ -6,6 +6,7 @@ export const TrackRow = ({
   device,
   selected,
   selection,
+  current,
   playlist,
   index,
   rowData,
@@ -26,7 +27,7 @@ export const TrackRow = ({
       tracks: selection && selection.length > 0 ? selection : [{ index, track: rowData }],
     },
     isDragging(monitor) {
-      return selected.some(tr => tr.track.origIndex === rowData.origIndex);
+      return selection.some(tr => tr.track.origIndex === rowData.origIndex);
     },
   });
 
@@ -62,9 +63,10 @@ export const TrackRow = ({
 
   const onMouseDown = useCallback((event) => onClick(event, index), [index, onClick]);
   const onDoubleClick = useCallback((event) => {
-    console.debug('onDoubleClick: %o', { list: selected, index, event: event.nativeEvent, onPlay });
-    onPlay({ list: selected, index });
-  }, [selected, index, onPlay]);
+    //const tracks = selection.map(row => row.track);
+    console.debug('onDoubleClick: %o', { list: selection, index, event: event.nativeEvent, onPlay });
+    onPlay({ list: selection, index });
+  }, [selection, index, onPlay]);
 
   return connectDropTarget(connectDragSource(
     <div
@@ -73,8 +75,11 @@ export const TrackRow = ({
       onClick={onMouseDown}
       onDoubleClick={onDoubleClick}
     >
+      { current ? (
+        <span className="fas fa-play current" />
+      ) : null }
       { columns.map(col => (
-        <Cell key={col.key} col={col} rowData={rowData} colors={colors} />
+        <Cell key={col.key} col={col} rowData={rowData} colors={colors} selected={selected} />
       )) }
       <style jsx>{`
         div {
@@ -83,6 +88,14 @@ export const TrackRow = ({
           border-bottom: solid transparent 1px;
           box-sizing: border-box;
           color: ${colors.trackList.text};
+        }
+        .current {
+          display: inline-block;
+          width: 0;
+          margin-left: 5px;
+          margin-right: -5px;
+          font-size: 8px;
+          line-height: 20px;
         }
         .even {
           background-color: ${colors.trackList.evenBg};
@@ -100,7 +113,7 @@ export const TrackRow = ({
   ));
 };
 
-const Cell = React.memo(({ rowData, col, colors }) => (
+const Cell = React.memo(({ rowData, col, colors, selected }) => (
   <div className={col.className}>
     {col.formatter ? col.formatter({ rowData, dataKey: col.key }) : rowData[col.key]}
     <style jsx>{`
@@ -109,6 +122,7 @@ const Cell = React.memo(({ rowData, col, colors }) => (
         width: ${col.width}px;
         min-width: ${col.width}px;
         max-width: ${col.width}px;
+        white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         padding: 0px 10px 0px 5px;
@@ -124,7 +138,7 @@ const Cell = React.memo(({ rowData, col, colors }) => (
       }
       .stars {
         font-family: monospace;
-        color: ${colors.highlightText};
+        color: ${selected ? colors.highlightInverse : colors.highlightText};
       }
       .empty {
         padding: 0px;

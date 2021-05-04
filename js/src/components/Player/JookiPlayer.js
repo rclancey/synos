@@ -145,6 +145,7 @@ const reducer = (state, action) => {
 };
 
 export const JookiPlayer = ({
+  setTiming,
   setPlaybackInfo,
   setControlAPI,
 }) => {
@@ -178,9 +179,9 @@ export const JookiPlayer = ({
       onSkipBy: (cnt) => api.skipBy(cnt),
       onSeekTo: (abs) => api.seekTo(abs),
       onSeekBy: (del) => api.seekBy(del),
-      onReplaceQueue: (tracks) => api.replaceQueue(tracks),
-      onAppendToQueue: (tracks) => api.appendToQueue(tracks),
-      onInsertIntoQueue: (tracks) => api.insertIntoQueue(tracks),
+      onReplaceQueue: null, //(tracks) => api.replaceQueue(tracks),
+      onAppendToQueue: null, //(tracks) => api.appendToQueue(tracks),
+      onInsertIntoQueue: null, //(tracks) => api.insertIntoQueue(tracks),
       onSetPlaylist: (id, idx) => api.setPlaylist(id, idx),
       onSetVolumeTo: (vol) => api.setVolumeTo(vol),
       onChangeVolumeBy: (del) => api.changeVolumeBy(del),
@@ -191,8 +192,24 @@ export const JookiPlayer = ({
     };
   }, [api]);
 
-  useEffect(() => setControlAPI(controlAPI), [controlAPI, setControlAPI]);
-  useEffect(() => setPlaybackInfo(state), [state, setPlaybackInfo]);
+  useEffect(() => { console.debug('setting control api to jooki: %o', controlAPI); setControlAPI(controlAPI); }, [controlAPI, setControlAPI]);
+  useEffect(() => {
+    setTiming({
+      currentTime: state.currentTime,
+      duration: state.duration,
+    });
+  }, [state.currentTime, state.duration, setTiming]);
+  useEffect(() => {
+    setPlaybackInfo({
+      player: 'jooki',
+      playlistId: state.playlistId,
+      queue: state.queue,
+      index: state.index,
+      playStatus: state.playStatus,
+      volume: state.volume,
+      playMode: state.playMode,
+    });
+  }, [state.playlistId, state.queue, state.index, state.playStatus, state.volume, state.playMode, setPlaybackInfo]);
 
   return (
     <div id="jookiPlayer" />

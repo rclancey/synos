@@ -1,6 +1,8 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import displayTime from '../../lib/displayTime';
-import { PlayPauseSkip, Volume, Progress } from '../Controls';
+import { Player } from '../Player/Player';
+import { currentTrack, usePlaybackInfo, useControlAPI } from '../Player/Context';
+import { PlayPauseSkip, Volume, Progress, ShuffleButton, RepeatButton } from '../Controls';
 import { CoverArt } from '../CoverArt';
 import { TrackInfo } from '../TrackInfo';
 import { Queue } from './Queue';
@@ -19,68 +21,78 @@ const Buttons = React.memo(({
   onSetVolumeTo,
   onEnableSonos,
   onDisableSonos,
-}) => (
-  <div className="playpause">
-    <div className="wrapper">
-      <div className="padding" />
-      <PlayPauseSkip
-        width={120}
-        height={24}
-        paused={status !== 'PLAYING'}
-        onPlay={onPlay}
-        onPause={onPause}
-        onSkipBy={onSkipBy}
-        onSeekBy={onSeekBy}
-      />
-      <div className="padding" />
+  onReload,
+}) => {
+  const colors = useTheme();
+  return (
+    <div className="playpause">
+      <div className="wrapper">
+        <div className="padding" />
+        <PlayPauseSkip
+          width={120}
+          height={24}
+          paused={status !== 'PLAYING'}
+          onPlay={onPlay}
+          onPause={onPause}
+          onSkipBy={onSkipBy}
+          onSeekBy={onSeekBy}
+        />
+        <div className="padding" />
+      </div>
+      <div className="fas fa-redo-alt" onClick={onReload} />
+      <div className="foo" style={{ flex: 8 }}>
+        <div className="padding" />
+        <Volume
+          volume={volume}
+          onChange={onSetVolumeTo}
+        />
+        <div className="padding" />
+      </div>
+      <div className="foo">
+        <div className="padding" />
+        <AirplayButton
+          sonos={sonos}
+          onEnableSonos={onEnableSonos}
+          onDisableSonos={onDisableSonos}
+        />
+        <div className="padding" />
+      </div>
+      <style jsx>{`
+        .playpause {
+          width: 33%;
+          display: flex;
+          flex-direction: row;
+        }
+        .playpause :global(.rewind),
+        .playpause :global(.ffwd) {
+          padding: 5px;
+          margin-left: 1em;
+          margin-right: 1em;
+        }
+        .wrapper {
+          display: flex;
+          flex-direction: column;
+          padding-left: 3em;
+          flex: 10;
+        }
+        .padding {
+          flex: 2;
+        }
+        .foo {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          margin-right: 1em;
+        }
+        .fa-redo-alt {
+          padding-right: 1em;
+          line-height: 52px;
+          color: ${colors.highlightText};
+        }
+      `}</style>
     </div>
-    <div className="foo" style={{ flex: 8 }}>
-      <div className="padding" />
-      <Volume
-        volume={volume}
-        onChange={onSetVolumeTo}
-      />
-      <div className="padding" />
-    </div>
-    <div className="foo">
-      <div className="padding" />
-      <AirplayButton
-        sonos={sonos}
-        onEnableSonos={onEnableSonos}
-        onDisableSonos={onDisableSonos}
-      />
-      <div className="padding" />
-    </div>
-    <style jsx>{`
-      .playpause {
-        width: 33%;
-        display: flex;
-        flex-direction: row;
-      }
-      .playpause :global(.rewind),
-      .playpause :global(.ffwd) {
-        padding: 5px;
-        margin-left: 1em;
-        margin-right: 1em;
-      }
-      .wrapper {
-        display: flex;
-        flex-direction: column;
-        padding-left: 3em;
-        flex: 10;
-      }
-      .padding {
-        flex: 2;
-      }
-      .foo {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        margin-right: 1em;
-      }
-    `}</style>
-  </div>
-));
+  );
+});
 
 const OutputDevice = React.memo(({ name, icon, enabled, onEnable }) => (
   <div className="device">
@@ -201,8 +213,9 @@ const NotPlaying = React.memo(() => (
   />
 ));
 
-const Timer = React.memo(({ t }) => (
+const Timer = React.memo(({ t, children }) => (
   <div className="timer">
+    {children}
     <div className="padding" />
     <div className="currentTime">{displayTime(t)}</div>
     <style jsx>{`
@@ -231,27 +244,30 @@ const Timer = React.memo(({ t }) => (
 ));
 
 const NowPlaying = React.memo(({
+  timing,
+  playMode,
   track,
-  currentTime,
-  duration,
   colors,
   onSeekTo,
+  onShuffle,
+  onRepeat,
 }) => {
   if (!track) {
     return (<NotPlaying />);
   }
+  const style = { textAlign: 'center', marginTop: '3px' };
   return (
     <div className="nowplaying">
       <CoverArt track={track} size={56} radius={0} />
       <div className="outerwrapper">
         <div className="innerwrapper">
-          <Timer t={currentTime} />
+          <Timer t={timing.currentTime}><ShuffleButton playMode={playMode} onShuffle={onShuffle} style={style} /></Timer>
           <TrackInfo track={track} className="desktop controls" />
-          <Timer t={currentTime - duration} />
+          <Timer t={timing.currentTime - timing.duration}><RepeatButton playMode={playMode} onRepeat={onRepeat} style={style} /></Timer>
         </div>
         <Progress
-          currentTime={currentTime}
-          duration={duration}
+          currentTime={timing.currentTime}
+          duration={timing.duration}
           onSeekTo={onSeekTo}
           height={4}
         />
@@ -259,6 +275,7 @@ const NowPlaying = React.memo(({
       <style jsx>{`
         .nowplaying {
           width: 34%;
+          border-color: ${colors.panelBorder};
           border-left-style: solid;
           border-left-width: 1px;
           border-right-style: solid;
@@ -296,11 +313,12 @@ const QueueMenu = React.memo(({
   <ButtonMenu icon="queue" maxWidth={375}>
     <Queue
       playMode={playMode}
-      tracks={queue}
+      tracks={queue || []}
       index={queueIndex}
       onSkipTo={onSkipTo}
       onShuffle={onShuffle}
       onRepeat={onRepeat}
+      onSelect={(track, index) => onSkipTo(index)}
     />
   </ButtonMenu>
 ));
@@ -413,71 +431,63 @@ const Tools = React.memo(({
   
 export const Controls = ({
   search,
-  playbackInfo,
-  controlAPI,
+  player,
   setPlayer,
+  setControlAPI,
+  setPlaybackInfo,
+  onReload,
   onSearch,
 }) => {
   const colors = useTheme();
-  const {
-    queue,
-    index,
-    playStatus,
-    currentTime,
-    duration,
-    volume,
-    playMode,
-  } = playbackInfo;
-  const {
-    onPlay,
-    onPause,
-    onSkipTo,
-    onSkipBy,
-    onSeekTo,
-    onSeekBy,
-    onSetVolumeTo,
-    onShuffle,
-    onRepeat,
-  } = controlAPI;
+  const playbackInfo = usePlaybackInfo();
+  const controlAPI = useControlAPI();
+  const track = useMemo(() => currentTrack(playbackInfo), [playbackInfo]);
+  const [timing, setTiming] = useState({ currentTime: 0, duration: 0 });
 
-  const sonos = playbackInfo.player === 'sonos';
-  const onEnableSonos = useMemo(() => {
-    return () => setPlayer('sonos');
-  }, [setPlayer]);
-  const onDisableSonos = useMemo(() => {
-    return () => setPlayer('local');
-  }, [setPlayer]);
+  const sonos = useMemo(() => playbackInfo.player === 'sonos', [playbackInfo]);
+  const onEnableSonos = useCallback(() => setPlayer('sonos'), [setPlayer]);
+  const onDisableSonos = useCallback(() => setPlayer('local'), [setPlayer]);
 
   return (
     <div className="controls">
+      <Player
+        player={player}
+        setPlayer={setPlayer}
+        setTiming={setTiming}
+        setPlaybackInfo={setPlaybackInfo}
+        setControlAPI={setControlAPI}
+      />
       <Buttons
-        status={playStatus}
-        volume={volume}
+        status={playbackInfo.playStatus}
+        volume={playbackInfo.volume}
         sonos={sonos}
-        onPlay={onPlay}
-        onPause={onPause}
-        onSkipBy={onSkipBy}
-        onSeekBy={onSeekBy}
-        onSetVolumeTo={onSetVolumeTo}
+        onPlay={controlAPI.onPlay}
+        onPause={controlAPI.onPause}
+        onSkipBy={controlAPI.onSkipBy}
+        onSeekBy={controlAPI.onSeekBy}
+        onSetVolumeTo={controlAPI.onSetVolumeTo}
         onEnableSonos={onEnableSonos}
         onDisableSonos={onDisableSonos}
+        onReload={onReload}
       />
       <NowPlaying
-        track={queue ? queue[index] : null}
-        currentTime={currentTime}
-        duration={duration}
+        timing={timing}
+        track={track}
+        playMode={playbackInfo.playMode}
         colors={colors}
-        onSeekTo={onSeekTo}
+        onSeekTo={controlAPI.onSeekTo}
+        onShuffle={controlAPI.onShuffle}
+        onRepeat={controlAPI.onRepeat}
       />
       <Tools
-        queue={queue}
-        queueIndex={index}
-        playMode={playMode}
+        queue={playbackInfo.queue}
+        queueIndex={playbackInfo.index}
+        playMode={playbackInfo.playMode}
         search={search}
-        onSkipTo={onSkipTo}
+        onSkipTo={controlAPI.onSkipTo}
         onSearch={onSearch}
-        onShuffle={onShuffle}
-        onRepeat={onRepeat}
+        onShuffle={controlAPI.onShuffle}
+        onRepeat={controlAPI.onRepeat}
       />
       <style jsx>{`
         .controls {
@@ -488,6 +498,7 @@ export const Controls = ({
           max-height: 56px;
           height: 56px;
           background-color: ${colors.panelBackground};
+          border-bottom: solid ${colors.panelBorder} 1px;
         }
       `}</style>
     </div>

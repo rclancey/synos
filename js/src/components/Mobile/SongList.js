@@ -2,14 +2,15 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useTheme } from '../../lib/theme';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
+import { useStack } from './Router/StackContext';
+import { useMenuContext } from './TrackMenu';
 import { AutoSizeList } from '../AutoSizeList';
 import { CoverArt } from '../CoverArt';
-import { Icon } from '../Icon';
 import { DotsMenu } from './TrackMenu';
-import { MixCover } from './MixCover';
-import { Back } from './ScreenHeader';
+import { MixCover } from '../MixCover';
 import { Sources } from './Sources';
 import { SongRow } from './SongRow';
+import { Home } from './Home';
 
 const plural = (n, s) => {
   if (n === 1) {
@@ -27,7 +28,8 @@ const useDuration = (tracks) => {
     if (durT < 60 * 24) {
       const hours = Math.floor(durT / 60);
       const mins = Math.round(durT) % 60;
-      return `${plural(hours, 'hour')}, ${plural(mins, 'minute')}`;
+      return `${hours}:${mins < 10 ? '0' : ''}${mins}`;
+      //return `${plural(hours, 'hour')}, ${plural(mins, 'minute')}`;
     }
     const days = Math.floor(durT / (60 * 24));
     const hours = Math.round((durT % (60 * 24)) / 60);
@@ -45,6 +47,7 @@ export const PlaylistTitle = ({
   onEditPlaylist,
 }) => {
   const colors = useTheme();
+  const menu = useMenuContext();
   const dur = useDuration(tracks);
   return (
     <div className="title">
@@ -57,8 +60,9 @@ export const PlaylistTitle = ({
         <div className="buttons">
           <DotsMenu
             track={tracks}
-            onOpen={tracks => onPlaylistMenu(playlist.name, tracks)}
+            onOpen={tracks => menu.onPlaylistMenu(playlist.name, tracks)}
           />
+          <div className="spacer" />
           <div className="edit" onClick={() => onEditPlaylist(!editing)}>{editing ? "Done" : "Edit"}</div>
         </div>
       ) }
@@ -88,8 +92,12 @@ export const PlaylistTitle = ({
           flex-direction: row;
           width: 100%;
         }
-        .title .buttons .edit {
+        .title .buttons .spacer {
           flex: 10;
+        }
+        .title .buttons .edit {
+          flex: 1;
+          padding-left: 1em;
           text-align: right;
           font-size: 18px;
           line-height: 30px;
@@ -112,15 +120,17 @@ export const SongList = ({
   onClose,
   onTrackMenu,
   editing = false,
-  adding = false,
-  onAdd,
+  onBeginAdd,
   onUpdatePlaylist = () => {},
   children,
 }) => {
   const colors = useTheme();
+  const stack = useStack();
+  const menu = useMenuContext();
   const [chooser, setChooser] = useState(false);
   const [chooserSource, setChooserSource] = useState(null);
-  const [scrollTop, setScrollTop] = useState(0);
+  const page = stack.pages[stack.pages.length - 1];
+  const scrollTop = page ? page.scrollOffset : 0;
   const scrollTopRef = useRef(scrollTop);
   const ref = useRef(null);
 
@@ -128,10 +138,7 @@ export const SongList = ({
     scrollTopRef.current = scrollTop;
   }, [scrollTop]);
 
-  const onScroll = useCallback(({ scrollOffset }) => {
-    setScrollTop(scrollOffset);
-  }, [setScrollTop]);
-
+  /*
   const onAddMe = useCallback((track) => {
     console.error("%o onAddMe(%o): %o", playlist, track, editing);
     if (editing) {
@@ -140,6 +147,7 @@ export const SongList = ({
     }
     return onAdd(track);
   }, [api, playlist, editing, onUpdatePlaylist, onAdd]);
+  */
 
   const onDelete = useCallback((track, index) => {
     return api.deletePlaylistTracks(
@@ -160,41 +168,26 @@ export const SongList = ({
       });
   }, [playlist, tracks, api, onUpdatePlaylist]);
 
-  const rowRenderer = useCallback(({ index, style }) => {
-    if (editing && index === 0) {
-      return (
-        <div
-          className="item add"
-          style={style}
-          onClick={() => setChooser(true)}
-        >
-          <Icon name="add" size={36} />
-          <div className="action">Add Music</div>
-        </div>
-      );
-    }
-    const track = editing ? tracks[index - 1] : tracks[index];
-    return (
-      <SongRow
-        style={style}
-        index={editing ? index - 1 : index}
-        len={tracks.length}
-        playlist={playlist}
-        track={track}
-        withTrackNum={withTrackNum}
-        withCover={withCover}
-        withArtist={withArtist}
-        withAlbum={withAlbum}
-        editing={editing}
-        adding={adding}
-        onTrackMenu={onTrackMenu}
-        onAdd={onAddMe}
-        onMove={onMove}
-        onDelete={onDelete}
-      />
-    );
-  }, [playlist, tracks, withTrackNum, withCover, withArtist, withAlbum, onTrackMenu, editing, adding, onDelete, onMove, onAddMe]);
+  const itemData = useMemo(() => {
+    return {
+      tracks,
+      offset: editing ? -1 : 0,
+      len: tracks.length,
+      playlist,
+      withTrackNum,
+      withCover,
+      withArtist,
+      withAlbum,
+      editing,
+      onTrackMenu: menu.onTrackMenu,
+      onBeginAdd: onBeginAdd,
+      onAdd: stack.onAdd,
+      onMove,
+      onDelete,
+    };
+  }, [tracks, playlist, withTrackNum, withCover, withArtist, withAlbum, menu, onMove, onDelete]);
 
+  /*
   if (chooser) {
     return (
       <Sources
@@ -209,23 +202,24 @@ export const SongList = ({
       </Sources>
     );
   }
+  */
 
   return (
     <div className={`songList ${editing ? 'editing' : ''}`}>
-      <Back onClose={onClose}>{prev}</Back>
       <Header colors={colors}>
         {children}
       </Header>
       <div className="items">
         <AutoSizeList
           xref={ref}
+          itemData={itemData}
           itemCount={tracks.length + (editing ? 1 : 0)}
           itemSize={63}
           offset={0}
           initialScrollOffset={scrollTop}
-          onScroll={onScroll}
+          onScroll={stack.onScroll}
         >
-          {rowRenderer}
+          {SongRow}
         </AutoSizeList>
       </div>
 
@@ -237,6 +231,10 @@ export const SongList = ({
           overflow: hidden;
         }
         .songList .items {
+          position: absolute;
+          left: 0;
+          top: 204px;
+          width: 100vw;
           height: calc(100vh - 273px);
         }
         .songList :global(.item.add) {
@@ -256,16 +254,34 @@ export const SongList = ({
 };
 
 export const Playlist = ({
-  prev,
   playlist,
-  adding = false,
   onClose,
   onTrackMenu,
   onPlaylistMenu,
-  onAdd,
 }) => {
-  const [tracks, setTracks] = useState([]);
+  const stack = useStack();
+  const setTitle = stack.setTitle;
   const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    if (editing) {
+      setTitle(`Edit ${playlist.name}...`);
+    } else {
+      setTitle(playlist.name);
+    }
+  }, [setTitle, playlist, editing]);
+  const onBeginEdit = useCallback(() => {
+    setEditing(true);
+  }, []);
+  const onFinishAddX = stack.onFinishAdd;
+  const onFinishEdit = useCallback(() => {
+    onFinishAddX();
+    setEditing(false);
+  }, [onFinishAddX]);
+  const onBeginAddX = stack.onBeginAdd;
+  const onBeginAddY = useCallback(() => {
+    onBeginAddX(playlist, 'Library', <Home />);
+  }, [onBeginAddX, playlist]);
+  const [tracks, setTracks] = useState(null);
   const api = useAPI(API);
   const plid = playlist.persistent_id;
 
@@ -277,21 +293,21 @@ export const Playlist = ({
     api.loadPlaylistTracks({ persistent_id: plid }).then(setTracks);
   }, [api, plid]);
 
+  if (tracks === null) {
+    return null;
+  }
+
   return (
     <SongList
       api={api}
-      prev={prev}
       tracks={tracks}
       playlist={playlist}
       withTrackNum={false}
       withCover={true}
       withArtist={true}
-      withAlbum={false}
-      onClose={onClose}
-      onTrackMenu={onTrackMenu}
+      withAlbum={true}
       editing={editing}
-      adding={adding}
-      onAdd={onAdd}
+      onBeginAdd={editing ? onBeginAddY : null}
       onUpdatePlaylist={onUpdatePlaylist}
     >
       <MixCover tracks={tracks} radius={5} />
@@ -299,7 +315,6 @@ export const Playlist = ({
         tracks={tracks}
         playlist={playlist}
         editing={editing}
-        adding={adding}
         onPlaylistMenu={onPlaylistMenu}
         onEditPlaylist={setEditing}
       />
@@ -312,6 +327,7 @@ const AlbumTitle = React.memo(({
   adding,
   onPlaylistMenu,
 }) => {
+  const menu = useMenuContext();
   const dur = useDuration(tracks);
   if (tracks.length === 0) {
     return null;
@@ -319,20 +335,22 @@ const AlbumTitle = React.memo(({
   const first = tracks[0];
   return (
     <div className="title">
-      <div className="album">{first.album}</div>
-      <div className="artist">{first.album_artist || first.artist}</div>
-      <div className="genre">
-        {first.genre}
-        {first.year ? `\u00a0\u2219\u00a0${first.year}` : ''}
-      </div>
-      <div className="genre">
-        {plural(tracks.length, 'Track')}
-        {`\u00a0\u2219\u00a0${dur}`}
+      <div className="info">
+        <div className="album">{first.album}</div>
+        <div className="artist">{first.album_artist || first.artist}</div>
+        <div className="genre">
+          {first.genre}
+          {first.year ? `\u00a0\u2219\u00a0${first.year}` : ''}
+        </div>
+        <div className="genre">
+          {plural(tracks.length, 'Track')}
+          {`\u00a0\u2219\u00a0${dur}`}
+        </div>
       </div>
       { adding ? null : (
         <DotsMenu
           track={tracks}
-          onOpen={tracks => onPlaylistMenu(first.album, tracks)}
+          onOpen={tracks => menu.onPlaylistMenu(first.album, tracks)}
         />
       ) }
       <style jsx>{`
@@ -347,17 +365,23 @@ const AlbumTitle = React.memo(({
           font-weight: normal;
           margin-top: 0;
         }
+        .title .info {
+          flex: 10;
+        }
+        .title .album, .title .artist {
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
+          overflow: hidden;
+        }
         .title .album {
-          flex: 1;
           font-size: 16pt;
           font-weight: bold;
         }
         .title .artist {
-          flex: 1;
           font-size: 12pt;
         }
         .title .genre {
-          flex: 10;
           font-size: 12pt;
         }
       `}</style>
@@ -372,18 +396,21 @@ export const Album = ({
   onTrackMenu,
   onPlaylistMenu,
   onClose,
-  onAdd,
 }) => {
-  const [tracks, setTracks] = useState([]);
+  const [tracks, setTracks] = useState(null);
   const api = useAPI(API);
   useEffect(() => {
     api.songIndex(album).then(setTracks);
   }, [api, album]);
 
+  if (tracks === null) {
+    return null;
+  }
+
   return (
     <SongList
       api={api}
-      prev={prev.name}
+      prev={prev ? prev.name : 'blah'}
       tracks={tracks}
       adding={adding}
       withTrackNum={true}
@@ -392,7 +419,6 @@ export const Album = ({
       withAlbum={false}
       onClose={onClose}
       onTrackMenu={onTrackMenu}
-      onAdd={onAdd}
     >
       <CoverArt track={tracks[0]} size={140} radius={5} />
       <AlbumTitle tracks={tracks} adding={adding} onPlaylistMenu={onPlaylistMenu} />

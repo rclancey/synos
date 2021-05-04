@@ -18,7 +18,7 @@ export const useFocus = (onKeyPress) => {
   const onBlur = useCallback(() => setFocused(false), [setFocused]);
   useEffect(() => {
     const handler = (event) => {
-      if (focusRef.current) {
+      if (focusRef.current && onKeyPress) {
         onKeyPress(event);
       }
     };

@@ -1,65 +1,135 @@
-import React, { useState, useCallback } from 'react';
-import { PlaylistMenu } from './TrackMenu';
-import { NowPlaying } from './NowPlaying';
+import React, { useEffect } from 'react';
+import { StackContext, usePages } from './Router/StackContext';
+import { Stack } from './Router/Stack';
 import { Home } from './Home';
+import { TrackMenu, PlaylistMenu, MenuContext, useMenus } from './TrackMenu';
+import { Controls } from './NowPlaying';
 import { useTheme } from '../../lib/theme';
+import { useControlAPI } from '../Player/Context';
+import { WithRouter } from '../../lib/router';
+import { BackButton } from './BackButton';
+import { Screen } from './Screen';
 
 export const MobileSkin = ({
   theme,
   player,
   setPlayer,
-  playbackInfo,
-  controlAPI,
+  setControlAPI,
+  setPlaybackInfo,
 }) => {
-  const colors = useTheme();
-  const [children, setChildren] = useState(null);
-  const [trackMenuTrack, setTrackMenuTrack] = useState(null);
-  const [playlistMenuTracks, setPlaylistMenuTracks] = useState(null);
-  const [playlistMenuTitle, setPlaylistMenuTitle] = useState(null);
+  const controlAPI = useControlAPI();
 
+  const colors = useTheme();
+  const pages = usePages();
+  const menus = useMenus();
+
+  useEffect(() => {
+    const handler = (evt) => {
+      console.debug(evt);
+    };
+    window.addEventListener('popstate', handler);
+    window.addEventListener('pushstate', handler);
+    if (pages.pages.length === 0) {
+      pages.onPush('Library', <Home controlAPI={controlAPI} setPlayer={setPlayer} />);
+    }
+    return () => {
+      window.removeEventListner('popstate', handler);
+      window.removeEventListener('pushstate', handler);
+    };
+  // eslint-disable-next-line
+  }, []);
+  /*
   const onOpen = setChildren;
   const onClose = useCallback(() => setChildren(null), [setChildren]);
-  const onTrackMenu = setTrackMenuTrack;
-  const onPlaylistMenu = useCallback((title, tracks) => {
-    setPlaylistMenuTitle(title);
-    setPlaylistMenuTracks(tracks);
-  }, [setPlaylistMenuTitle, setPlaylistMenuTracks]);
-  const onEnableSonos = useCallback(() => setPlayer('sonos'), [setPlayer]);
-  const onDisableSonos = useCallback(() => setPlayer('local'), [setPlayer]);
-
-  return (
-    <div id="app" className={`mobile ${theme}`}>
-      <Home
+  const onList = useCallback((args) => {
+    if (args.album) {
+      const album = {
+        artist: {
+          sort: args.album.sort_album_artist || args.album.sort_artist,
+        },
+        sort: args.album.sort_album,
+      };
+      onOpen(<Album
+        prev={{ name: "Library" }}
+        album={album}
         controlAPI={controlAPI}
-        onOpen={onOpen}
         onClose={onClose}
         onTrackMenu={onTrackMenu}
         onPlaylistMenu={onPlaylistMenu}
-      >
-        {children}
-      </Home>
-      <NowPlaying
+      />);
+    } else if (args.artist) {
+      const artist = {
+        sort: args.artist.sort_artist || args.sort_album_artist,
+      };
+      onOpen(<AlbumList
+        prev="Library"
+        artist={artist}
         controlAPI={controlAPI}
-        playbackInfo={playbackInfo}
-        sonos={player === 'sonos'}
-        onEnableSonos={onEnableSonos}
-        onDisableSonos={onDisableSonos}
+        onClose={onClose}
+        onTrackMenu={onTrackMenu}
+        onPlaylistMenu={onPlaylistMenu}
+      />);
+    }
+  }, [onOpen]);
+  */
+
+  useEffect(() => {
+    document.body.style.background = colors.sectionBackground;
+  }, [colors]);
+
+  const onList = null;
+  return (
+    <div id="app" className={`mobile ${theme}`}>
+  {/*
+    <WithRouter
+      state={null}
+      title="Library"
+      url="/"
+    >
+      <Screen />
+      <Controls
+        player={player}
+        setPlayer={setPlayer}
+        setControlAPI={setControlAPI}
+        setPlaybackInfo={setPlaybackInfo}
+        onList={onList}
       />
-      {trackMenuTrack ? (
-        <PlaylistMenu
-          tracks={[trackMenuTrack]}
-          name={trackMenuTrack.name}
-          onClose={() => setTrackMenuTrack(null)}
-          controlAPI={controlAPI}
-        />
+    </WithRouter>
+  */}
+      <StackContext.Provider value={pages}>
+        <MenuContext.Provider value={menus}>
+          <Stack />
+        </MenuContext.Provider>
+      </StackContext.Provider>
+
+      <Controls
+        player={player}
+        setPlayer={setPlayer}
+        setControlAPI={setControlAPI}
+        setPlaybackInfo={setPlaybackInfo}
+        onList={onList}
+      />
+
+      {menus.trackMenuTrack ? (
+        <StackContext.Provider value={pages}>
+          <TrackMenu
+            menus={menus}
+            track={menus.trackMenuTrack}
+            onClose={() => menus.onTrackMenu(null)}
+            controlAPI={controlAPI}
+          />
+        </StackContext.Provider>
       ) : null}
-      {playlistMenuTracks ? (
-        <PlaylistMenu
-          name={playlistMenuTitle}
-          tracks={playlistMenuTracks}
-          onClose={() => setPlaylistMenuTracks(null)}
-          controlAPI={controlAPI}
-        />
+      {menus.playlistMenuTracks ? (
+        <StackContext.Provider value={pages}>
+          <PlaylistMenu
+            menus={menus}
+            name={menus.playlistMenuTitle}
+            tracks={menus.playlistMenuTracks}
+            onClose={() => menus.onPlaylistMenu(null, null)}
+            controlAPI={controlAPI}
+          />
+        </StackContext.Provider>
       ) : null}
       <style jsx>{`
         #app {

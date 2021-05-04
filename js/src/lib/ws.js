@@ -6,6 +6,15 @@ class WebSocketSingleton {
     this.listeners = {};
     this.backoff = 1;
     this.reconnect();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibililtyState === 'visible') {
+        this.reconnect();
+      }
+    });
+  }
+
+  send(msg) {
+    this.ws.send(JSON.stringify(msg));
   }
 
   addEventListener(name, handler) {
@@ -68,6 +77,7 @@ class WebSocketSingleton {
 
   close() {
     if (this.isOpening()) {
+      this.ws.onClose = null;
       this.ws.close();
     }
   }
@@ -76,7 +86,7 @@ class WebSocketSingleton {
     this.close();
     this.ws = new WebSocket(this.uri);
     this.ws.onopen = evt => {
-      console.debug('websocket open');
+      //console.debug('websocket open');
       this.backoff = 1;
       this.emit('open', evt);
     };

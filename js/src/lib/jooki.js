@@ -37,7 +37,7 @@ export class JookiAPI extends APIBase {
   }
 
   loadPlaylists() {
-    console.error(new Error('loading playlists'));
+    //console.error(new Error('loading playlists'));
     const url = '/api/jooki/playlists';
     return this.get(url);
   }

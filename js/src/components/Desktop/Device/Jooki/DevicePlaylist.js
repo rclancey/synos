@@ -8,8 +8,10 @@ export const JookiDevicePlaylist = ({
   device,
   selected,
   onSelect,
+  setPlayer,
 }) => {
   const dpls = device ? device.playlists : null;
+  const api = device ? device.api : null;
   useEffect(() => {
     if (!dpls) {
       return;
@@ -19,9 +21,9 @@ export const JookiDevicePlaylist = ({
     }
     const pl = dpls.find(x => x.persistent_id === selected);
     if (pl) {
-      onSelect(pl, <JookiTrackBrowser device={device} playlist={pl} />);
+      onSelect(pl, <JookiTrackBrowser api={api} playlist={pl} setPlayer={setPlayer} />);
     }
-  }, [device, dpls, selected, onSelect]);
+  }, [api, dpls, selected, onSelect, setPlayer]);
   if (!device) {
     return null;
   }
@@ -58,9 +60,9 @@ export const JookiDevicePlaylist = ({
       selected={selected}
       onSelect={pl => {
         if (pl === playlist) {
-          onSelect(pl, <JookiDevice device={device} />);
+          onSelect(pl, <JookiDevice device={device} setPlayer={setPlayer} />);
         } else {
-          onSelect(pl, <JookiTrackBrowser device={device} playlist={pl} />);
+          onSelect(pl, <JookiTrackBrowser api={api} playlist={pl} setPlayer={setPlayer} />);
         }
       }}
       onRename={onRename}

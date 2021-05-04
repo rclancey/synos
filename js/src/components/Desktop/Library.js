@@ -1,14 +1,16 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { trackDB } from '../../lib/trackdb';
 import { WS } from '../../lib/ws';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
+import { useControlAPI } from '../Player/Context';
 import { PlaylistBrowser } from './Playlists/PlaylistBrowser';
 import { TrackBrowser } from './Tracks/TrackBrowser';
 import { ProgressBar } from './ProgressBar';
 
 const loadTracks = (api, page, size, since, onProgress) => {
-  api.loadTracks(page, size, since)
+  //console.debug('loading tracks from database, page %o', page);
+  return api.loadTracks(page, size, since)
     .then(tracks => {
       if (tracks === null) {
         return false;
@@ -38,8 +40,10 @@ export const Library = ({
   playlist,
   track,
   search,
-  controlAPI,
   setPlaylist,
+  setPlayer,
+  onShowInfo,
+  onShowMultiInfo,
 }) => {
   const api = useAPI(API);
   const [loadedCount, setLoadedCount] = useState(0);
@@ -52,6 +56,7 @@ export const Library = ({
   const [device, setDevice] = useState(null);
 
   useEffect(() => {
+    //console.debug('loading track database');
     const onProgress = n => {
       setLoadedCount(c => c + n);
     };
@@ -68,6 +73,7 @@ export const Library = ({
       .then(() => trackDB.countTracks())
       .then(c => setLoadingCount(orig => orig + c))
       .then(() => loadTracks(api, 1, 100, newest.current, onProgress))
+      //.then(() => console.debug('finished loading tracks from server'))
       .then(() => api.loadPlaylists())
       .then(updatePlaylists)
       .then(() => trackDB.loadTracks(1000, () => onProgress(1000)))
@@ -77,7 +83,7 @@ export const Library = ({
       .then(() => setLoadingComplete(true));
 
     const openHandler = () => {
-      console.debug('websocket reopened, refreshing library');
+      //console.debug('websocket reopened, refreshing library');
       const count = { current: 0 };
       const onProgress = n => count.current += 1;
       trackDB.getNewest()
@@ -119,63 +125,98 @@ export const Library = ({
     };
   }, [api]);
 
-  const onSelectPlaylist = useMemo(() => {
-    return (pl, dev) => {
-      console.debug('onSelectPlaylist(%o, %o)', pl, dev);
-      if (!dev) {
-        if (!pl) {
-          setPlaylist(null);
+  /*
+  const reloaddb = useCallback(() => {
+    const onProgress = n => {
+      setLoadedCount(c => c + n);
+    };
+    const updatePlaylists = pls => {
+      setPlaylists(addPlaylistTimestamp(pls, Date.now()));
+    };
+
+    trackDB.clear()
+      .then(t => {
+        newest.current = 0;
+        return api.loadTrackCount(0);
+      })
+      .then(c => setLoadingCount(c + 1))
+      .then(() => trackDB.countTracks())
+      .then(c => setLoadingCount(orig => orig + c))
+      .then(() => loadTracks(api, 1, 100, newest.current, onProgress))
+      .then(() => api.loadPlaylists())
+      .then(updatePlaylists)
+      .then(() => trackDB.loadTracks(1000, () => onProgress(1000)))
+      .then(tracks => setTracks(tracks))
+      .then(() => trackDB.getNewest())
+      .then(t => newest.current = t)
+      .then(() => setLoadingComplete(true));
+  }, [api]);
+  */
+
+  const onSelectPlaylist = useCallback((pl, dev) => {
+    //console.error('onSelectPlaylist(%o, %o)', pl, dev);
+    if (!dev) {
+      if (!pl) {
+        setPlaylist(null);
+        setDevice(null);
+        window.localStorage.setItem('lastPlaylist', '');
+        return;
+      }
+      if (pl.folder) {
+        return;
+      }
+      api.loadPlaylist(pl.persistent_id)
+        .then(xpl => {
+          setPlaylist(xpl);
           setDevice(null);
-          return;
-        }
-        if (pl.folder) {
-          return;
-        }
-        api.loadPlaylist(pl.persistent_id)
-          .then(xpl => {
-            setPlaylist(xpl);
-            setDevice(null);
-          });
-      } else {
-        setDevice(dev);
-        setPlaylist(pl);
-      }
-    };
+          window.localStorage.setItem('lastPlaylist', xpl.persistent_id);
+        });
+    } else {
+      setDevice(dev);
+      setPlaylist(pl);
+    }
   }, [api, setPlaylist]);
-  const onMovePlaylist = useMemo(() => {
-    return ({ source, target }) => {
-      console.debug('onMovePlaylist: %o', { source, target });
-      api.movePlaylist(source.playlist, target.playlist)
-        .then(() => api.loadPlaylists())
-        .then(pls => setPlaylists(addPlaylistTimestamp(pls, Date.now())));
-    };
+  const onMovePlaylist = useCallback(({ source, target }) => {
+    console.debug('onMovePlaylist: %o', { source, target });
+    api.movePlaylist(source.playlist, target.playlist)
+      .then(() => api.loadPlaylists())
+      .then(pls => setPlaylists(addPlaylistTimestamp(pls, Date.now())));
   }, [api]);
-  const onAddToPlaylist = useMemo(() => {
-    return ({ source, target }) => {
-      console.debug('onAddToPlaylist: %o', { source, target });
-      if (target.playlist && source.tracks && source.tracks.length > 0) {
-        api.addToPlaylist(target.playlist, source.tracks.map(tr => tr.track));
-      }
-    };
+  const onAddToPlaylist = useCallback(({ source, target }) => {
+    console.debug('onAddToPlaylist: %o', { source, target });
+    if (target.playlist && source.tracks && source.tracks.length > 0) {
+      api.addToPlaylist(target.playlist, source.tracks.map(tr => tr.track));
+    }
   }, [api]);
-  const onReorderTracks = useMemo(() => {
-    return (playlist, targetIndex, sourceIndices) => {
-      console.debug('onReorderTracks: %o', { playlist, targetIndex, sourceIndices });
-      if (playlist && sourceIndices && sourceIndices.length > 0) {
-        api.reorderTracks(playlist, targetIndex, sourceIndices)
-          .then(() => api.loadPlaylist(playlist.persistent_id))
-          .then(pl => setPlaylist(pl));
-      }
-    };
+  const onReorderTracks = useCallback((playlist, targetIndex, sourceIndices) => {
+    console.debug('onReorderTracks: %o', { playlist, targetIndex, sourceIndices });
+    if (playlist && sourceIndices && sourceIndices.length > 0) {
+      api.reorderTracks(playlist, targetIndex, sourceIndices)
+        .then(() => api.loadPlaylist(playlist.persistent_id))
+        .then(pl => setPlaylist(pl));
+    }
   }, [api, setPlaylist]);
-  const onDeleteTracks = useMemo(() => {
-    return (playlist, selected) => {
-      console.debug('onDeleteTracks: %o', { playlist, selected });
-      if (playlist && selected && selected.length > 0) {
-        api.deletePlaylistTracks(playlist, selected);
-      }
-    };
+  const onDeleteTracks = useCallback((playlist, selected) => {
+    console.debug('onDeleteTracks: %o', { playlist, selected });
+    if (playlist && selected && selected.length > 0) {
+      api.deletePlaylistTracks(playlist, selected);
+    }
   }, [api]);
+  /*
+  const onCreatePlaylist = useCallback((playlist) => {
+    api.createPlaylist(playlist)
+      .then(() => api.loadPlaylists())
+      .then(pls => setPlaylists(addPlaylistTimestamp(pls, Date.now())));
+  }, [api]);
+  */
+
+  useEffect(() => {
+    const plid = window.localStorage.getItem('lastPlaylist');
+    if (plid) {
+      onSelectPlaylist({ persistent_id: plid });
+    }
+  }, [onSelectPlaylist]);
+  const controlAPI = useControlAPI();
 
   return (
     <>
@@ -187,6 +228,7 @@ export const Library = ({
           onMovePlaylist={onMovePlaylist}
           onAddToPlaylist={onAddToPlaylist}
           controlAPI={controlAPI}
+          setPlayer={setPlayer}
         />
         { device || (
           <TrackBrowser
@@ -197,6 +239,8 @@ export const Library = ({
             onReorder={onReorderTracks}
             onDelete={onDeleteTracks}
             controlAPI={controlAPI}
+            onShowInfo={onShowInfo}
+            onShowMultiInfo={onShowMultiInfo}
           />
         ) }
         <style jsx>{`

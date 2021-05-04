@@ -3,17 +3,14 @@ import { useAPI } from '../../../../lib/useAPI';
 import { JookiAPI } from '../../../../lib/jooki';
 import { Icon } from '../../../Icon';
 import { SongList, PlaylistTitle } from '../../SongList';
-import { MixCover } from '../../MixCover';
+import { MixCover } from '../../../MixCover';
 import { ScreenHeader } from '../../ScreenHeader';
 import { JookiToken } from '../../../Jooki/Token';
 
 export const Playlists = ({ db, controlAPI, onClose, onTrackMenu, onPlaylistMenu }) => {
-  const api = useAPI(JookiAPI);
   const [selected, setSelected] = useState(null);
   const onCloseMe = useCallback(() => setSelected(null), [setSelected]);
   const onOpen = setSelected;
-  const onAdd = null;
-  const adding = false;
   const playlists = useMemo(() => {
     return Object.entries(db.playlists).map(entry => {
       return Object.assign({}, { jooki_id: entry[0] }, entry[1]);
@@ -87,10 +84,10 @@ export const Playlist = ({ playlistId, controlAPI, onClose, onTrackMenu, onPlayl
   const [playlist, setPlaylist] = useState({ name: 'Loading...', tracks: [] });
   const onUpdatePlaylist = useCallback(() => {
     api.loadPlaylist(playlistId).then(setPlaylist);
-  }, [api, setPlaylist]);
+  }, [api, playlistId, setPlaylist]);
   useEffect(() => {
     api.loadPlaylist(playlistId).then(setPlaylist);
-  }, [api, setPlaylist]);
+  }, [api, playlistId, setPlaylist]);
   const onAdd = useCallback((track) => {
     console.debug('errant onAdd(%o)', track);
   }, []);

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const CoverArt = ({ track, size, radius, style, url, children }) => {
+export const CoverArt = React.memo(({ track, size, radius, style, url, children }) => {
   const xstyle = Object.assign({
     backgroundSize: 'cover',
     backgroundPosition: 'center',
@@ -45,4 +45,4 @@ export const CoverArt = ({ track, size, radius, style, url, children }) => {
   return (
     <div className="coverart" style={xstyle}>{children}</div>
   );
-};
+});

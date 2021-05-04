@@ -58,7 +58,12 @@ export const QueueHeader = ({ playMode, tracks, onShuffle, onRepeat, onClose }) 
 };
 
 export const QueueInfo = ({ tracks, ...props }) => {
-  const durT = tracks.reduce((sum, val) => sum + val.total_time, 0) / 60000;
+  let durT = 0;
+  try {
+    durT = tracks.reduce((sum, val) => sum + val.total_time, 0) / 60000;
+  } catch (err) {
+    console.error("error getting queue duration for %o: %o", tracks, err);
+  }
   let dur = '';
   if (durT < 59.5) {
     dur = `${Math.round(durT)} minutes`;

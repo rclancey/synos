@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { WS } from '../../../../lib/ws';
-import { JookiPlayer } from '../../../Player/JookiPlayer';
-import { JookiControls } from '../../../Jooki/Controls';
 import { Calendar } from '../../../Jooki/Calendar';
 import { TokenList } from '../../../Jooki/Token';
 import { DeviceInfo } from '../../../Jooki/DeviceInfo';
@@ -29,11 +27,15 @@ const merge = (orig, delta) => {
   return delta;
 };
 
-export const JookiDevice = ({ device }) => {
+export const JookiDevice = ({ device, setPlayer }) => {
   const [jooki, setJooki] = useState(device.state);
-  const [playbackInfo, setPlaybackInfo] = useState({});
-  const [controlAPI, setControlAPI] = useState({});
   const api = device.api;
+  useEffect(() => {
+    setPlayer('jooki');
+    return () => {
+      setPlayer(null);
+    };
+  }, [setPlayer]);
   useEffect(() => {
     const msgHandler = msg => {
       if (msg.type === 'jooki') {
@@ -53,14 +55,20 @@ export const JookiDevice = ({ device }) => {
       WS.off('message', msgHandler);
     };
   }, [api]);
+
   return (
     <div className="jooki device">
+      {/*
       <JookiPlayer
+        setTiming={() => {}}
         setPlaybackInfo={setPlaybackInfo}
         setControlAPI={setControlAPI}
       />
+      */}
       <div className="header">
+        {/*
         <JookiControls playbackInfo={playbackInfo} controlAPI={controlAPI} />
+        */}
         <DeviceInfo state={jooki} />
       </div>
       <Calendar />

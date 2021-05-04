@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from '../../lib/theme';
 import { HomeItem } from './HomeItem';
-import { PlaylistList } from './PlaylistList';
+import { PlaylistFolder } from './PlaylistList';
 import { ArtistList } from './ArtistList';
 import { AlbumList } from './AlbumList';
 import { GenreList } from './GenreList';
@@ -19,13 +19,13 @@ export const Sources = React.memo(({ prev, children, onOpen, onFinish, ...props 
   return (
     <div className="home">
       <ScreenHeader
-        name="Lubrary"
+        name="Library"
         prev={prev}
         onClose={onFinish}
       />
       <div className="items">
         <HomeItem name="Playlists" icon="playlists" onOpen={onOpen}>
-          <PlaylistList prev="Library" {...props} />
+          <PlaylistFolder prev="Library" {...props} />
         </HomeItem>
         <HomeItem name="Artists" icon="artists" onOpen={onOpen}>
           <ArtistList prev="Library" {...props} />

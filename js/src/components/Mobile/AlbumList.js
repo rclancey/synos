@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useStack } from './Router/StackContext';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import { AlbumIndex } from './Index';
@@ -25,17 +26,13 @@ const AlbumImage = ({ album, artist, size }) => {
 };
 
 export const AlbumList = ({
-  prev,
   artist,
   controlAPI,
   adding,
-  onClose,
-  onTrackMenu,
-  onPlaylistMenu,
   onAdd,
 }) => {
-  const [albums, setAlbums] = useState([]);
-  const [album, setAlbum] = useState(null);
+  const stack = useStack();
+  const [albums, setAlbums] = useState(null);
   const api = useAPI(API);
 
   useEffect(() => {
@@ -54,15 +51,12 @@ export const AlbumList = ({
       });
   }, [api, artist]);
 
-  const onCloseMe = useCallback(() => {
-    if (album === null) {
-      onClose();
-    } else {
-      setAlbum(null);
-    }
-  }, [album, onClose]);
-
-  const itemRenderer = useCallback(({ index, onOpen }) => {
+  const onPush = stack.onPush;
+  const onOpen = useCallback((album) => {
+    console.debug('open album %o', album);
+    onPush(album.name, <Album album={album} />);
+  }, [onPush]);
+  const itemRenderer = useCallback(({ index }) => {
     const album = albums[index];
     if (!album) {
       return (<div className="item" />);
@@ -73,38 +67,21 @@ export const AlbumList = ({
         <div className="title">{album.name}</div>
       </div>
     );
-  }, [albums, artist]);
+  }, [albums, artist, onOpen]);
 
-  if (album !== null) {
-    return (
-      <Album
-        prev={artist || { name: "Albums"}}
-        artist={artist || album.artist}
-        album={album}
-        adding={adding}
-        onClose={onCloseMe}
-        onTrackMenu={onTrackMenu}
-        onPlaylistMenu={onPlaylistMenu}
-        onAdd={onAdd}
-      />
-    );
+  if (albums === null) {
+    return null;
   }
+
   return (
     <CoverList
       name={artist ? artist.name : "Albums"}
       items={albums}
-      selected={album}
       Indexer={AlbumIndex}
       indexerArgs={{ albums, artist }}
-      Child={Album}
-      childArgs={{ album, artist: artist || (album ? album.artist : null) }}
-      onSelect={setAlbum}
       itemRenderer={itemRenderer}
-      prev={prev}
       controlAPI={controlAPI}
       adding={adding}
-      onClose={onClose}
-      onTrackMenu={onTrackMenu}
       onAdd={onAdd}
     />
   );

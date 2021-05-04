@@ -1,11 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import Draggable from 'react-draggable';
 import { useTheme } from '../../../lib/theme';
 import { useColumns } from '../../../lib/colsize';
-import { useMeasure } from '../../../lib/useMeasure';
 import { useFocus } from '../../../lib/useFocus';
 import { AutoSizeList } from '../../AutoSizeList';
 import { TrackRow } from './TrackRow';
+import { useCurrentTrack } from '../../Player/Context';
 
 const TrackListHeader = React.memo(({
   columnData,
@@ -63,31 +63,35 @@ export const TrackList = ({
   onPlay,
   onReorder,
   onDelete,
+  onShowInfo,
 }) => {
   const colors = useTheme();
   const { focused, focus, node, onFocus, onBlur } = useFocus(onKeyPress);
   const [cols, onResize, setColNode] = useColumns(columns);
-  const [, , setTLNode] = useMeasure(100, 100);
+  //const [, , setTLNode] = useMeasure(100, 100);
+  const currentTrack = useCurrentTrack();
 
   const setNode = useCallback((xnode) => {
     if (xnode) {
       if (node.current !== xnode) {
-        console.debug('track list node changing from %o to %o', node.current, xnode);
+        //console.debug('track list node changing from %o to %o', node.current, xnode);
         node.current = xnode;
         if (focused.current) {
           focus();
         }
         setColNode(xnode);
-        setTLNode(xnode);
+        //setTLNode(xnode);
       }
     }
-  }, [setColNode, setTLNode, focus, focused, node]);
+  }, [setColNode, /*setTLNode,*/ focus, focused, node]);
 
+  const selection = useMemo(() => tracks.filter(tr => tr.selected), [tracks]);
   const rowRenderer = useCallback(({ index, style }) => (
     <TrackRow
       device={type}
       selected={tracks[index].selected}
-      selection={tracks.filter(tr => tr.selected)}
+      selection={selection}
+      current={currentTrack && tracks[index].track.persistent_id === currentTrack.persistent_id}
       playlist={playlist}
       index={index}
       rowData={tracks[index].track}
@@ -103,7 +107,7 @@ export const TrackList = ({
       }}
       onPlay={onPlay}
     />
-  ), [type, playlist, tracks, cols, onReorder, onClick, onPlay, focus]);
+  ), [type, playlist, tracks, selection, cols, onReorder, onClick, onPlay, focus, currentTrack]);
 
   return (
     <div

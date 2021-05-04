@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { useAPI } from '../../../lib/useAPI';
 import { API } from '../../../lib/api';
@@ -44,6 +44,9 @@ export const Playlist = ({
       };
     },
   });
+  const onRenameCallback = useCallback(name => onRename(playlist, name), [onRename, playlist]);
+  const onSelectCallback = useCallback(() => onSelect(playlist), [onSelect, playlist]);
+
   return connectDropTarget(connectDragSource(
     <div
       className="folder"
@@ -67,8 +70,8 @@ export const Playlist = ({
         highlight={dropCollect.isOver}
         selected={selected === playlist.persistent_id}
         folder={false}
-        onRename={name => onRename(playlist, name)}
-        onSelect={() => onSelect(playlist)}
+        onRename={onRenameCallback}
+        onSelect={onSelectCallback}
       />
     </div>
   ));

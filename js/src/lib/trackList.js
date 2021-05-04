@@ -88,13 +88,24 @@ export class TrackSelectionList {
   }
 
   setTracks(tracks) {
+    //console.debug('setting tracks');
     this.allTracks = tracks.map((track, index) => this.wrap(track, index));
     const sk = this._sortKey;
     this._sortKey = null;
+    //console.debug('sorting tracks');
     this.sort(sk);
+    const applied = this.appliedFilters;
+    this.appliedFilters = {
+      [SEARCH_FILTER]: new Set(),
+      [GENRE_FILTER]:  new Set(),
+      [ARTIST_FILTER]: new Set(),
+      [ALBUM_FILTER]:  new Set(),
+    };
     [SEARCH_FILTER, GENRE_FILTER, ARTIST_FILTER, ALBUM_FILTER].forEach(f => {
-      this.allTracks = this.applyFilter(f, Array.from(this.appliedFilters[f]));
+      //console.debug('filtering tracks with %o %o', f, Array.from(applied[f]));
+      this.allTracks = this.applyFilter(f, Array.from(applied[f]));
     });
+    this.allTracks = this.allTracks.slice(0);
   }
 
   get allTracks() {
@@ -103,10 +114,14 @@ export class TrackSelectionList {
 
   set allTracks(tracks) {
     if (this._allTracks === tracks) {
+      //console.debug('no change to allTracks');
       return;
     }
-    this._allTracks = tracks;
+    //console.debug('updating tracks');
+    this._allTracks = tracks.map((tr, i) => Object.assign({}, tr, { index: i }));;
+    //console.debug('filtering tracks');
     this.tracks = this._allTracks.filter(tr => tr.filtered === 0);
+    //console.debug('setting display tracks');
     this.displayTracks = this.tracks.map(tr => tr.track);
     //console.error('updated tracks to %o, %o items', this.tracks.length, this.displayTracks.length);
     this.genres = this.filters(GENRE_FILTER);
@@ -176,7 +191,7 @@ export class TrackSelectionList {
       return this.allTracks;
     }
     this.appliedFilters[filter] = filts;
-    console.error('applyFilter(%o, %o)', filter, filts);
+    //console.error('applyFilter(%o, %o)', filter, filts);
     if (filts.size === 0) {
       return this.allTracks.map(track => this.filterTrack(track, filter, false));
     }

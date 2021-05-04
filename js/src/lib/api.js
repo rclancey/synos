@@ -81,14 +81,22 @@ export class API extends APIBase {
     return this.get(url);
   };
 
-  loadPlaylists() {
-    const url = `/api/playlists`;
+  loadPlaylists(folderId) {
+    let url = `/api/playlists`;
+    if (folderId !== undefined && folderId !== null) {
+      url += `/${folderId}`;
+    }
     return this.get(url);
   };
 
   loadPlaylistTrackIds(pl) {
     const url = `/api/playlist/${pl.persistent_id}/track-ids`;
     return this.get(url);
+  }
+
+  createPlaylist(playlist) {
+    const url = '/api/playlist';
+    return this.post(url, playlist);
   }
 
   addToPlaylist(dst, tracks) {
@@ -167,6 +175,76 @@ export class API extends APIBase {
     return this.get(url);
   }
 
+  constructSearchQuery({ query, genre, song, album, artist, count = 100, page = 0 }) {
+    let q = `?count=${count}&page=${page}`;
+
+    if (query) {
+      q += `&q=${escape(query)}`;
+    } else {
+      let ok = false;
+      if (genre) {
+        q += `&genre=${escape(genre)}`;
+      }
+      if (song) {
+        q += `&song=${escape(song)}`;
+        ok = true;
+      }
+      if (album) {
+        q += `&album=${escape(album)}`;
+        ok = true;
+      }
+      if (artist) {
+        q += `&artist=${escape(artist)}`;
+        ok = true;
+      }
+      if (!ok) {
+        throw new Error("no query specified");
+      }
+    }
+    return q;
+  }
+
+  search(args) {
+    try {
+      const url = `/api/tracks/search?${this.constructSearchQuery(args)}`;
+      return this.get(url);
+    } catch (err) {
+      return Promise.resolve(null);
+    }
+  }
+
+  searchArtists(args) {
+    try {
+      const url = `/api/search/artists?${this.constructSearchQuery(args)}`;
+      return this.get(url)
+        .then(res => {
+          return res.map(art => {
+            const n = art.names ? Object.values(art.names).reduce((sum, v) => sum + v) : 0;
+            return Object.assign({}, art, { count: n });
+          })
+            .sort((a, b) => a.count > b.count ? -1 : a.count < b.count ? 1 : 0);
+        });
+    } catch (err) {
+      return Promise.resolve(null);
+    }
+  }
+
+  searchAlbums(args) {
+    try {
+      const url = `/api/search/albums?${this.constructSearchQuery(args)}`;
+      return this.get(url)
+        .then(res => {
+          return res.map(alb => {
+            const n = alb.names ? Object.values(alb.names).reduce((sum, v) => sum + v) : 0;
+            return Object.assign({}, alb, { count: n });
+          })
+            .sort((a, b) => a.count > b.count ? -1 : a.count < b.count ? 1 : 0);
+        });
+    } catch (err) {
+      return Promise.resolve(null);
+    }
+  }
+
   genreIndex() {
     const url = '/api/index/genres';
     return this.get(url);
@@ -203,6 +281,21 @@ export class API extends APIBase {
       url += `album-artist`;
     }
     return this.get(url);
+  }
+
+  updateTrack(updated) {
+    const url = `/api/track/${updated.persistent_id}`;
+    return this.put(url, updated);
+  }
+
+  updateTracks(tracks, update) {
+    const url = `/api/tracks`;
+    const body = {
+      track_ids: tracks.map(tr => tr.persistent_id),
+      update,
+    };
+    console.debug('PUT %o %o', url, body);
+    return this.put(url, body);
   }
 
   queueManip(method, tracks) {

@@ -14,6 +14,7 @@ import { PlexDevicePlaylist } from './Plex/DevicePlaylist';
 export const DevicePlaylists = ({
   selected,
   onSelect,
+  setPlayer,
 }) => {
   const [jooki, setJooki] = useState(null);
   const jookiAPI = useAPI(JookiAPI);
@@ -44,7 +45,8 @@ export const DevicePlaylists = ({
             const device = { api: jookiAPI, state, playlists };
             setJooki(device);
           });
-      });
+      })
+      .catch(err => console.error(err));
     WS.on('message', msgHandler);
     return () => {
       WS.off('message', msgHandler);
@@ -63,6 +65,7 @@ export const DevicePlaylists = ({
         device={jooki}
         selected={selected}
         onSelect={onSelect}
+        setPlayer={setPlayer}
       />
       <AppleDevicePlaylist
         device={null}

@@ -26,6 +26,9 @@ export const Index = ({ index, list }) => {
         .index .disabled {
           color: ${colors.text2};
         }
+        .index>div {
+          padding-left: 1em;
+        }
       `}</style>
     </div>
   );

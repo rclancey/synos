@@ -22,13 +22,16 @@ const reducer = (state, action) => {
   let update = {};
   switch (action.type) {
   case 'ws':
+    if (!action.message) {
+      return state;
+    }
     if (action.message.queue) {
       if (action.message.queue.tracks) {
         update.queue = action.message.queue.tracks;
       }
       if (Object.hasOwnProperty.call(action.message.queue, 'index')) {
         update.index = action.message.queue.index;
-        if (action.message.queue.tracks) {
+        if (action.message.queue.tracks && action.message.queue.tracks[action.message.queue.index]) {
           update.duration = action.message.queue.tracks[action.message.queue.index].total_time;
         }
         update.currentTime = action.message.queue.time;
@@ -76,7 +79,7 @@ const reducer = (state, action) => {
       volume: action.update.volume,
       playMode: action.update.mode,
     };
-    console.debug('sonos refresh: %o', update);
+    //console.debug('sonos refresh: %o', update);
     return Object.assign({}, state, update);
   case 'tick':
     if (state.playStatus !== 'PLAYING') {
@@ -94,6 +97,7 @@ const reducer = (state, action) => {
 };
 
 export const SonosPlayer = ({
+  setTiming,
   setPlaybackInfo,
   setControlAPI,
 }) => {
@@ -104,19 +108,28 @@ export const SonosPlayer = ({
 
   useEffect(() => {
     const wsHandler = msg => {
-    if (msg.type === 'sonos') {
+      if (msg.type === 'sonos') {
         dispatch({ type: 'ws', message: msg.event });
       }
     };
     api.getQueue().then(queue => {
-      console.debug('sonos queue: %o', queue);
+      //console.debug('sonos queue: %o', queue);
       dispatch({ type: 'refresh', update: queue });
       WS.on('message', wsHandler);
     });
     timeKeeper.current = setInterval(() => dispatch({ type: 'tick' }), 250);
+    const onWake = (evt) => {
+      if (document.visibilityState === 'visible') {
+        api.getQueue().then(queue => {
+          dispatch({ type: 'refresh', update: queue });
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', onWake);
     return () => {
       clearInterval(timeKeeper.current);
       WS.off('message', wsHandler);
+      document.removeEventListener('visibilitychange', onWake);
     };
   }, [api]);
   const controlAPI = useMemo(() => {
@@ -141,7 +154,24 @@ export const SonosPlayer = ({
   }, [api]);
 
   useEffect(() => setControlAPI(controlAPI), [controlAPI, setControlAPI]);
-  useEffect(() => setPlaybackInfo(state), [state, setPlaybackInfo]);
+  useEffect(() => {
+    setTiming({
+      currentTime: state.currentTime,
+      duration: state.duration,
+    });
+  }, [state.currentTime, state.duration, setTiming]);
+  useEffect(() => {
+    setPlaybackInfo({
+      player: 'sonos',
+      playlistId: null,
+      queue: state.queue,
+      queueOrder: state.queueOrder,
+      index: state.index,
+      playStatus: state.playStatus,
+      volume: state.volume,
+      playMode: state.playMode,
+    });
+  }, [state.queue, state.queueOrder, state.index, state.playStatus, state.volume, state.playMode, setPlaybackInfo]);
 
   return (
     <div id="sonosPlayer" />

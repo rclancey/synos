@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTheme } from '../../../../lib/theme';
 import { Icon } from '../../../Icon';
 import { ScreenHeader } from '../../ScreenHeader';
-import { JookiPlayer } from '../../../Player/JookiPlayer';
 import { JookiControls } from '../../../Jooki/Controls';
 import { Calendar } from '../../../Jooki/Calendar';
 import { TokenList } from '../../../Jooki/Token';
 import { DeviceInfo } from '../../../Jooki/DeviceInfo';
 import { Playlists } from './Playlists';
 
-export const JookiDevice = ({ device, onClose, ...props }) => {
+export const JookiDevice = ({ device, setPlayer, onClose, ...props }) => {
   const colors = useTheme();
-  const [playbackInfo, setPlaybackInfo] = useState({});
-  const [controlAPI, setControlAPI] = useState({});
+  const [playbackInfo,] = useState({});
+  const [controlAPI,] = useState({});
   const [showPlaylists, setShowPlaylists] = useState(false);
+  useEffect(() => {
+    setPlayer('jooki');
+    return () => setPlayer(null);
+  }, [setPlayer]);
   if (showPlaylists) {
     return (
       <Playlists
@@ -26,10 +29,6 @@ export const JookiDevice = ({ device, onClose, ...props }) => {
   }
   return (
     <div className="jooki device">
-      <JookiPlayer
-        setPlaybackInfo={setPlaybackInfo}
-        setControlAPI={setControlAPI}
-      />
       <ScreenHeader
         name="Jooki"
         prev="Library"
