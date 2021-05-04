@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -36,18 +37,30 @@ func SetDefaultContentType(w http.ResponseWriter, ct string) {
 
 type HandlerFunc func(w http.ResponseWriter, req *http.Request) (interface{}, error)
 
-type hf HandlerFunc
-func (h hf) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+type handler struct {
+	srv *Server
+	f HandlerFunc
+}
+
+func (h *Handler) sendError(ctx context.Context, w http.ResponseWriter, err error) {
+	herr, isa := err.(HTTPError)
+	if !isa {
+		herr = InternalServerError.Wrap(err, "")
+	}
+	l, err := logging.FromContext(ctx)
+}
+
+func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if err != nil {
+		log.Println("error creating request context:", err)
+	}
 	defer req.Body.Close()
 	gzrw := NewGZipResponseWriter(w, req)
-	obj, err := h(gzrw, req)
+	reqId := FromContext(req)
+	gzrw.Header().Set("X-Request-Id", reqId)
+	obj, err := h.f(gzrw, req)
 	if err != nil {
-		herr, isa := err.(*HTTPError)
-		if isa {
-			herr.Respond(w)
-			return
-		}
-		InternalServerError.Raise(err, "Internal Server Error").Respond(gzrw)
+		h.sendError(w, err)
 		return
 	}
 	if obj != nil {
@@ -68,7 +81,7 @@ func (h hf) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			client := &http.Client{}
 			preq, err := http.NewRequest(req.Method, string(tobj), req.Body)
 			if err != nil {
-				BadRequest.Raise(err, "Invalid downstream server").Respond(gzrw)
+				SendError(w, BadRequest.Wrap(err, "Invalid downstream server"))
 				return
 			}
 			for k, vs := range req.Header {
@@ -81,7 +94,7 @@ func (h hf) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			preq.Header.Set("X-Forwarded-For", req.RemoteAddr)
 			res, err := client.Do(preq)
 			if err != nil {
-				BadGateway.Raise(err, "Downstream server error").Respond(gzrw)
+				SendError(w, BadGateway.Wrap(err, "Downstream server error"))
 				return
 			}
 			wh := w.Header()
@@ -95,19 +108,22 @@ func (h hf) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			conn, err := upgrader.Upgrade(gzrw, req, nil)
 			if err != nil {
 				tobj.Close()
-				InternalServerError.Raise(err, "Can't upgrade connection").Respond(gzrw)
+				SendError(w, InternalServerError.Wrap(err, "Can't upgrade connection"))
 				return
 			}
 			err = tobj.Open(conn)
 			if err != nil {
 				tobj.Close()
-				InternalServerError.Raise(err, "Can't open websocket").Respond(gzrw)
+				SendError(w, InternalServerError.Wrap(err, "Can't open websocket"))
 				return
 			}
 			go tobj.WritePump()
 			go tobj.ReadPump()
-		case *HTTPError:
-			tobj.RespondJSON(gzrw)
+		case HTTPError:
+			gzrw.Header().Set("Content-Type", "application/json")
+			gzrw.WriteHeader(tobj.StatusCode())
+			data, _ := json.MarshalJSON(tobj)
+			gzrw.Write(data)
 		default:
 			SendJSON(gzrw, obj)
 		}
@@ -141,6 +157,15 @@ func FileServer(docRoot string) HandlerFunc {
 		fn := filepath.Join(docRoot, rel)
 		return StaticFile(fn), nil
 	}
+}
+
+func (srv *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	errlog, _ := srv.cfg.Logging.ErrorLogger()
+	ctx, _ = logging.NewContext(ctx, errlog)
+	ctx, _ = NewRequestIdContext(ctx)
+	req = req.Clone(ctx)
+	srv.mux.ServeHTTP(w, req)
 }
 
 func (srv *Server) ListenAndServe() error {

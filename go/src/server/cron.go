@@ -9,8 +9,13 @@ import (
 	//"github.com/pkg/errors"
 
 	"cron"
-	H "httpserver"
+	H "github.com/rclancey/httpserver"
 )
+
+func CronAPI(router H.Router, authmw Middleware) {
+	router.GET("/cron", H.HandlerFunc(authmw(LoadSchedule)))
+	router.POST("/cron", H.HandlerFunc(authmw(UpdateSchedule)))
+}
 
 var sched *cron.Schedule
 
@@ -206,6 +211,10 @@ func CronHandler(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 	*/
 	}
 	return nil, H.MethodNotAllowed
+}
+
+func LoadSchedule(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	return ScheduleToConfig(), nil
 }
 
 func UpdateSchedule(w http.ResponseWriter, req *http.Request) (interface{}, error) {

@@ -688,7 +688,7 @@ func (lf LimitField) Column(desc bool) string {
 		return "track.rating DESC"
 	}
 	if lf == LimitRandom {
-		rv := strconv.Itoa(rand.Int() >> 2)
+		rv := strconv.Itoa(rand.Int() & 0xffffff)
 		return "track.id % " + rv
 	}
 	s, ok := limitFieldColumns[lf]

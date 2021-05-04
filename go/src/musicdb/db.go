@@ -3,11 +3,16 @@ package musicdb
 import (
 	"bytes"
 	"database/sql"
+	"encoding/base64"
 	"encoding/gob"
 	builtinErrors "errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math"
+	"mime"
+	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -55,37 +60,129 @@ type Search struct {
 	Artist *string
 	AlbumArtist *string
 	Composer *string
+	LooseArtist *string
 	Album *string
+	LooseAlbum *string
 	Name *string
+	LooseName *string
+	Any *string
 }
 
-func (db *DB) SearchTracks(s Search) ([]*Track, error) {
+func searchSort(field, val string) (string, []interface{}) {
+	qs := fmt.Sprintf("(%s = ? OR sort_%s = ?)", field, field)
+	vals := []interface{}{val, MakeSort(val)}
+	return qs, vals
+}
+
+func searchLoose(field, val string) (string, []interface{}) {
+	qs := fmt.Sprintf("(%s ILIKE ? OR sort_%s ILIKE ?)", field, field)
+	vals := []interface{}{
+		"%" + strings.TrimPrefix(strings.TrimSuffix(strings.ReplaceAll(val, "*", "%"), "%"), "%") + "%",
+		"%" + strings.TrimPrefix(strings.TrimSuffix(strings.ReplaceAll(MakeSort(val), "*", "%"), "%"), "%") + "%",
+	}
+	return qs, vals
+}
+
+func searchFilters(s Search) (string, []interface{}) {
 	filters := []string{}
 	vals := []interface{}{}
 	if s.Genre != nil {
-		filters = append(filters, "sort_genre = ?")
-		vals = append(vals, *s.Genre)
+		qs, vs := searchSort("genre", *s.Genre)
+		filters = append(filters, qs)
+		vals = append(vals, vs...)
 	}
 	if s.Artist != nil {
-		filters = append(filters, "sort_artist = ?")
-		vals = append(vals, *s.Artist)
+		qs, vs := searchSort("artist", *s.Artist)
+		filters = append(filters, qs)
+		vals = append(vals, vs...)
 	}
 	if s.AlbumArtist != nil {
-		filters = append(filters, "sort_album_artist = ?")
-		vals = append(vals, *s.AlbumArtist)
+		qs, vs := searchSort("album_artist", *s.AlbumArtist)
+		filters = append(filters, qs)
+		vals = append(vals, vs...)
+	}
+	if s.Composer != nil {
+		qs, vs := searchSort("composer", *s.Composer)
+		filters = append(filters, qs)
+		vals = append(vals, vs...)
+	}
+	if s.LooseArtist != nil {
+		any := []string{}
+		for _, field := range []string{"artist", "album_artist", "composer"} {
+			qs, vs := searchLoose(field, *s.LooseArtist)
+			any = append(any, qs)
+			vals = append(vals, vs...)
+		}
+		filters = append(filters, "(" + strings.Join(any, " OR ") + ")")
 	}
 	if s.Album != nil {
-		filters = append(filters, "sort_album = ?")
-		vals = append(vals, *s.Album)
+		qs, vs := searchSort("album", *s.Album)
+		filters = append(filters, qs)
+		vals = append(vals, vs...)
+	}
+	if s.LooseAlbum != nil {
+		qs, vs := searchLoose("album", *s.LooseAlbum)
+		filters = append(filters, qs)
+		vals = append(vals, vs...)
 	}
 	if s.Name != nil {
-		filters = append(filters, "sort_name = ?")
-		vals = append(vals, *s.Name)
+		qs, vs := searchSort("name", *s.Name)
+		filters = append(filters, qs)
+		vals = append(vals, vs...)
 	}
+	if s.LooseName != nil {
+		qs, vs := searchLoose("name", *s.LooseName)
+		filters = append(filters, qs)
+		vals = append(vals, vs...)
+	}
+	if s.Any != nil {
+		qs := `to_tsvector(coalesce(name, '') || ' ' || coalesce(artist, '') || ' ' || coalesce(album_artist, '') || ' ' || coalesce(album, '') || ' ' || coalesce(composer, '')) @@ to_tsquery(?)`
+		filters = append(filters, qs)
+		words := strings.Fields(*s.Any)
+		vals = append(vals, strings.Join(words, " & "))
+		/*
+		any := []string{}
+		for _, field := range []string{"artist", "album_artist", "composer", "album", "name"} {
+			qs, vs := searchLoose(field, *s.Any)
+			any = append(any, qs)
+			vals = append(vals, vs...)
+		}
+		filters = append(filters, "(" + strings.Join(any, " OR ") + ")")
+		*/
+	}
+	return strings.Join(filters, " AND "), vals
+}
+
+func (db *DB) SearchTracksCount(s Search) (int, error) {
+	filters, vals := searchFilters(s)
+	if len(filters) == 0 {
+		return -1, errors.New("no search params")
+	}
+	qs := `SELECT COUNT(*) FROM track WHERE ` + filters
+	row := db.QueryRow(qs, vals...)
+	var n int
+	err := row.Scan(&n)
+	if err != nil {
+		return -1, err
+	}
+	return n, nil
+}
+
+func (db *DB) SearchTracks(s Search, limit int, offset int) ([]*Track, error) {
+	filters, vals := searchFilters(s)
 	if len(filters) == 0 {
 		return nil, errors.New("no search params")
 	}
-	qs := `SELECT * FROM track WHERE ` + strings.Join(filters, " AND ") + `ORDER BY sort_album_artist, sort_album, disc_number, track_number, sort_name`;
+	qs := `SELECT * FROM track WHERE ` + filters + ` ORDER BY COALESCE(rating, 1) * COALESCE(play_count, 1) / EXTRACT(EPOCH FROM AGE(COALESCE(date_added, '1970-01-01 00:00:00Z'))) DESC, sort_album_artist, sort_album, disc_number, track_number, sort_name`;
+	if limit > 0 {
+		qs += ` LIMIT ?`
+		vals = append(vals, limit)
+		if offset > 0 {
+			qs += ` OFFSET ?`
+			vals = append(vals, offset)
+		}
+	}
+	log.Println(qs, vals)
 	rows, err := db.Query(qs, vals...)
 	if err != nil {
 		return nil, err
@@ -104,9 +201,26 @@ func (db *DB) SearchTracks(s Search) ([]*Track, error) {
 	return tracks, nil
 }
 
-func (db *DB) TracksSinceCount(t Time) (int, error) {
-	qs := `SELECT COUNT(*) FROM track WHERE date_modified >= ?`
-	row := db.QueryRow(qs, t)
+
+func (db *DB) SearchArtists(s Search) ([]*Artist, error) {
+	filters, vals := searchFilters(s)
+	if len(filters) == 0 {
+		return nil, errors.New("no search params")
+	}
+	return db.searchArtists(filters, vals)
+}
+
+func (db *DB) SearchAlbums(s Search) ([]*Album, error) {
+	filters, vals := searchFilters(s)
+	if len(filters) == 0 {
+		return nil, errors.New("no search params")
+	}
+	return db.searchAlbums(filters, vals)
+}
+
+func (db *DB) TracksSinceCount(mk MediaKind, t Time) (int, error) {
+	qs := `SELECT COUNT(*) FROM track WHERE media_kind = ? AND date_modified >= ?`
+	row := db.QueryRow(qs, mk, t)
 	var i int
 	err := row.Scan(&i)
 	if err != nil {
@@ -115,9 +229,9 @@ func (db *DB) TracksSinceCount(t Time) (int, error) {
 	return i, nil
 }
 
-func (db *DB) TracksSince(t Time, page, count int, args map[string]interface{}) ([]*Track, error) {
-	qs := `SELECT * FROM track WHERE date_modified >= ? `
-	params := []interface{}{t}
+func (db *DB) TracksSince(mk MediaKind, t Time, page, count int, args map[string]interface{}) ([]*Track, error) {
+	qs := `SELECT * FROM track WHERE media_kind = ? AND date_modified >= ? `
+	params := []interface{}{mk, t}
 	for k, v := range args {
 		if strings.Contains(k, "date") {
 			qs += fmt.Sprintf(`AND %s >= ? `, k)
@@ -483,12 +597,10 @@ func (db *DB) Artists() ([]*Artist, error) {
 	return db.GenreArtists(nil)
 }
 
-func (db *DB) GenreArtists(genre *Genre) ([]*Artist, error) {
+func (db *DB) searchArtists(filter string, args []interface{}) ([]*Artist, error) {
 	qs := `SELECT (CASE album_artist WHEN NULL THEN artist ELSE album_artist END) AS art, (CASE album_artist WHEN NULL THEN sort_artist ELSE sort_album_artist END) AS sart, COUNT(*) FROM track`
-	args := []interface{}{}
-	if genre != nil {
-		qs += ` WHERE sort_genre = ?`
-		args = append(args, genre.SortName)
+	if filter != "" {
+		qs += ` WHERE `+ filter
 	}
 	qs += ` GROUP BY art, sart ORDER BY sart`
 	rows, err := db.Query(qs, args...)
@@ -532,16 +644,20 @@ func (db *DB) GenreArtists(genre *Genre) ([]*Artist, error) {
 	return artists, nil
 }
 
-func (db *DB) GetAlbums(artist *Artist, genre *Genre) ([]*Album, error) {
-	qs := `SELECT album_artist, sort_album_artist, artist, sort_artist, album, sort_album, COUNT(*) FROM track WHERE album IS NOT NULL`
+func (db *DB) GenreArtists(genre *Genre) ([]*Artist, error) {
+	filter := ""
 	args := []interface{}{}
-	if artist != nil {
-		qs += " AND (sort_artist = ? OR sort_album_artist = ?)"// OR sort_composer = ?)"
-		args = append(args, artist.SortName, artist.SortName)//, artist.SortName)
-	}
 	if genre != nil {
-		qs += " AND sort_genre = ?"
+		filter = `sort_genre = ?`
 		args = append(args, genre.SortName)
+	}
+	return db.searchArtists(filter, args)
+}
+
+func (db *DB) searchAlbums(filter string, args []interface{}) ([]*Album, error) {
+	qs := `SELECT album_artist, sort_album_artist, artist, sort_artist, album, sort_album, COUNT(*) FROM track WHERE album IS NOT NULL`
+	if filter != "" {
+		qs += ` AND (` + filter + `)`
 	}
 	qs += ` GROUP BY album_artist, sort_album_artist, artist, sort_artist, album, sort_album ORDER BY sort_album`
 	rows, err := db.Query(qs, args...)
@@ -618,6 +734,21 @@ func (db *DB) GetAlbums(artist *Artist, genre *Genre) ([]*Album, error) {
 		albums[i] = albmap[key]
 	}
 	return albums, nil
+}
+
+func (db *DB) GetAlbums(artist *Artist, genre *Genre) ([]*Album, error) {
+	filters := []string{}
+	args := []interface{}{}
+	if artist != nil {
+		filters = append(filters,  "(sort_artist = ? OR sort_album_artist = ?)")// OR sort_composer = ?)")
+		args = append(args, artist.SortName, artist.SortName)//, artist.SortName)
+	}
+	if genre != nil {
+		filters = append(filters, "sort_genre = ?")
+		args = append(args, genre.SortName)
+	}
+	filter := strings.Join(filters, " AND ")
+	return db.searchAlbums(filter, args)
 }
 
 func (db *DB) Albums() ([]*Album, error) {
@@ -764,6 +895,128 @@ func (db *DB) PlaylistTrackIDs(pl *Playlist) ([]PersistentID, error) {
 	return ids, nil
 }
 
+func (db *DB) FolderTracks(folder *Playlist) ([]*Track, error) {
+	items := map[PersistentID]*Track{}
+	children, err := db.GetPlaylistTree(&folder.PersistentID)
+	if err != nil {
+		return nil, err
+	}
+	var tracks []*Track
+	for _, child := range children {
+		if child.Folder {
+			tracks, err = db.FolderTracks(child)
+		} else if child.Smart != nil {
+			tracks, err = db.SmartTracks(child.Smart)
+		} else {
+			tracks, err = db.PlaylistTracks(child)
+		}
+		if err != nil {
+			return nil, err
+		}
+		for _, track := range tracks {
+			items[track.PersistentID] = track
+		}
+	}
+	tracks = make([]*Track, len(items))
+	i := 0
+	for _, track := range items {
+		tracks[i] = track
+		i++
+	}
+	return tracks, nil
+}
+
+type sortableTracksByName []*Track
+func (st sortableTracksByName) Len() int { return len(st) }
+func (st sortableTracksByName) Swap(i, j int) { st[i], st[j] = st[j], st[i] }
+func (st sortableTracksByName) Less(i, j int) bool {
+	if st[i].Name == nil {
+		if st[j].Name == nil {
+			return st[i].PersistentID < st[j].PersistentID
+		}
+		return false
+	}
+	if st[j].Name == nil {
+		return true
+	}
+	if *st[i].Name == *st[j].Name {
+		return st[i].PersistentID < st[j].PersistentID
+	}
+	return *st[i].Name < *st[j].Name
+}
+
+func (db *DB) UpdateFolderTracks() error {
+	qs := "SELECT * FROM playlist WHERE folder = 't'"
+	rows, err := db.Query(qs)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	pls := []*Playlist{}
+	for rows.Next() {
+		var pl Playlist
+		err = rows.StructScan(&pl)
+		if err != nil {
+			return errors.Wrap(err, "can't scan row into playlist")
+		}
+		pls = append(pls, &pl)
+	}
+	for _, pl := range pls {
+		tracks, err := db.FolderTracks(pl)
+		if err != nil {
+			return err
+		}
+		sort.Sort(sortableTracksByName(tracks))
+		trackIds := make([]PersistentID, len(tracks))
+		for i, track := range tracks {
+			trackIds[i] = track.PersistentID
+		}
+		pl.TrackIDs = trackIds
+		err = db.SavePlaylistTracks(pl)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (db *DB) UpdateSmartTracks() error {
+	qs := "SELECT * FROM playlist WHERE smart IS NOT NULL"
+	rows, err := db.Query(qs)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	pls := []*Playlist{}
+	for rows.Next() {
+		var pl Playlist
+		err = rows.StructScan(&pl)
+		if err != nil {
+			return errors.Wrap(err, "can't scan row into playlist")
+		}
+		pls = append(pls, &pl)
+	}
+	for _, pl := range pls {
+		if pl.Smart == nil || !pl.Smart.LiveUpdating {
+			continue
+		}
+		tracks, err := db.SmartTracks(pl.Smart)
+		if err != nil {
+			return err
+		}
+		trackIds := make([]PersistentID, len(tracks))
+		for i, track := range tracks {
+			trackIds[i] = track.PersistentID
+		}
+		pl.TrackIDs = trackIds
+		err = db.SavePlaylistTracks(pl)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (db *DB) hasPlaylistRule(rs *RuleSet) bool {
 	for _, rule := range rs.Rules {
 		if rule.RuleType == PlaylistRule {
@@ -776,16 +1029,54 @@ func (db *DB) hasPlaylistRule(rs *RuleSet) bool {
 	return false
 }
 
+func (db *DB) playlistRules(rs *RuleSet) []*Rule {
+	rules := []*Rule{}
+	for _, rule := range rs.Rules {
+		if rule.RuleType == PlaylistRule {
+			rules = append(rules, rule)
+		} else if rule.RuleType == RulesetRule {
+			rules = append(rules, db.playlistRules(rule.RuleSet)...)
+		}
+	}
+	return rules
+}
+
+const queryKeys = "abcdefghijklmnopqrstuvwxyz"
+func queryKey(i int) string {
+	l := len(queryKeys)
+	if i >= l {
+		j := i / l
+		if j >= l {
+			return ""
+		}
+		k := i % l
+		return queryKeys[j:j+1] + queryKeys[k:k+1]
+	}
+	return queryKeys[i:i+1]
+}
+
 func (db *DB) SmartTracks(spl *Smart) ([]*Track, error) {
 	maxs := int64(math.MaxInt64)
 	maxt := int64(math.MaxInt64)
-	where, args := spl.RuleSet.Where()
 	var qs string
+	xargs := []interface{}{}
 	if db.hasPlaylistRule(spl.RuleSet) {
-		qs = `SELECT DISTINCT track.* FROM track, playlist_track WHERE track.id = playlist_track.track_id AND track.location IS NOT NULL AND (` + where + ")"
+		qs = `SELECT DISTINCT track.* FROM track`
+		for i, rule := range db.playlistRules(spl.RuleSet) {
+			key := queryKey(i)
+			rule.playlistKey = key
+			qs += ` LEFT OUTER JOIN playlist_track pt` + key + ` ON track.id = pt` + key + `.track_id`
+			if rule.PlaylistValue != nil {
+				qs += ` AND pt` + key + `.playlist_id = ?`
+				xargs = append(xargs, rule.PlaylistValue)
+			}
+		}
 	} else {
-		qs = `SELECT * FROM track WHERE track.location IS NOT NULL AND (` + where + ")"
+		qs = `SELECT * FROM track`
 	}
+	where, args := spl.RuleSet.Where()
+	qs += ` WHERE track.location IS NOT NULL AND (` + where + ")"
+	args = append(xargs, args...)
 	if spl.Limit != nil {
 		qs += spl.Limit.Order()
 		if spl.Limit.MaxSize != nil {
@@ -911,6 +1202,56 @@ func (db *DB) saveStruct(tx *Tx, obj IDable) error {
 	return db.updateStruct(tx, obj)
 }
 
+func (db *DB) ImageExtension(ct string) string {
+	if ct == "image/jpeg" {
+		return ".jpg"
+	}
+	if ct == "image/png" {
+		return ".png"
+	}
+	if ct == "image/gif" {
+		return ".gif"
+	}
+	exts, err := mime.ExtensionsByType(ct)
+	if err != nil && len(exts) > 0 {
+		return exts[0]
+	}
+	log.Println("no idea what ext to use for mime type", ct)
+	return ".img"
+}
+
+func (db *DB) extractTrackArtwork(tx *Tx, track *Track) error {
+	if track.ArtworkURL != nil && strings.HasPrefix(*track.ArtworkURL, "data:") {
+		log.Println("track has artwork")
+		parts := strings.SplitN((*track.ArtworkURL)[5:], ";", 2)
+		ext := db.ImageExtension(parts[0])
+		if len(parts) > 1 {
+			parts = strings.SplitN(parts[1], ",", 2)
+			if len(parts) > 1 {
+				data, err := base64.StdEncoding.DecodeString(parts[1])
+				if err == nil {
+					fn, err := db.saveTrackArtwork(tx, track, ext, data)
+					if err == nil {
+						track.ArtworkURL = nil
+						log.Println("saved artwork to", fn)
+					} else {
+						log.Println("error saving artwork:", err)
+					}
+				} else {
+					log.Println("error decoding base64 data:", err)
+				}
+			} else {
+				log.Println("malformed encoding")
+			}
+		} else {
+			log.Println("malformed data url")
+		}
+	} else {
+		log.Println("no artwork data")
+	}
+	return nil
+}
+
 func (db *DB) SaveTrack(track *Track) error {
 	err := track.Validate()
 	if err != nil {
@@ -920,6 +1261,7 @@ func (db *DB) SaveTrack(track *Track) error {
 	if err != nil {
 		return err
 	}
+	db.extractTrackArtwork(tx, track)
 	err = db.saveStruct(tx, track)
 	if err != nil {
 		tx.Rollback()
@@ -940,6 +1282,7 @@ func (db *DB) SaveTracks(tracks []*Track) error {
 		return err
 	}
 	for _, track := range tracks {
+		db.extractTrackArtwork(tx, track)
 		err = db.saveStruct(tx, track)
 		if err != nil {
 			tx.Rollback()
@@ -1103,14 +1446,7 @@ func (db *DB) DeleteTrack(tr *Track) error {
 	if err != nil {
 		return err
 	}
-	qs := `DELETE FROM playlist_track WHERE track_id = ?`
-	_, err = tx.Exec(qs, tr.PersistentID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	qs = `DELETE FROM track WHERE id = ?`
-	_, err = tx.Exec(qs, tr.PersistentID)
+	err = db.deleteTrackId(tx, tr.PersistentID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -1118,36 +1454,52 @@ func (db *DB) DeleteTrack(tr *Track) error {
 	return tx.Commit()
 }
 
+func (db *DB) deleteTrackId(tx *Tx, id PersistentID) error {
+	qs := `DELETE FROM playlist_track WHERE track_id = ?`
+	_, err := tx.Exec(qs, id)
+	if err != nil {
+		return err
+	}
+	qs = `DELETE FROM track WHERE id = ?`;
+	_, err = tx.Exec(qs, id)
+	return err
+}
+
 func (db *DB) DeletePlaylist(pl *Playlist) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
-	qs := `DELETE FROM playlist_track WHERE playlist_id = ?`
-	_, err = tx.Exec(qs, pl.PersistentID)
+	err = db.deletePlaylistId(tx, pl.PersistentID)
 	if err != nil {
 		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
+}
+
+func (db *DB) deletePlaylistId(tx *Tx, id PersistentID) error {
+	qs := `DELETE FROM playlist_track WHERE playlist_id = ?`
+	_, err := tx.Exec(qs, id)
+	if err != nil {
 		return err
 	}
 	qs = `DELETE FROM playlist WHERE id = ?`
-	_, err = tx.Exec(qs, pl.PersistentID)
+	_, err = tx.Exec(qs, id)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	qs = `SELECT COUNT(*) FROM playlist WHERE parent_id = ?`
-	row := tx.QueryRow(qs, pl.PersistentID)
+	row := tx.QueryRow(qs, id)
 	var c int
 	err = row.Scan(&c)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	if c != 0 {
-		tx.Rollback()
 		return PlaylistFolderNotEmpty
 	}
-	return tx.Commit()
+	return nil
 }
 
 func (db *DB) UpdateITunesTrack(tr *loader.Track) (bool, error) {
@@ -1288,7 +1640,10 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) (bool, error) {
 	if err != nil {
 		return true, err
 	}
-	playlist.Update(PlaylistFromITunes(orig), PlaylistFromITunes(pl))
+	parentPid, parentUpdated := playlist.Update(PlaylistFromITunes(orig), PlaylistFromITunes(pl))
+	if parentUpdated {
+		playlist.ParentPersistentID = parentPid
+	}
 	tx, err := db.Begin()
 	if err != nil {
 		return true, err
@@ -1311,6 +1666,94 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) (bool, error) {
 		return true, err
 	}
 	return true, tx.Commit()
+}
+
+func (db *DB) LoadITunesTrackIDs() (map[string]bool, error) {
+	qs := `SELECT id FROM itunes_track`
+	rows, err := db.Query(qs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := map[string]bool{}
+	var id string
+	for rows.Next() {
+		rows.Scan(&id)
+		ids[id] = true
+	}
+	return ids, nil
+}
+
+func (db *DB) LoadITunesPlaylistIDs() (map[string]bool, error) {
+	qs := `SELECT id FROM itunes_playlist`
+	rows, err := db.Query(qs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := map[string]bool{}
+	var id string
+	for rows.Next() {
+		rows.Scan(&id)
+		ids[id] = true
+	}
+	return ids, nil
+}
+
+func (db *DB) DeleteITunesTracks(ids map[string]bool) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	qs := `DELETE FROM itunes_track WHERE id = ?`
+	var xpid PersistentID
+	pid := &xpid
+	for id := range ids {
+		err = pid.Decode(id)
+		if err != nil {
+			continue
+		}
+		log.Println("deleting itunes track", id)
+		_, err = tx.Exec(qs, id)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		err = db.deleteTrackId(tx, *pid)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (db *DB) DeleteITunesPlaylists(ids map[string]bool) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	qs := `DELETE FROM itunes_playlist WHERE id = ?`
+	var xpid PersistentID
+	pid := &xpid
+	for id := range ids {
+		err = pid.Decode(id)
+		if err != nil {
+			continue
+		}
+		log.Println("deleting itunes playlist", id)
+		_, err = tx.Exec(qs, id)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		err = db.deletePlaylistId(tx, *pid)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func (db *DB) FindTrack(tr *Track) {
@@ -1360,4 +1803,71 @@ func (db *DB) FindTrack(tr *Track) {
 	if err == nil {
 		*tr = xtr
 	}
+}
+
+func (db *DB) SaveTrackArtwork(tr *Track, ext string, data []byte) (string, error) {
+	tx, err := db.Begin()
+	if err != nil {
+		return "", err
+	}
+	fn, err := db.saveTrackArtwork(tx, tr, ext, data)
+	if err != nil {
+		tx.Rollback()
+		return fn, err
+	}
+	return fn, tx.Commit()
+}
+
+func (db *DB) saveTrackArtwork(tx *Tx, tr *Track, ext string, data []byte) (string, error) {
+	if tr.Location == nil {
+		return "", errors.New("track has no location")
+	}
+	dn := filepath.Dir(*tr.Location)
+	qs := `SELECT COUNT(*) FROM track WHERE location LIKE ?`
+	args := []interface{}{
+		filepath.Join(dn, "%"),
+	}
+	if tr.Album == nil {
+		qs += ` AND (album IS NOT NULL`
+	} else {
+		qs += ` AND (album != ?`
+		args = append(args, *tr.Album)
+	}
+	if tr.AlbumArtist != nil {
+		qs += ` OR album_artist != ?)`
+		args = append(args, *tr.AlbumArtist)
+	} else if tr.Artist != nil {
+		qs += ` OR artist != ?)`
+		args = append(args, tr.Artist)
+	} else {
+		qs += ` OR artist IS NOT NULL`;
+	}
+	log.Println(qs, args)
+	row := tx.QueryRow(qs, args...)
+	var n int64
+	err := row.Scan(&n)
+	log.Println("track is in file", tr.Path())
+	xdn := filepath.Dir(tr.Path())
+	var root string
+	if err != nil {
+		return "", err
+	}
+	if n == 0 {
+		root = filepath.Join(xdn, "cover")
+	} else {
+		root = filepath.Join(xdn, "cover_" + tr.PersistentID.String())
+	}
+	for _, ex := range []string{".jpg", ".png", ".gif"} {
+		fn := root + ex
+		_, err := os.Stat(fn)
+		if err == nil {
+			xerr := os.Remove(fn)
+			if xerr != nil {
+				return "", xerr
+			}
+		} else if !os.IsNotExist(err) {
+			return "", err
+		}
+	}
+	return root + ext, ioutil.WriteFile(root+ext, data, os.FileMode(0664))
 }

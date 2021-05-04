@@ -44,12 +44,16 @@ func (pid *PersistentID) UnmarshalJSON(data []byte) error {
 	return pid.Decode(s)
 }
 
-func (pid PersistentID) Value() (driver.Value, error) {
+func (pid PersistentID) Int64() int64 {
 	iv := int64(pid & 0x7fffffffffffffff)
 	if pid > 0x7fffffffffffffff {
 		iv *= -1
 	}
-	return iv, nil
+	return iv
+}
+
+func (pid PersistentID) Value() (driver.Value, error) {
+	return pid.Int64(), nil
 }
 
 func (pid *PersistentID) Scan(value interface{}) error {

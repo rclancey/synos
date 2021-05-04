@@ -196,10 +196,11 @@ func PlaylistFromITunes(ipl *loader.Playlist) *Playlist {
 	if !pl.Folder {
 		if ipl.IsSmart() {
 			ispl, err := itunes.ParseSmartPlaylist(ipl.SmartInfo, ipl.SmartCriteria)
-			if err == nil {
+			if err == nil && len(ispl.Criteria.Rules) > 0 {
 				pl.Smart = SmartPlaylistFromITunes(ispl)
 			}
-		} else {
+		}
+		if pl.Smart == nil {
 			pl.TrackIDs = make([]PersistentID, len(ipl.TrackIDs))
 			for i, uid := range ipl.TrackIDs {
 				pl.TrackIDs[i] = PersistentID(uid)

@@ -41,6 +41,22 @@ func ReadJSON(req *http.Request, target interface{}) error {
 	return nil
 }
 
+func SendError(w http.ResponseWriter, err error) {
+	herr, isa := err.(HTTPError)
+	if !isa {
+		herr = InternalServerError.Wrap(err, "")
+	}
+	errId, _ := uuid.NewV1()
+	if herr.StatusCode() >= 500 {
+		log.Println(herr.StatusCode(), "Error", herr.Message(), ":", herr.Cause())
+	}
+	for k, v := range herr.Headers() {
+		w.Header().Set(k, v)
+	}
+	w.WriteHeader(herr.StatusCode())
+	w.Write([]byte(herr.Message()))
+}
+
 func EnsureDir(fn string) error {
 	dn := filepath.Dir(fn)
 	st, err := os.Stat(dn)

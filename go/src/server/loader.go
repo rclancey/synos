@@ -7,7 +7,7 @@ import (
 
 	"file-monitor"
 	"itunes/loader"
-	"logging"
+	"github.com/rclancey/logging"
 	"musicdb"
 )
 
@@ -39,6 +39,16 @@ func WatchITunes() (chan bool, error) {
 				} else {
 					errlog.Info("itunes library update complete")
 				}
+				errlog.Info("update folder tracks")
+				err = db.UpdateFolderTracks()
+				if err != nil {
+					errlog.Error(err)
+				}
+				errlog.Info("update smart tracks")
+				err = db.UpdateSmartTracks()
+				if err != nil {
+					errlog.Error(err)
+				}
 			}
 		}
 	}()
@@ -52,6 +62,14 @@ type LibraryEvent struct {
 }
 
 func updateItunes(fn string, errlog *logging.Logger) error {
+	deletedTracks, err := db.LoadITunesTrackIDs()
+	if err != nil {
+		return err
+	}
+	deletedPlaylists, err := db.LoadITunesPlaylistIDs()
+	if err != nil {
+		return err
+	}
 	l := loader.NewLoader()
 	go l.Load(fn)
 	tracks := -1
@@ -67,7 +85,15 @@ func updateItunes(fn string, errlog *logging.Logger) error {
 		update, ok := <-l.C
 		if !ok {
 			//errlog.("loader channel closed")
-			if len(evt.Playlists) > 0 || len(evt.Tracks) > 0 {
+			err = db.DeleteITunesTracks(deletedTracks)
+			if err != nil {
+				return err
+			}
+			err = db.DeleteITunesPlaylists(deletedPlaylists)
+			if err != nil {
+				return err
+			}
+			if len(evt.Playlists) > 0 || len(evt.Tracks) > 0 || len(deletedTracks) > 0 || len(deletedPlaylists) > 0 {
 				hub, err := getWebsocketHub()
 				if err == nil {
 					hub.BroadcastEvent(evt)
@@ -93,6 +119,10 @@ func updateItunes(fn string, errlog *logging.Logger) error {
 				errlog.Infof("%d itunes playlists updated", playlists)
 			}
 		case *loader.Track:
+			if tupdate.PersistentID != nil {
+				pid := musicdb.PersistentID(*tupdate.PersistentID).String()
+				delete(deletedTracks, pid)
+			}
 			if tupdate.GetDisabled() {
 				// noop
 			} else if tupdate.Location == nil {
@@ -112,6 +142,10 @@ func updateItunes(fn string, errlog *logging.Logger) error {
 				}
 			}
 		case *loader.Playlist:
+			if tupdate.PersistentID != nil {
+				pid := musicdb.PersistentID(*tupdate.PersistentID).String()
+				delete(deletedPlaylists, pid)
+			}
 			updated, err := db.UpdateITunesPlaylist(tupdate)
 			if err != nil {
 				errlog.Error("error updating playlist:", err)

@@ -126,13 +126,22 @@ func NewFileFinder(mediaFolder string, sourcePath, targetPath []string) *FileFin
 
 func (ff *FileFinder) Clean(fn string) string {
 	var dn, after string
-	for _, mp := range ff.SourcePath {
+	paths := make([]string, len(ff.SourcePath) + 1)
+	for i, mp := range ff.SourcePath {
+		paths[i] = mp
+	}
+	paths[len(ff.SourcePath)] = ""
+	for _, mp := range paths {
 		for _, f := range ff.MediaFolder {
 			dn = filepath.Join(mp, f)
 			after = pathAfter(fn, dn)
 			if after != "" {
 				return after
 			}
+		}
+		after = pathAfter(fn, mp)
+		if after != "" {
+			return after
 		}
 	}
 	return fn

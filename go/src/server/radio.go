@@ -7,10 +7,17 @@ import (
 	"path"
 	"strings"
 
-	H "httpserver"
+	H "github.com/rclancey/httpserver"
 	"musicdb"
 	"radio"
 )
+
+func RadioAPI(router H.Router, authmw Middleware) {
+	router.GET("/radio", H.HandlerFunc(authmw(ListStations)))
+	router.GET("/radio/:id", H.HandlerFunc(PlayStation))
+	router.POST("/radio", H.HandlerFunc(authmw(CreateStation)))
+	router.DELETE("/radio/:id", H.HandlerFunc(authmw(DeleteStation)))
+}
 
 var streams = map[string]*radio.Stream{}
 
@@ -29,10 +36,6 @@ type CreateStationMessage struct {
 }
 
 func CreateStation(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	name := path.Base(req.URL.Path)
 	key := strings.ToLower(strings.ReplaceAll(name, " ", ""))
 	stream, ok := streams[key]
@@ -40,7 +43,7 @@ func CreateStation(w http.ResponseWriter, req *http.Request) (interface{}, error
 		return stream, nil
 	}
 	msg := &CreateStationMessage{}
-	err = H.ReadJSON(req, msg)
+	err := H.ReadJSON(req, msg)
 	if err != nil {
 		return nil, err
 	}
@@ -61,11 +64,11 @@ func PlayStation(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 	key := strings.ToLower(strings.ReplaceAll(name, " ", ""))
 	stream, ok := streams[key]
 	if !ok {
-		return nil, H.NotFound.Raise(nil, "Station %s does not exist", name)
+		return nil, H.NotFound.Wrapf(nil, "Station %s does not exist", name)
 	}
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		return nil, H.InternalServerError.Raise(nil, "Connection doesn't support streaming")
+		return nil, H.InternalServerError.Wrap(nil, "Connection doesn't support streaming")
 	}
 	c, r := stream.Connect()
 	defer r.Close()
@@ -110,18 +113,14 @@ func PlayStation(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 }
 
 func DeleteStation(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	name := path.Base(req.URL.Path)
 	key := strings.ToLower(strings.ReplaceAll(name, " ", ""))
 	stream, ok := streams[key]
 	if !ok {
-		return nil, H.NotFound.Raise(nil, "Station %s does not exist", name)
+		return nil, H.NotFound.Wrapf(nil, "Station %s does not exist", name)
 	}
 	stream.Shutdown()
-	return H.JSONStatusOK, nil
+	return JSONStatusOK, nil
 }
 
 func RadioHandler(w http.ResponseWriter, req *http.Request) (interface{}, error) {

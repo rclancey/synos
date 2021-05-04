@@ -43,22 +43,26 @@ func CheckHTPasswd(fn, username, password string) (bool, error) {
 		line, err := buf.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
+				fmt.Printf("no such user '%s'\n", username)
 				return false, nil
 			}
 			return false, err
 		}
 		parts := strings.Split(strings.TrimSpace(line), ":")
-		if len(parts) == 2 && parts[0] == username {
+		fmt.Println("parts =", parts)
+		if len(parts) >= 2 && parts[0] == username {
 			err := bcrypt.CompareHashAndPassword([]byte(parts[1]), []byte(password))
 			if err == nil {
 				return true, nil
 			}
 			if err == bcrypt.ErrMismatchedHashAndPassword {
+				fmt.Printf("bad password '%s'\n", password)
 				return false, nil
 			}
 			return false, err
 		}
 	}
+	fmt.Printf("no such user '%s'\n", username)
 	return false, nil
 }
 
