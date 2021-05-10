@@ -1,7 +1,0 @@
-*.crt
-*.key
-*.csr
-*.conf
-newcerts
-serial*
-index.txt*
