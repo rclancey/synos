@@ -2,7 +2,7 @@ package "synosPlugins"
 
 import (
 	H "github.com/rclancey/httpserver"
-	"musicdb"
+	"github.com/rclancey/synos/musicdb"
 )
 
 type SynosPlugin interface {

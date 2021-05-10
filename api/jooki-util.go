@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"crypto/md5"
@@ -11,8 +11,8 @@ import (
 	"time"
 
 	H "github.com/rclancey/httpserver"
-	"jooki"
-	"musicdb"
+	"github.com/rclancey/jooki"
+	"github.com/rclancey/synos/musicdb"
 )
 
 var jookiDevice *jooki.Client
@@ -150,6 +150,30 @@ func (s sortablePlaylists) Less(i, j int) bool {
 	return s[i].Name < s[j].Name
 }
 
+func findJookiTrackInDB(db *musicdb.DB, jtr *jooki.Track) *musicdb.Track {
+	tr := &musicdb.Track{
+		JookiID: jtr.ID,
+		Artist: jtr.Artist,
+		Album: jtr.Album,
+		Name: jtr.Name,
+		Location: jtr.Location,
+	}
+	if jtr.Size != nil {
+		s := uint64(*jtr.Size)
+		tr.Size = &s
+	}
+	if jtr.Duration != nil {
+		tt := uint(*jtr.Duration * 1000)
+		tr.TotalTime = &tt
+	}
+	db.FindTrack(tr)
+	if tr.JookiID == nil {
+		tr.JookiID = jtr.ID
+		db.SaveTrack(tr)
+	}
+	return tr
+}
+
 func getJookiPlaylist(lib *jooki.Library, id string) *JookiPlaylist {
 	jpl, ok := lib.Playlists[id]
 	if !ok {
@@ -167,7 +191,7 @@ func getJookiPlaylist(lib *jooki.Library, id string) *JookiPlaylist {
 			continue
 		}
 		jtr.ID = &trid
-		pl.Tracks[i] = jtr.Track(db)
+		pl.Tracks[i] = findJookiTrackInDB(db, jtr)
 	}
 	return pl
 }
@@ -186,7 +210,14 @@ func getJookiTrackId(lib *jooki.Library, tr *musicdb.Track) (string, bool, error
 		}
 		tr = xtr
 	}
-	jtr := lib.FindTrack(tr)
+	jtr := lib.FindTrack(jooki.TrackSearch{
+		JookiID: tr.JookiID,
+		Name: tr.Name,
+		Album: tr.Album,
+		Artist: tr.Artist,
+		Size: tr.Size,
+		TotalTime: tr.TotalTime,
+	})
 	if jtr != nil {
 		return *jtr.ID, true, nil
 	}

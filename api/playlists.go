@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"log"
@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	H "github.com/rclancey/httpserver"
-	"musicdb"
+	"github.com/rclancey/synos/musicdb"
 )
 
 func PlaylistAPI(router H.Router, authmw Middleware) {

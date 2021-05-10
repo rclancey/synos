@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	//"fmt"
@@ -8,9 +8,9 @@ import (
 	"github.com/rclancey/htpasswd"
 	"github.com/rclancey/httpserver"
 	"github.com/rclancey/logging"
-	"lastfm"
-	"musicdb"
-	"spotify"
+	"github.com/rclancey/lastfm"
+	"github.com/rclancey/synos/musicdb"
+	"github.com/rclancey/spotify"
 )
 
 type hf func(http.ResponseWriter, *http.Request) (interface{}, error)
@@ -21,7 +21,7 @@ var cfg *SynosConfig
 var lastFm *lastfm.LastFM
 var spot *spotify.SpotifyClient
 
-func main() {
+func APIMain() {
 	var err error
 	cfg, err = Configure()
 	if err != nil {

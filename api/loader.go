@@ -1,14 +1,14 @@
-package main
+package api
 
 import (
 	//"io"
 	//"log"
 	"time"
 
-	"file-monitor"
-	"itunes/loader"
+	"github.com/rclancey/file-monitor"
+	"github.com/rclancey/itunes/loader"
 	"github.com/rclancey/logging"
-	"musicdb"
+	"github.com/rclancey/synos/musicdb"
 )
 
 func WatchITunes() (chan bool, error) {

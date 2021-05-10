@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"errors"
@@ -9,8 +9,8 @@ import (
 	"time"
 
 	H "github.com/rclancey/httpserver"
-	"musicdb"
-	"sonos"
+	"github.com/rclancey/synos/musicdb"
+	"github.com/rclancey/synos/sonos"
 )
 
 func SonosAPI(router H.Router, authmw Middleware) {

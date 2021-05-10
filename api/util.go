@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	H "github.com/rclancey/httpserver"
-	"musicdb"
+	"github.com/rclancey/synos/musicdb"
 )
 
 /*

@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	H "github.com/rclancey/httpserver"
-	"musicdb"
+	"github.com/rclancey/synos/musicdb"
 )
 
 func stringp(v string) *string { return &v }

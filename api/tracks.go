@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"log"
@@ -12,7 +12,7 @@ import (
 	"time"
 
 	H "github.com/rclancey/httpserver"
-	"musicdb"
+	"github.com/rclancey/synos/musicdb"
 )
 
 /*

@@ -11,8 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"itunes"
-	"itunes/loader"
+	"github.com/rclancey/itunes"
+	"github.com/rclancey/itunes/loader"
 )
 
 type Playlist struct {

@@ -22,7 +22,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 
-	"itunes/loader"
+	"github.com/rclancey/itunes/loader"
 )
 
 var CircularPlaylistFolder = builtinErrors.New("playlist can't be a descendant of itself")

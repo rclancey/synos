@@ -1,11 +1,11 @@
-package main
+package api
 
 import (
 	"fmt"
 	"html"
 	"strings"
 
-	"musicdb"
+	"github.com/rclancey/synos/musicdb"
 )
 
 func m3uEscape(s string) string {

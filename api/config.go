@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -14,10 +14,10 @@ import (
 
 	"github.com/rclancey/argparse"
 	"github.com/rclancey/httpserver"
-	"itunes/loader"
-	"lastfm"
-	"musicdb"
-	"spotify"
+	"github.com/rclancey/itunes/loader"
+	"github.com/rclancey/lastfm"
+	"github.com/rclancey/spotify"
+	"github.com/rclancey/synos/musicdb"
 )
 
 type DatabaseConfig struct {
