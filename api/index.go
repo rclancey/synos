@@ -1,11 +1,11 @@
-package main
+package api
 
 import (
 	"log"
 	"net/http"
 
 	H "github.com/rclancey/httpserver"
-	"musicdb"
+	"github.com/rclancey/synos/musicdb"
 )
 
 func IndexAPI(router H.Router, authmw Middleware) {

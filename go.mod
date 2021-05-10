@@ -1,0 +1,42 @@
+module github.com/rclancey/synos
+
+go 1.13
+
+require (
+	github.com/aws/aws-sdk-go v1.38.36
+	github.com/danilopolani/gocialite v1.0.2
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/dhowden/tag v0.0.0-20201120070457-d52dcb253c63
+	github.com/eclipse/paho.mqtt.golang v1.3.4
+	github.com/gorilla/websocket v1.4.2
+	github.com/goulash/audio v1.0.0
+	github.com/hajimehoshi/go-mp3 v0.3.2
+	github.com/jmoiron/sqlx v1.3.3
+	github.com/lib/pq v1.10.1
+	github.com/mmcdole/gofeed v1.1.3
+	github.com/oleiade/reflections v1.0.1
+	github.com/pkg/errors v0.9.1
+	github.com/rclancey/argparse v1.0.1
+	github.com/rclancey/cache v0.0.0-20200904003744-bb8bad0ff6b8
+	github.com/rclancey/file-monitor v0.0.0-20200904003835-d85ec7e2ec01
+	github.com/rclancey/fsutil v0.0.0-20200904003901-a5ae5b676fef
+	github.com/rclancey/go-sonos v0.0.1
+	github.com/rclancey/htpasswd v0.0.0-20200904003938-f0a6b7a375b1
+	github.com/rclancey/httpserver v1.0.3
+	github.com/rclancey/itunes v0.0.1
+	github.com/rclancey/jooki v0.0.1
+	github.com/rclancey/lastfm v0.0.0-20210510164243-0116f005e8c8
+	github.com/rclancey/logging v1.0.1
+	github.com/rclancey/logrotate v1.0.1
+	github.com/rclancey/spotify v0.0.3
+	github.com/satori/go.uuid v1.2.0
+	github.com/sergi/go-diff v1.2.0
+	github.com/stretchr/testify v1.7.0
+	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
+	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf
+	golang.org/x/net v0.0.0-20210510120150-4163338589ed
+	golang.org/x/oauth2 v0.0.0-20210427180440-81ed05c6b58c
+	golang.org/x/text v0.3.6
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
+	gopkg.in/oleiade/reflections.v1 v1.0.0
+)

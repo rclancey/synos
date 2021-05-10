@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"log"
@@ -8,7 +8,7 @@ import (
 
 	//"github.com/pkg/errors"
 
-	"cron"
+	"github.com/rclancey/synos/cron"
 	H "github.com/rclancey/httpserver"
 )
 

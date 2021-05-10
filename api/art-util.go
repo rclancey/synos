@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"io/ioutil"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"musicdb"
+	"github.com/rclancey/synos/musicdb"
 )
 
 var genreImages = map[string]string{

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"musicdb"
+	"github.com/rclancey/synos/musicdb"
 )
 
 type Station interface{

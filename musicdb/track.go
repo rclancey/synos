@@ -16,7 +16,7 @@ import (
 	"github.com/hajimehoshi/go-mp3"
 	"github.com/pkg/errors"
 
-	"itunes/loader"
+	"github.com/rclancey/itunes/loader"
 )
 
 type Track struct {

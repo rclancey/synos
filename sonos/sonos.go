@@ -12,14 +12,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ianr0bkny/go-sonos"
-	"github.com/ianr0bkny/go-sonos/didl"
-	"github.com/ianr0bkny/go-sonos/model"
-	"github.com/ianr0bkny/go-sonos/ssdp"
-	"github.com/ianr0bkny/go-sonos/upnp"
+	"github.com/rclancey/go-sonos"
+	"github.com/rclancey/go-sonos/didl"
+	"github.com/rclancey/go-sonos/model"
+	"github.com/rclancey/go-sonos/ssdp"
+	"github.com/rclancey/go-sonos/upnp"
 	"github.com/pkg/errors"
 
-	"musicdb"
+	"github.com/rclancey/synos/musicdb"
 )
 
 const (

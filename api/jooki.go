@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"errors"
@@ -13,8 +13,8 @@ import (
 	"time"
 
 	H "github.com/rclancey/httpserver"
-	"jooki"
-	"musicdb"
+	"github.com/rclancey/jooki"
+	"github.com/rclancey/synos/musicdb"
 )
 
 func JookiAPI(router H.Router, authmw Middleware) {
@@ -107,7 +107,7 @@ func JookiListPlaylists(w http.ResponseWriter, req *http.Request) (interface{}, 
 				continue
 			}
 			jtr.ID = &trid
-			pl.Tracks[i] = jtr.Track(db)
+			pl.Tracks[i] = findJookiTrackInDB(db, jtr)
 		}
 		pls = append(pls, pl)
 	}

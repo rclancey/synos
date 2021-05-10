@@ -9,8 +9,8 @@ import (
 	"time"
 
 	H "github.com/rclancey/httpserver"
-	"musicdb"
-	"sonos"
+	"github.com/rclancey/synos/musicdb"
+	"github.com/rclancey/synos/sonos"
 )
 
 type SonosAPI string

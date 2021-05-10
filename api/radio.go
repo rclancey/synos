@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"log"
@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	H "github.com/rclancey/httpserver"
-	"musicdb"
-	"radio"
+	"github.com/rclancey/synos/musicdb"
+	"github.com/rclancey/synos/radio"
 )
 
 func RadioAPI(router H.Router, authmw Middleware) {

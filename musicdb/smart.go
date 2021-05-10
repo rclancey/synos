@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"itunes"
+	"github.com/rclancey/itunes"
 )
 
 type Smart struct {
