@@ -72,6 +72,7 @@ export class TrackSelectionList {
     this._typing = '';
     this._clearTyping = null;
     this._sortKey = null;
+    this._reversed = false;
     this.onPlay = onPlay;
     this.onDelete = onDelete;
     this.onSkip = onSkip;
@@ -90,8 +91,9 @@ export class TrackSelectionList {
   setTracks(tracks) {
     //console.debug('setting tracks');
     this.allTracks = tracks.map((track, index) => this.wrap(track, index));
-    const sk = this._sortKey;
+    const sk = this.sortKey;
     this._sortKey = null;
+    this._reversed = null;
     //console.debug('sorting tracks');
     this.sort(sk);
     const applied = this.appliedFilters;
@@ -206,23 +208,54 @@ export class TrackSelectionList {
 
   sort(key) {
     if (key === null) {
+      //console.debug('no sort key');
       return;
     }
+    let rev = null;
+    if (key.startsWith('-')) {
+      rev = true;
+      key = key.substr(1);
+    } else if (key.startsWith('+')) {
+      rev = false;
+      key = key.substr(1);
+    }
     if (this._sortKey === key) {
-      if (key === null) {
+      if (rev && this._reversed) {
+        //console.debug('already sorted %o/%o', key, rev);
         return;
       }
+      if (rev !== null && !this._reversed) {
+        //console.debug('already sorted %o/%o', key, rev);
+        return;
+      }
+      //console.debug('already sorted, reversing');
+      this._reversed = !this._reversed;
       return this.reverse();
     }
     const skey = key === null ? 'origIndex' : key;
-    console.debug('sortBy(%o)', skey);
+    //console.debug('sortBy(%o)', skey);
     this.allTracks = sortBy(this.allTracks, [track => stringSorter(track.track[skey])])
       .map((track, index) => Object.assign({}, track, { index }));
     this._sortKey = key === 'origIndex' ? null : key;
+    if (rev) {
+      //console.debug('reversing');
+      this._reversed = true;
+      this.reverse();
+    } else {
+      this._reversed = false;
+    }
   }
 
   reverse() {
     this.allTracks = this.allTracks.slice().reverse()
+  }
+
+  get sortKey() {
+    const skey = this._sortKey === null ? 'origIndex' : this._sortKey;
+    if (this._reversed) {
+      return `-${skey}`;
+    }
+    return `+${skey}`;
   }
 
   onTrackClick(index, { shift = false, meta = false }) {

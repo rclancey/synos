@@ -139,6 +139,7 @@ const Cell = React.memo(({ rowData, col, colors, selected }) => (
       .stars {
         font-family: monospace;
         color: ${selected ? colors.highlightInverse : colors.highlightText};
+        font-size: 20px;
       }
       .empty {
         padding: 0px;

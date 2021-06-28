@@ -46,6 +46,8 @@ export const Library = ({
   onShowMultiInfo,
 }) => {
   const api = useAPI(API);
+  const loading = useRef(false);
+  const [libraryUpdate, setLibraryUpdate] = useState(0);
   const [loadedCount, setLoadedCount] = useState(0);
   const [loadingCount, setLoadingCount] = useState(0);
   const [loadingComplete, setLoadingComplete] = useState(false);
@@ -56,6 +58,10 @@ export const Library = ({
   const [device, setDevice] = useState(null);
 
   useEffect(() => {
+    if (loading.current) {
+      return;
+    }
+    loading.current = true;
     //console.debug('loading track database');
     const onProgress = n => {
       setLoadedCount(c => c + n);
@@ -64,6 +70,7 @@ export const Library = ({
       setPlaylists(addPlaylistTimestamp(pls, Date.now()));
     };
 
+    console.debug('libraryUpdate = %o', libraryUpdate);
     trackDB.getNewest()
       .then(t => {
         newest.current = t;
@@ -80,10 +87,14 @@ export const Library = ({
       .then(tracks => setTracks(tracks))
       .then(() => trackDB.getNewest())
       .then(t => newest.current = t)
-      .then(() => setLoadingComplete(true));
+      .then(() => { setLoadingComplete(true); loading.current = false; });
+  }, [api, libraryUpdate]);
 
+  useEffect(() => {
     const openHandler = () => {
-      //console.debug('websocket reopened, refreshing library');
+      console.debug('websocket reopened, refreshing library');
+      setLibraryUpdate(Date.now());
+      /*
       const count = { current: 0 };
       const onProgress = n => count.current += 1;
       trackDB.getNewest()
@@ -101,12 +112,17 @@ export const Library = ({
         })
         .then(() => trackDB.getNewest())
         .then(t => newest.current = t);
+      */
     };
+
     const msgHandler = msg => {
-      if (msg.type !== 'library') {
+      if (msg.type !== 'library update') {
+        console.debug('ignoring message %o', msg.type)
         return;
       }
       console.debug('got library update message');
+      setLibraryUpdate(Date.now());
+      /*
       if (msg.playlists && msg.playlists.length > 0) {
         api.loadPlaylists().then(updatePlaylists);
       } else if (msg.tracks && msg.tracks.length > 0) {
@@ -116,6 +132,7 @@ export const Library = ({
           return tracks.concat(msg.tracks);
         });
       }
+      */
     };
     WS.on('open', openHandler);
     WS.on('message', msgHandler);
