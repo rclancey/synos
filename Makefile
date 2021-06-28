@@ -35,7 +35,7 @@ $(BUILDDIR)/$(PKGNAME)/bin/%: $(GOSRC) go.mod go.sum
 	env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) go build -o $@ cmd/$*.go
 
 $(BUILDDIR)/$(PKGNAME)/htdocs/index.html: $(JSSRC) js/package.json
-	mkdir $(BUILDDIR)/$(PKGNAME)/htdocs
+	mkdir -p $(BUILDDIR)/$(PKGNAME)/htdocs
 	cd js && yarn install && yarn build
 	rsync -a js/build/ $(BUILDDIR)/$(PKGNAME)/htdocs/
 
@@ -43,7 +43,7 @@ go-compile: $(BUILDDIR)/$(PKGNAME)/bin/synos
 
 .PHONY: go-compile
 
-js-compile: $(BULIDDIR)/$(PKGNAME)/htdocs/index.html
+js-compile: $(BUILDDIR)/$(PKGNAME)/htdocs/index.html
 
 .PHONY: js-compile
 
