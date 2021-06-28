@@ -17,9 +17,9 @@ require (
 	github.com/oleiade/reflections v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/rclancey/argparse v1.0.1
-	github.com/rclancey/cache v0.0.0-20200904003744-bb8bad0ff6b8
+	github.com/rclancey/cache v0.0.6
 	github.com/rclancey/file-monitor v0.0.0-20200904003835-d85ec7e2ec01
-	github.com/rclancey/fsutil v0.0.0-20200904003901-a5ae5b676fef
+	github.com/rclancey/fsutil v0.0.3
 	github.com/rclancey/go-sonos v0.0.1
 	github.com/rclancey/htpasswd v0.0.0-20200904003938-f0a6b7a375b1
 	github.com/rclancey/httpserver v1.0.3
@@ -28,11 +28,12 @@ require (
 	github.com/rclancey/lastfm v0.0.0-20210510164243-0116f005e8c8
 	github.com/rclancey/logging v1.0.1
 	github.com/rclancey/logrotate v1.0.1
-	github.com/rclancey/spotify v0.0.3
+	github.com/rclancey/spotify v0.1.7
 	github.com/satori/go.uuid v1.2.0
 	github.com/sergi/go-diff v1.2.0
 	github.com/stretchr/testify v1.7.0
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
+	github.com/texttheater/golang-levenshtein/levenshtein v0.0.0-20200805054039-cae8b0eaed6c
 	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed
 	golang.org/x/oauth2 v0.0.0-20210427180440-81ed05c6b58c

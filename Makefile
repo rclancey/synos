@@ -1,4 +1,4 @@
-PKGNAME    := synos-api
+PKGNAME    := synos
 GITHASH    := $(shell git rev-parse --short HEAD)
 FULLBRANCH := $(shell git branch --show-current)
 TAGNAME    := $(shell git describe --exact-match --tags $(GITHASH) 2>/dev/null)
@@ -6,38 +6,45 @@ BRANCHNAME := $(shell basename "$(FULLBRANCH)")
 DATE       := $(shell date '+%Y%m%d')
 GITVERSION := $(shell sh -c 'if [ "x$(TAGNAME)" = "x" ] ; then echo $(GITHASH) ; else echo $(TAGNAME) ; fi')
 VERSION    ?= $(GITVERSION)
+TARGET     ?= local
+BUILDDIR   = build
+TARFILE    = $(PKGNAME)-$(VERSION).tar.gz
 
-BUILDDIR = build
+ifeq "$(TARGET)" "macos"
+GOOS = darwin
+GOARCH = amd64
+GOARM = 
+BUILDDIR = build-macos
+TARFILE = $(PKGNAME)-$(TARGET)-$(VERSION).tar.gz
+endif
+ifeq "$(TARGET)" "synology"
+GOOS = linux
+GOARCH = amd64
+GOARM = 5
+BUILDDIR = build-synology
+TARFILE = $(PKGNAME)-$(TARGET)-$(VERSION).tar.gz
+endif
+
 GOSRC := $(shell find * -type f -name "*.go")
 
-all: local
+all: compile
 
-$(BUILDDIR)/local/$(PKGNAME)/bin/%: $(GOSRC) go.mod go.sum
-	mkdir -p $(BUILDDIR)/local/$(PKGNAME)/bin
-	go build -o $@ cmd/$*.go
+$(BUILDDIR)/$(PKGNAME)/bin/%: $(GOSRC) go.mod go.sum
+	mkdir -p $(BUILDDIR)/$(PKGNAME)/bin
+	env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) go build -o $@ cmd/$*.go
 
-$(BUILDDIR)/macos/$(PKGNAME)/bin/%: $(GOSRC) go.mod go.sum
-	mkdir -p $(BUILDDIR)/local/$(PKGNAME)/bin
-	env GOOS=darwin GOARCH=amd64 go build -o $@ cmd/$*.go
-
-$(BUILDDIR)/synology/bin/%: $(GOSRC) go.mod go.sum
-	mkdir -p $(BUILDDIR)/local/$(PKGNAME)/bin
-	env GOOS=linux GOARCH=amd64 GOARM=5 go build -o $@ cmd/$*.go
-
-$(BUILDDIR)/$(PKGNAME)-%-$(VERSION).tar.gz: $(BUILDDIR)/%/$(PKGNAME)/bin/synos
-	cd $(BUILDDIR)/$* && tar -zcf ../$(PKGNAME)-$*-$(VERSION).tar.gz $(PKGNAME)
+$(BUILDDIR)/$(TARFILE): $(BUILDDIR)/$(PKGNAME)/bin/synos
+	cd $(BUILDDIR) && tar -zcf $(TARFILE) $(PKGNAME)
 
 local: $(BUILDDIR)/$(PKGNAME)-local-$(VERSION).tar.gz
 
-.PHONY: local
+compile: $(BUILDDIR)/$(PKGNAME)/bin/synos
 
-macos: $(BUILDDIR)/$(PKGNAME)-local-$(VERSION).tar.gz
+.PHONY: compile
 
-.PHONY: macos
+dist: $(BUILDDIR)/$(TARFILE)
 
-synology: $(BUILDDIR)/$(PKGNAME)-local-$(VERSION).tar.gz
-
-.PHONY: synology
+.PHONY: dist
 
 dev:
 	go build -o synos cmd/synos.go
@@ -47,3 +54,4 @@ dev:
 version:
 	echo $(VERSION)
 
+.PHONY: version
