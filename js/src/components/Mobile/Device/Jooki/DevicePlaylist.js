@@ -7,7 +7,7 @@ export const JookiDevicePlaylist = ({
   onOpen,
   onClose,
   setPlayer,
-  ...props,
+  ...props
 }) => {
   if (!device) {
     return null;

@@ -323,7 +323,7 @@ export const SmartPlaylistIntRule = ({
 
 export const SmartPlaylistBooleanRule = ({
   onUpdate,
-  ...rule,
+  ...rule
 }) => {
   const ops = rule.bool ? [
     { op: "IS", name: "is true", sign: "POS" },
@@ -518,7 +518,7 @@ export const SmartPlaylistLocationRule = ({
 
 const SmartPlaylistRuleData = ({
   type,
-  ...props,
+  ...props
 }) => {
   switch (type) {
   case "string":

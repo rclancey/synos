@@ -122,7 +122,7 @@ export const TimeInput = ({
   max,
   placeholder,
   onChange,
-  ...props,
+  ...props
 }) => {
   const onChangeParsed = evt => {
     if (!evt.target.value) {
