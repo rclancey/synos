@@ -290,9 +290,11 @@ func ListTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	}
 	tracks, err := db.TracksSince(musicdb.Music, params.Since, params.Page - 1, params.Count, args)
 	if err != nil {
+		log.Println("database error:", err)
 		return nil, DatabaseError.Wrap(err, "")
 	}
 	if len(tracks) == 0 {
+		log.Println("no tracks")
 		return nil, H.NoContent
 	}
 	return tracks, nil

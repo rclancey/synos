@@ -49,6 +49,12 @@ func WatchITunes() (chan bool, error) {
 				if err != nil {
 					errlog.Error(err)
 				}
+				hub, err := getWebsocketHub()
+				if err != nil {
+					errlog.Error(err)
+				} else if hub != nil {
+					hub.Broadcast([]byte(`{"type":"library update"}`))
+				}
 			}
 		}
 	}()

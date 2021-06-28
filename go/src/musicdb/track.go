@@ -69,6 +69,10 @@ type Track struct {
 	Work             *string      `json:"work,omitempty" db:"work"`
 	MediaKind        MediaKind    `json:"media_kind,omitempty" db:"media_kind"`
 	ArtworkURL       *string      `json:"artwork_url,omitempty" db:"-"`
+	SportifyAlbumArtistID *string `json:"spotify_album_artist_id" db:"spotify_album_artist_id"`
+	SportifyArtistID *string `json:"spotify_artist_id" db:"spotify_artist_id"`
+	SportifyAlbumID *string `json:"spotify_album_id" db:"spotify_album_id"`
+	SportifyTrackID *string `json:"spotify_track_id" db:"spotify_track_id"`
 	db *DB
 }
 

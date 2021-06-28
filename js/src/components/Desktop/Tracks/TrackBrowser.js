@@ -17,19 +17,53 @@ window.tsl = tsl;
 
 const defaultColumns = [
   Object.assign({}, COLUMNS.PLAYLIST_POSITION, { width: 100 /*1*/ }),
+  Object.assign({}, COLUMNS.ALBUM_ARTIST,      { width: 11 /*1*/ }),
+  Object.assign({}, COLUMNS.ALBUM_TITLE,       { width: 11 /*12*/ }),
+  Object.assign({}, COLUMNS.DISC_NUMBER,       { width: 100 /*3*/ }),
+  Object.assign({}, COLUMNS.TRACK_NUMBER,      { width: 100 /*3*/ }),
+  Object.assign({}, COLUMNS.ARTIST,            { width: 11 /*10*/ }),
   Object.assign({}, COLUMNS.TRACK_TITLE,       { width: 11 /*15*/ }),
   Object.assign({}, COLUMNS.TIME,              { width: 100 /*3*/ }),
-  Object.assign({}, COLUMNS.ARTIST,            { width: 11 /*10*/ }),
-  Object.assign({}, COLUMNS.ALBUM_TITLE,       { width: 11 /*12*/ }),
   Object.assign({}, COLUMNS.GENRE,             { width: 11 /*4*/ }),
   Object.assign({}, COLUMNS.RATING,            { width: 100 /*4*/ }),
   Object.assign({}, COLUMNS.RELEASE_DATE,      { width: 100 /*5*/ }),
   Object.assign({}, COLUMNS.DATE_ADDED,        { width: 100 /*8*/ }),
   Object.assign({}, COLUMNS.PURCHASE_DATE,     { width: 100 /*8*/ }),
-  Object.assign({}, COLUMNS.DISC_NUMBER,       { width: 100 /*3*/ }),
-  Object.assign({}, COLUMNS.TRACK_NUMBER,      { width: 100 /*3*/ }),
   Object.assign({}, COLUMNS.EMPTY,             { width: 1 }),
 ];
+
+const getDefaultSortKey = (playlist) => {
+  const data = window.localStorage.getItem("defaultSort");
+  if (data === null || data === undefined || data === '') {
+    return 'origIndex';
+  }
+  const obj = JSON.parse(data);
+  if (playlist) {
+    const key = obj[playlist.persistent_id];
+    if (key === null || key === undefined || key === '') {
+      return 'origIndex';
+    }
+    return key;
+  }
+  const key = obj.library;
+  if (key === null || key === undefined || key === '') {
+    return '-date_added';
+  }
+  return key;
+};
+
+const setDefaultSortKey = (playlist, sortKey) => {
+  console.debug('setDefaultSortKey(%o, %o)', playlist, sortKey);
+  let data = window.localStorage.getItem('defaultSort');
+  const obj = data ? JSON.parse(data) : {};
+  if (playlist) {
+    obj[playlist.persistent_id] = sortKey;
+  } else {
+    obj.library = sortKey;
+  }
+  data = JSON.stringify(obj);
+  window.localStorage.setItem('defaultSort', data);
+};
 
 export const TrackBrowser = ({
   columnBrowser = false,
@@ -88,10 +122,16 @@ export const TrackBrowser = ({
 
   useEffect(() => {
     //console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
+    console.debug('tracks updated: %o', playlist);
     prevTracks.current = tracks;
     tsl.setTracks(tracks);
+    const sortKey = getDefaultSortKey(playlist);
+    if (tsl.sortKey !== sortKey) {
+      console.debug('sorting updated tracks (%o !== %o)', sortKey, tsl.sortKey);
+      tsl.sort(sortKey);
+    }
     update();
-  }, [tracks, update]);
+  }, [tracks, update, playlist]);
 
   useEffect(() => {
     tsl.onPlay = controlAPI.onPlay;
@@ -115,9 +155,11 @@ export const TrackBrowser = ({
   }, [onDelete, tracks, playlist]);
 
   const onSort = useCallback((key) => {
+    console.debug('onSort(%o)', key);
     tsl.sort(key);
+    setDefaultSortKey(playlist, tsl.sortKey);
     setDisplayTracks(tsl.tracks);
-  }, [setDisplayTracks]);
+  }, [setDisplayTracks, playlist]);
 
   const onClick = useCallback((event, index) => {
     const mods = { shift: event.shiftKey, meta: event.metaKey };

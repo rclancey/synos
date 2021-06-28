@@ -45,6 +45,7 @@ func NewSonos(iface string, rootUrl *url.URL, db *musicdb.DB) (*Sonos, error) {
 		return nil, err
 	}
 	mgr := ssdp.MakeManager()
+	defer mgr.Close()
 	mgr.Discover(iface, strconv.Itoa(mgrPort), false)
 	qry := ssdp.ServiceQueryTerms{
 		ssdp.ServiceKey("schemas-upnp-org-MusicServices"): -1,
