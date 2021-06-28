@@ -1,8 +1,0 @@
-syntax = "proto2";
-package itunespb;
-
-import "track.proto";
-
-message TrackList {
-    repeated Track tracks = 1;
-}
