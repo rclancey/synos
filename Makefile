@@ -26,6 +26,7 @@ TARFILE = $(PKGNAME)-$(TARGET)-$(VERSION).tar.gz
 endif
 
 GOSRC := $(shell find * -type f -name "*.go")
+JSSRC := $(shell find js/public js/src -type f)
 
 all: compile
 
@@ -33,14 +34,25 @@ $(BUILDDIR)/$(PKGNAME)/bin/%: $(GOSRC) go.mod go.sum
 	mkdir -p $(BUILDDIR)/$(PKGNAME)/bin
 	env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) go build -o $@ cmd/$*.go
 
-$(BUILDDIR)/$(TARFILE): $(BUILDDIR)/$(PKGNAME)/bin/synos
-	cd $(BUILDDIR) && tar -zcf $(TARFILE) $(PKGNAME)
+$(BUILDDIR)/$(PKGNAME)/htdocs/index.html: $(JSSRC) js/package.json
+	mkdir $(BUILDDIR)/$(PKGNAME)/htdocs
+	cd js && yarn install && yarn build
+	rsync -a js/build/ $(BUILDDIR)/$(PKGNAME)/htdocs/
 
-local: $(BUILDDIR)/$(PKGNAME)-local-$(VERSION).tar.gz
+go-compile: $(BUILDDIR)/$(PKGNAME)/bin/synos
 
-compile: $(BUILDDIR)/$(PKGNAME)/bin/synos
+.PHONY: go-compile
+
+js-compile: $(BULIDDIR)/$(PKGNAME)/htdocs/index.html
+
+.PHONY: js-compile
+
+compile: go-compile js-compile
 
 .PHONY: compile
+
+$(BUILDDIR)/$(TARFILE): compile
+	cd $(BUILDDIR) && tar -zcf $(TARFILE) $(PKGNAME)
 
 dist: $(BUILDDIR)/$(TARFILE)
 
