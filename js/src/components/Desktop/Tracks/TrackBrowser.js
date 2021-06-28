@@ -1,14 +1,13 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMeasure } from '../../../lib/useMeasure';
 import { useTheme } from '../../../lib/theme';
-import { useAPI } from '../../../lib/useAPI';
-import { API } from '../../../lib/api';
 import {
   TrackSelectionList,
   GENRE_FILTER,
   ARTIST_FILTER,
   ALBUM_FILTER
 } from '../../../lib/trackList';
+import { PlaylistHeader } from '../Playlists/PlaylistHeader';
 import * as COLUMNS from '../../../lib/columns';
 import { TrackList } from './TrackList';
 import { ColumnBrowser } from './ColumnBrowser';
@@ -18,19 +17,53 @@ window.tsl = tsl;
 
 const defaultColumns = [
   Object.assign({}, COLUMNS.PLAYLIST_POSITION, { width: 100 /*1*/ }),
+  Object.assign({}, COLUMNS.ALBUM_ARTIST,      { width: 11 /*1*/ }),
+  Object.assign({}, COLUMNS.ALBUM_TITLE,       { width: 11 /*12*/ }),
+  Object.assign({}, COLUMNS.DISC_NUMBER,       { width: 100 /*3*/ }),
+  Object.assign({}, COLUMNS.TRACK_NUMBER,      { width: 100 /*3*/ }),
+  Object.assign({}, COLUMNS.ARTIST,            { width: 11 /*10*/ }),
   Object.assign({}, COLUMNS.TRACK_TITLE,       { width: 11 /*15*/ }),
   Object.assign({}, COLUMNS.TIME,              { width: 100 /*3*/ }),
-  Object.assign({}, COLUMNS.ARTIST,            { width: 11 /*10*/ }),
-  Object.assign({}, COLUMNS.ALBUM_TITLE,       { width: 11 /*12*/ }),
   Object.assign({}, COLUMNS.GENRE,             { width: 11 /*4*/ }),
   Object.assign({}, COLUMNS.RATING,            { width: 100 /*4*/ }),
   Object.assign({}, COLUMNS.RELEASE_DATE,      { width: 100 /*5*/ }),
   Object.assign({}, COLUMNS.DATE_ADDED,        { width: 100 /*8*/ }),
   Object.assign({}, COLUMNS.PURCHASE_DATE,     { width: 100 /*8*/ }),
-  Object.assign({}, COLUMNS.DISC_NUMBER,       { width: 100 /*3*/ }),
-  Object.assign({}, COLUMNS.TRACK_NUMBER,      { width: 100 /*3*/ }),
   Object.assign({}, COLUMNS.EMPTY,             { width: 1 }),
 ];
+
+const getDefaultSortKey = (playlist) => {
+  const data = window.localStorage.getItem("defaultSort");
+  if (data === null || data === undefined || data === '') {
+    return 'origIndex';
+  }
+  const obj = JSON.parse(data);
+  if (playlist) {
+    const key = obj[playlist.persistent_id];
+    if (key === null || key === undefined || key === '') {
+      return 'origIndex';
+    }
+    return key;
+  }
+  const key = obj.library;
+  if (key === null || key === undefined || key === '') {
+    return '-date_added';
+  }
+  return key;
+};
+
+const setDefaultSortKey = (playlist, sortKey) => {
+  console.debug('setDefaultSortKey(%o, %o)', playlist, sortKey);
+  let data = window.localStorage.getItem('defaultSort');
+  const obj = data ? JSON.parse(data) : {};
+  if (playlist) {
+    obj[playlist.persistent_id] = sortKey;
+  } else {
+    obj.library = sortKey;
+  }
+  data = JSON.stringify(obj);
+  window.localStorage.setItem('defaultSort', data);
+};
 
 export const TrackBrowser = ({
   columnBrowser = false,
@@ -41,9 +74,10 @@ export const TrackBrowser = ({
   onDelete,
   onReorder,
   controlAPI,
+  onShowInfo,
+  onShowMultiInfo,
 }) => {
   const colors = useTheme();
-  const api = useAPI(API);
   const prevTracks = useRef(null);
   const [displayTracks, setDisplayTracks] = useState(tsl.tracks);
   const [selected, setSelected] = useState([]);
@@ -71,9 +105,11 @@ export const TrackBrowser = ({
       if (list.length <= 1) {
         tracks = tsl.displayTracks.slice(index, index + 100);
       } else {
-        tracks = tsl.displayTracks.filter(tr => tr.selected);
+        tracks = list.map(tr => tr.track);
+        //tracks = tsl.displayTracks.filter(tr => tr.selected);
       }
-      controlAPI.onReplaceQueue(tracks.map(tr => tr.track));
+      console.debug('onReplaceQueue(%o)', tracks);
+      controlAPI.onReplaceQueue(tracks);
     } else {
       console.debug('no way to play %o', { list, index, playlist, controlAPI });
     }
@@ -85,11 +121,17 @@ export const TrackBrowser = ({
   }, [setDisplayTracks, setSelected]);
 
   useEffect(() => {
-    console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
+    //console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
+    console.debug('tracks updated: %o', playlist);
     prevTracks.current = tracks;
     tsl.setTracks(tracks);
+    const sortKey = getDefaultSortKey(playlist);
+    if (tsl.sortKey !== sortKey) {
+      console.debug('sorting updated tracks (%o !== %o)', sortKey, tsl.sortKey);
+      tsl.sort(sortKey);
+    }
     update();
-  }, [tracks, update]);
+  }, [tracks, update, playlist]);
 
   useEffect(() => {
     tsl.onPlay = controlAPI.onPlay;
@@ -107,18 +149,21 @@ export const TrackBrowser = ({
       tsl.onDelete = null;
     } else {
       tsl.onDelete = (sel) => {
-        return api.deletePlaylistTracks({ ...playlist, tracks }, sel);
+        return onDelete({ ...playlist, tracks, items: tracks }, sel);
       };
     }
-  }, [api, tracks, playlist]);
+  }, [onDelete, tracks, playlist]);
 
   const onSort = useCallback((key) => {
+    console.debug('onSort(%o)', key);
     tsl.sort(key);
+    setDefaultSortKey(playlist, tsl.sortKey);
     setDisplayTracks(tsl.tracks);
-  }, [setDisplayTracks]);
+  }, [setDisplayTracks, playlist]);
 
   const onClick = useCallback((event, index) => {
     const mods = { shift: event.shiftKey, meta: event.metaKey };
+    console.debug('onClick: tsl = %o, index: %o, mods: %o', tsl, index, mods);
     if (tsl.onTrackClick(index, mods)) {
       //event.stopPropagation();
       //event.preventDefault();
@@ -129,13 +174,38 @@ export const TrackBrowser = ({
 
   const onKeyPress = useCallback((event) => {
     const mods = { shift: event.shiftKey, meta: event.metaKey };
-    if (tsl.onTrackKeyPress(event.code, mods)) {
+    if ((event.metaKey || event.ctrlKey) && (event.key === 'i' || event.key === 'I')) {
+      if (tsl.selected && tsl.selected.length > 1) {
+        if (event.shiftKey) {
+          onShowMultiInfo(tsl.selected.map(tr => tr.track));
+        } else {
+          onShowInfo(tsl.selected.map(tr => tr.track), 0);
+        }
+      } else {
+        const tracks = tsl.tracks.map(tr => tr.track);
+        if (tsl.selected && tsl.selected.length > 0) {
+          console.debug(tsl.selected);
+          if (event.shiftKey) {
+            onShowMultiInfo(tracks);
+          } else {
+            const idx = tsl.tracks.findIndex(tr => tr.index === tsl.selected[0].index);
+            onShowInfo(tracks, idx);
+          }
+        } else {
+          if (event.shiftKey) {
+            onShowMultiInfo(tracks);
+          } else {
+            onShowInfo(tracks, 0);
+          }
+        }
+      }
+    } else if (tsl.onTrackKeyPress(event.code, mods)) {
       event.stopPropagation();
       event.preventDefault();
       setDisplayTracks(tsl.tracks);
       setSelected(tsl.selected);
     }
-  }, [setDisplayTracks, setSelected]);
+  }, [setDisplayTracks, setSelected, onShowInfo, onShowMultiInfo]);
 
   const genres = tsl.genres;
   const artists = tsl.artists;
@@ -172,7 +242,8 @@ export const TrackBrowser = ({
 
   return (
     <div className="trackBrowser">
-      { columnBrowser ? (
+      { playlist && (<PlaylistHeader playlist={playlist} controlAPI={controlAPI} />) }
+      { columnBrowser && !playlist ? (
         <div ref={setCBNode} className="columnBrowserContainer">
           { colBrowsers.map((cb, i) => (
             <ColumnBrowser
@@ -200,6 +271,7 @@ export const TrackBrowser = ({
         onPlay={onPlay}
         onReorder={onReorder}
         onDelete={onDelete}
+        onShowInfo={onShowInfo}
       />
       <style jsx>{`
         .trackBrowser {

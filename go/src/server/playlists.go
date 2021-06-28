@@ -7,10 +7,26 @@ import (
 	"strconv"
 	"strings"
 
-	H "httpserver"
+	H "github.com/rclancey/httpserver"
 	"musicdb"
 )
 
+func PlaylistAPI(router H.Router, authmw Middleware) {
+	router.GET("/playlists", H.HandlerFunc(authmw(ListPlaylists)))
+	router.GET("/playlists/:id", H.HandlerFunc(authmw(ListPlaylists)))
+	router.GET("/playlist/:id", H.HandlerFunc(GetPlaylist))
+	router.GET("/playlist/:id/tracks", H.HandlerFunc(PlaylistTracks))
+	router.GET("/playlist/:id/tracks.m3u", H.HandlerFunc(PlaylistTracks))
+	router.GET("/playlist/:id/track_ids", H.HandlerFunc(PlaylistTrackIDs))
+	router.GET("/playlist/:id/track-ids", H.HandlerFunc(PlaylistTrackIDs))
+	router.POST("/playlist", H.HandlerFunc(authmw(CreatePlaylist)))
+	router.PUT("/playlist/:id/tracks", H.HandlerFunc(authmw(EditPlaylistTracks)))
+	router.PUT("/playlist/:id", H.HandlerFunc(authmw(EditPlaylist)))
+	router.PATCH("/playlist/:id", H.HandlerFunc(authmw(AppendPlaylistTracks)))
+	router.DELETE("/playlist/:id", H.HandlerFunc(authmw(DeletePlaylist)))
+}
+
+/*
 func PlaylistHandler(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	log.Println("PlaylistHandler")
 	switch req.Method {
@@ -43,6 +59,7 @@ func PlaylistHandler(w http.ResponseWriter, req *http.Request) (interface{}, err
 		return nil, H.MethodNotAllowed
 	}
 }
+*/
 
 func GetPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	pid, err := getPathId(req)
@@ -51,10 +68,10 @@ func GetPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 	}
 	pl, err := db.GetPlaylist(pid)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	if pl == nil {
-		return nil, H.NotFound.Raise(nil, "playlist %s does not exist", pid)
+		return nil, H.NotFound.Wrapf(nil, "playlist %s does not exist", pid)
 	}
 	if !pl.Folder {
 		if pl.Smart != nil {
@@ -81,15 +98,15 @@ func PlaylistTrackIDs(w http.ResponseWriter, req *http.Request) (interface{}, er
 		return nil, err
 	}
 	if pl == nil {
-		return nil, H.NotFound.Raise(nil, "playlist %s does not exist", pid)
+		return nil, H.NotFound.Wrapf(nil, "playlist %s does not exist", pid)
 	}
 	if pl.Folder {
-		return nil, H.BadRequest.Raise(nil, "can't get track ids for playlist folders")
+		return nil, H.BadRequest.Wrapf(nil, "can't get track ids for playlist folders")
 	}
 	if pl.Smart != nil {
 		tracks, err := db.SmartTracks(pl.Smart)
 		if err != nil {
-			return nil, DatabaseError.Raise(err, "")
+			return nil, DatabaseError.Wrap(err, "")
 		}
 		trackIds := make([]musicdb.PersistentID, len(tracks))
 		for i, tr := range tracks {
@@ -110,10 +127,10 @@ func PlaylistTracks(w http.ResponseWriter, req *http.Request) (interface{}, erro
 		return nil, err
 	}
 	if pl == nil {
-		return nil, H.NotFound.Raise(nil, "playlist %s does not exist", pid)
+		return nil, H.NotFound.Wrapf(nil, "playlist %s does not exist", pid)
 	}
 	if pl.Folder {
-		return nil, H.BadRequest.Raise(nil, "can't get track ids for playlist folders")
+		return nil, H.BadRequest.Wrapf(nil, "can't get track ids for playlist folders")
 	}
 	var tracks []*musicdb.Track
 	if pl.Smart != nil {
@@ -122,13 +139,13 @@ func PlaylistTracks(w http.ResponseWriter, req *http.Request) (interface{}, erro
 		tracks, err = db.PlaylistTracks(pl)
 	}
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	ext := path.Ext(req.URL.Path)
 	if ext == ".m3u" {
 		lines, err := M3U(tracks)
 		if err != nil {
-			return nil, H.InternalServerError.Raise(err, "")
+			return nil, H.InternalServerError.Wrap(err, "")
 		}
 		data := []byte(strings.Join(lines, "\n"))
 		w.Header().Set("Content-Type", "text/plain")
@@ -141,12 +158,8 @@ func PlaylistTracks(w http.ResponseWriter, req *http.Request) (interface{}, erro
 }
 
 func CreatePlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	pl := musicdb.NewPlaylist()
-	err = H.ReadJSON(req, pl)
+	err := H.ReadJSON(req, pl)
 	if err != nil {
 		return nil, err
 	}
@@ -175,13 +188,13 @@ func CreatePlaylist(w http.ResponseWriter, req *http.Request) (interface{}, erro
 	if err != nil {
 		switch err {
 		case musicdb.CircularPlaylistFolder:
-			return nil, H.BadRequest.Raise(err, "")
+			return nil, H.BadRequest.Wrap(err, "")
 		case musicdb.NoSuchPlaylistFolder:
-			return nil, H.BadRequest.Raise(err, "")
+			return nil, H.BadRequest.Wrap(err, "")
 		case musicdb.ParentNotAFolder:
-			return nil, H.BadRequest.Raise(err, "")
+			return nil, H.BadRequest.Wrap(err, "")
 		default:
-			return nil, DatabaseError.Raise(err, "")
+			return nil, DatabaseError.Wrap(err, "")
 		}
 	}
 	if !pl.Folder {
@@ -191,32 +204,28 @@ func CreatePlaylist(w http.ResponseWriter, req *http.Request) (interface{}, erro
 			pl.PlaylistItems, err = db.PlaylistTracks(pl)
 		}
 		if err != nil {
-			return nil, DatabaseError.Raise(err, "")
+			return nil, DatabaseError.Wrap(err, "")
 		}
 	}
 	return pl, nil
 }
 
 func EditPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	pid, err := getPathId(req)
 	if err != nil {
 		return nil, err
 	}
 	pl, err := db.GetPlaylist(pid)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	if pl == nil {
-		return nil, H.NotFound.Raise(nil, "playlist %s does not exist", pid)
+		return nil, H.NotFound.Wrapf(nil, "playlist %s does not exist", pid)
 	}
 	if !pl.Folder && pl.Smart == nil {
 		pl.TrackIDs, err = db.PlaylistTrackIDs(pl)
 		if err != nil {
-			return nil, DatabaseError.Raise(err, "")
+			return nil, DatabaseError.Wrap(err, "")
 		}
 	}
 	xpl := &musicdb.Playlist{}
@@ -227,17 +236,17 @@ func EditPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error)
 	parent := xpl
 	for parent.ParentPersistentID != nil {
 		if *parent.ParentPersistentID == pid {
-			return nil, H.BadRequest.Raise(nil, "playlist can't be a descendant of itself")
+			return nil, H.BadRequest.Wrap(nil, "playlist can't be a descendant of itself")
 		}
 		parent, err = db.GetPlaylist(*parent.ParentPersistentID)
 		if err != nil {
-			return nil, DatabaseError.Raise(err, "")
+			return nil, DatabaseError.Wrap(err, "")
 		}
 		if parent == nil {
 			break
 		}
 		if !parent.Folder {
-			return nil, H.BadRequest.Raise(nil, "playlist can only be a descendant of a folder")
+			return nil, H.BadRequest.Wrap(nil, "playlist can only be a descendant of a folder")
 		}
 	}
 	pl.ParentPersistentID = xpl.ParentPersistentID
@@ -250,13 +259,13 @@ func EditPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error)
 	if err != nil {
 		switch err {
 		case musicdb.CircularPlaylistFolder:
-			return nil, H.BadRequest.Raise(err, "")
+			return nil, H.BadRequest.Wrap(err, "")
 		case musicdb.NoSuchPlaylistFolder:
-			return nil, H.BadRequest.Raise(err, "")
+			return nil, H.BadRequest.Wrap(err, "")
 		case musicdb.ParentNotAFolder:
-			return nil, H.BadRequest.Raise(err, "")
+			return nil, H.BadRequest.Wrap(err, "")
 		default:
-			return nil, DatabaseError.Raise(err, "")
+			return nil, DatabaseError.Wrap(err, "")
 		}
 	}
 	if !pl.Folder {
@@ -266,36 +275,32 @@ func EditPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error)
 			pl.PlaylistItems, err = db.PlaylistTracks(pl)
 		}
 		if err != nil {
-			return nil, DatabaseError.Raise(err, "")
+			return nil, DatabaseError.Wrap(err, "")
 		}
 	}
 	return pl, nil
 }
 
 func EditPlaylistTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	pid, err := getPathId(req)
 	if err != nil {
 		return nil, err
 	}
 	pl, err := db.GetPlaylist(pid)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	if pl == nil {
-		return nil, H.NotFound.Raise(nil, "playlist %s does not exist", pid)
+		return nil, H.NotFound.Wrapf(nil, "playlist %s does not exist", pid)
 	}
 	if pl.Folder {
-		return nil, H.BadRequest.Raise(nil, "can't modify folder tracks")
+		return nil, H.BadRequest.Wrap(nil, "can't modify folder tracks")
 	}
 	if pl.Smart != nil {
-		return nil, H.BadRequest.Raise(nil, "can't modify smart playlist tracks")
+		return nil, H.BadRequest.Wrap(nil, "can't modify smart playlist tracks")
 	}
 	if pl.GeniusTrackID != nil {
-		return nil, H.BadRequest.Raise(nil, "can't modify genius playlist tracks")
+		return nil, H.BadRequest.Wrap(nil, "can't modify genius playlist tracks")
 	}
 	tracks := []*musicdb.Track{}
 	err = H.ReadJSON(req, &tracks)
@@ -308,35 +313,31 @@ func EditPlaylistTracks(w http.ResponseWriter, req *http.Request) (interface{}, 
 	}
 	err = db.SavePlaylistTracks(pl)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	return pl, nil
 }
 
 func AppendPlaylistTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	pid, err := getPathId(req)
 	if err != nil {
 		return nil, err
 	}
 	pl, err := db.GetPlaylist(pid)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	if pl == nil {
-		return nil, H.NotFound.Raise(nil, "playlist %s does not exist", pid)
+		return nil, H.NotFound.Wrapf(nil, "playlist %s does not exist", pid)
 	}
 	if pl.Folder {
-		return nil, H.BadRequest.Raise(nil, "can't modify folder tracks")
+		return nil, H.BadRequest.Wrap(nil, "can't modify folder tracks")
 	}
 	if pl.Smart != nil {
-		return nil, H.BadRequest.Raise(nil, "can't modify smart playlist tracks")
+		return nil, H.BadRequest.Wrap(nil, "can't modify smart playlist tracks")
 	}
 	if pl.GeniusTrackID != nil {
-		return nil, H.BadRequest.Raise(nil, "can't modify genius playlist tracks")
+		return nil, H.BadRequest.Wrap(nil, "can't modify genius playlist tracks")
 	}
 	tracks := []*musicdb.Track{}
 	err = H.ReadJSON(req, &tracks)
@@ -349,31 +350,27 @@ func AppendPlaylistTracks(w http.ResponseWriter, req *http.Request) (interface{}
 	}
 	pl.TrackIDs, err = db.PlaylistTrackIDs(pl)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	pl.TrackIDs = append(pl.TrackIDs, trackIds...)
 	err = db.SavePlaylistTracks(pl)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	return pl, nil
 }
 
 func DeletePlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	pid, err := getPathId(req)
 	if err != nil {
 		return nil, err
 	}
 	pl, err := db.GetPlaylist(pid)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	if pl == nil {
-		return nil, H.NotFound.Raise(nil, "playlist %s does not exist", pid)
+		return nil, H.NotFound.Wrapf(nil, "playlist %s does not exist", pid)
 	}
 	if !pl.Folder && pl.Smart == nil {
 		pl.TrackIDs, _ = db.PlaylistTrackIDs(pl)
@@ -382,18 +379,27 @@ func DeletePlaylist(w http.ResponseWriter, req *http.Request) (interface{}, erro
 	if err != nil {
 		switch err {
 		case musicdb.PlaylistFolderNotEmpty:
-			return nil, H.BadRequest.Raise(err, "")
+			return nil, H.BadRequest.Wrap(err, "")
 		default:
-			return nil, DatabaseError.Raise(err, "")
+			return nil, DatabaseError.Wrap(err, "")
 		}
 	}
 	return pl, nil
 }
 
 func ListPlaylists(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	pls, err := db.GetPlaylistTree(nil)
+	var ppid *musicdb.PersistentID = nil
+	pathPid := pathVar(req, "id")
+	if pathPid != "" {
+		pid, err := getPathId(req)
+		if err != nil {
+			return nil, err
+		}
+		ppid = &pid
+	}
+	pls, err := db.GetPlaylistTree(ppid)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	return pls, nil
 }

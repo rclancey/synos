@@ -108,6 +108,7 @@ type StateUpdate struct {
 
 type Client struct {
 	conn mqtt.Client
+	hc *http.Client
 	device *DiscoveryInfo
 	dpi *DiscoveryPingInfo
 	lastError error
@@ -127,6 +128,9 @@ func NewClient(device *DiscoveryInfo, dpi *DiscoveryPingInfo) (*Client, error) {
 	ms := t.Unix() * 1000 + int64(t.Nanosecond() / 1e6)
 	client := &Client{
 		conn: nil,
+		hc: &http.Client{
+			Transport: http.DefaultTransport,
+		},
 		device: device,
 		dpi: dpi,
 		lastError: nil,

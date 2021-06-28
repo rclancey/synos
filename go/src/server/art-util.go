@@ -92,7 +92,6 @@ var genreImages = map[string]string{
 func GetGenreImageURL(sortGenre string) (string, error) {
 	if sortGenre == "" {
 		return "/piano.jpg", nil
-		//return "", errors.New("track has no genre")
 	}
 	key := strings.ReplaceAll(sortGenre, " ", "")
 	img, ok := genreImages[key]
@@ -101,10 +100,8 @@ func GetGenreImageURL(sortGenre string) (string, error) {
 			return "/" + img, nil
 		}
 		return "/piano.jpg", nil
-		//return "", errors.New("genre image missing")
 	}
 	return "/piano.jpg", nil
-	//return "", errors.New("unknown genre")
 }
 
 func GetArtistImageFilename(name string) (string, error) {
@@ -149,6 +146,13 @@ func GetArtistImageFilename(name string) (string, error) {
 func GetAlbumArtFilename(tr *musicdb.Track) (string, error) {
 	finder := cfg.Finder.FileFinder()
 	dn := filepath.Dir(tr.Path())
+	root := filepath.Join(dn, "cover_" + tr.PersistentID.String())
+	for _, x := range []string{".jpg", ".png", ".gif"} {
+		fn, err := finder.FindFile(root + x)
+		if err == nil {
+			return fn, nil
+		}
+	}
 	for _, x := range []string{"cover.jpg", "cover.png", "cover.gif"} {
 		fn := filepath.Join(dn, x)
 		fn, err := finder.FindFile(fn)
@@ -173,26 +177,26 @@ func GetAlbumArtFilename(tr *musicdb.Track) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "can't get lastfm album image for %s / %s", art, alb)
 	}
-	var fn string
+	var ext string
 	if ct == "image/jpeg" {
-		fn = filepath.Join(dn, "cover.jpg")
+		ext = ".jpg"
 	} else if ct == "image/png" {
-		fn = filepath.Join(dn, "cover.png")
+		ext = ".png"
 	} else if ct == "image/gif" {
-		fn = filepath.Join(dn, "cover.gif")
+		ext = ".gif"
 	} else {
 		exts, err := mime.ExtensionsByType(ct)
 		if err != nil && len(exts) > 0 {
-			fn = filepath.Join(dn, "cover"+exts[0])
+			ext = exts[0]
 		} else {
 			log.Println("no idea what ext to use for mime type", ct)
-			fn = filepath.Join(dn, "cover.img")
+			ext = ".img"
 		}
 	}
-	log.Printf("saving %s image to %s\n", ct, fn)
-	err = ioutil.WriteFile(fn, img, os.FileMode(0644))
+	fn, err := db.SaveTrackArtwork(tr, ext, img)
 	if err != nil {
 		return fn, errors.Wrap(err, "can't write to " + fn)
 	}
+	log.Printf("saved %s image to %s\n", ct, fn)
 	return fn, nil
 }

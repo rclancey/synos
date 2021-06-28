@@ -254,7 +254,7 @@ export const Volume = ({ volume, onChange, ...props }) => {
           min={0}
           max={100}
           step={1}
-          value={volume}
+          value={volume || 0}
           style={{ width: '100%' }}
           onChange={evt => onChange(parseInt(evt.target.value))}
         />

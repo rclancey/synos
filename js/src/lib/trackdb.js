@@ -17,10 +17,10 @@ const getDB = () => {
       objectStore.createIndex("artist", "artist", { unique: false });
       objectStore.createIndex("album", "album", { unique: false });
       objectStore.createIndex("date_modified", "date_modified", { unique: false });
-      console.debug("database created");
+      //console.debug("database created");
     };
     dbOpenReq.onsuccess = evt => {
-      console.debug("database opened");
+      //console.debug("database opened");
       resolve(dbOpenReq.result);
     };
   });

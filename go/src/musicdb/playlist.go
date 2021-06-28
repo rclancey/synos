@@ -22,6 +22,8 @@ type Playlist struct {
 	Kind                 PlaylistKind   `json:"kind" db:"kind"`
 	Folder               bool           `json:"folder,omitempty" db:"folder"`
 	Name                 string         `json:"name,omitempty" db:"name"`
+	DateAdded            *Time          `json:"date_added" db:"date_added"`
+	DateModified         *Time          `json:"date_modified" db:"date_modified"`
 	Smart                *Smart         `json:"smart,omitempty" db:"smart"`
 	GeniusTrackID        *PersistentID  `json:"genius_track_id,omitempty" db:"genius_track_id"`
 	TrackIDs             []PersistentID `json:"track_ids" db:"-"`
@@ -196,10 +198,11 @@ func PlaylistFromITunes(ipl *loader.Playlist) *Playlist {
 	if !pl.Folder {
 		if ipl.IsSmart() {
 			ispl, err := itunes.ParseSmartPlaylist(ipl.SmartInfo, ipl.SmartCriteria)
-			if err == nil {
+			if err == nil && len(ispl.Criteria.Rules) > 0 {
 				pl.Smart = SmartPlaylistFromITunes(ispl)
 			}
-		} else {
+		}
+		if pl.Smart == nil {
 			pl.TrackIDs = make([]PersistentID, len(ipl.TrackIDs))
 			for i, uid := range ipl.TrackIDs {
 				pl.TrackIDs[i] = PersistentID(uid)

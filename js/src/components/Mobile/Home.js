@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../lib/theme';
+import { useStack } from './Router/StackContext';
 import { useAPI } from '../../lib/useAPI';
 import { JookiAPI } from '../../lib/jooki';
+import { ScreenHeader } from './ScreenHeader';
 import { HomeItem } from './HomeItem';
-import { PlaylistList } from './PlaylistList';
+import { PlaylistFolder } from './PlaylistList';
 import { ArtistList } from './ArtistList';
 import { AlbumList } from './AlbumList';
 import { GenreList } from './GenreList';
@@ -17,8 +19,10 @@ import { JookiDevicePlaylist } from './Device/Jooki/DevicePlaylist';
 import { AppleDevicePlaylist } from './Device/Apple/DevicePlaylist';
 import { AndroidDevicePlaylist } from './Device/Android/DevicePlaylist';
 import { PlexDevicePlaylist } from './Device/Plex/DevicePlaylist';
+import { Search } from './Search';
 
 export const Home = React.memo(({ children, onOpen, ...props }) => {
+  const stack = useStack();
   const colors = useTheme();
   const [jooki, setJooki] = useState(null);
   const api = useAPI(JookiAPI);
@@ -30,47 +34,61 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
             const device = { api, state, playlists };
             setJooki(device);
           });
+      })
+      .catch(err => {
+        console.debug('error loading jooki: %o', err);
       });
   }, [api]);
+  /*
+  useEffect(() => {
+    const playlistPathStr = window.localStorage.getItem('playlistPath');
+    const playlistPath = JSON.parse(playlistPathStr || '[]');
+    if (playlistPath && playlistPath.length > 0) {
+      stack.onPush(<PlaylistList prev="Library" forcePath={playlistPath} {...props} />);
+    }
+  // eslint-disable-next-line
+  }, []);
+  */
   if (children) {
     return children;
   }
   return (
     <div className="home">
-      <div className="header">
-        <div className="title">Library</div>
-      </div>
+      <ScreenHeader name="Library" />
       <div className="items">
-        <HomeItem name="Playlists" icon="playlists" onOpen={onOpen}>
-          <PlaylistList prev="Library" {...props} />
+        <HomeItem name="Playlists" icon="playlists" onOpen={stack.onPush}>
+          <PlaylistFolder prev="Library" {...props} />
         </HomeItem>
-        <HomeItem name="Artists" icon="artists" onOpen={onOpen}>
+        <HomeItem name="Artists" icon="artists" onOpen={stack.onPush}>
           <ArtistList prev="Library" {...props} />
         </HomeItem>
-        <HomeItem name="Albums" icon="albums" onOpen={onOpen}>
+        <HomeItem name="Albums" icon="albums" onOpen={stack.onPush}>
           <AlbumList prev="Library" {...props} />
         </HomeItem>
-        <HomeItem name="Genres" icon="genres" onOpen={onOpen}>
+        <HomeItem name="Genres" icon="genres" onOpen={stack.onPush}>
           <GenreList prev="Library" {...props} />
         </HomeItem>
-        <HomeItem name="Podcasts" icon="podcasts" onOpen={onOpen}>
+        <HomeItem name="Podcasts" icon="podcasts" onOpen={stack.onPush}>
           <PodcastList prev="Library" {...props} />
         </HomeItem>
-        <HomeItem name="Audiobooks" icon="audiobooks" onOpen={onOpen}>
+        <HomeItem name="Audiobooks" icon="audiobooks" onOpen={stack.onPush}>
           <AudiobookList prev="Library" {...props} />
         </HomeItem>
-        <HomeItem name="Recently Added" icon="recent" onOpen={onOpen}>
+        <HomeItem name="Recently Added" icon="recent" onOpen={stack.onPush}>
           <RecentAdditions prev="Library" {...props} />
         </HomeItem>
-        <HomeItem name="Purchases" icon="purchased" onOpen={onOpen}>
+        <HomeItem name="Purchases" icon="purchased" onOpen={stack.onPush}>
           <Purchases prev="Library" {...props} />
         </HomeItem>
-        <SonosDevicePlaylist   device={null}  onOpen={onOpen} {...props} />
-        <AirplayDevicePlaylist device={null}  onOpen={onOpen} {...props} />
-        <JookiDevicePlaylist   device={jooki} onOpen={onOpen} {...props} />
-        <AppleDevicePlaylist   device={null}  onOpen={onOpen} {...props} />
-        <AndroidDevicePlaylist device={null}  onOpen={onOpen} {...props} />
-        <PlexDevicePlaylist    device={null}  onOpen={onOpen} {...props} />
+        <SonosDevicePlaylist   device={null}  onOpen={stack.onPush} {...props} />
+        <AirplayDevicePlaylist device={null}  onOpen={stack.onPush} {...props} />
+        <JookiDevicePlaylist   device={jooki} onOpen={stack.onPush} {...props} />
+        <AppleDevicePlaylist   device={null}  onOpen={stack.onPush} {...props} />
+        <AndroidDevicePlaylist device={null}  onOpen={stack.onPush} {...props} />
+        <PlexDevicePlaylist    device={null}  onOpen={stack.onPush} {...props} />
+        <HomeItem name="Search" icon="search" onOpen={stack.onPush}>
+          <Search prev="Library" {...props} />
+        </HomeItem>
       </div>
       <style jsx>{`
         .header {
@@ -88,7 +106,6 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
         .items {
           width: 100vw;
           height: calc(100vh - 185px);
-          overflow: auto;
           padding: 0 0.5em;
           box-sizing: border-box;
         }

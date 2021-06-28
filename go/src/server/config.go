@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"argparse"
-	"httpserver"
+	"github.com/rclancey/argparse"
+	"github.com/rclancey/httpserver"
 	"itunes/loader"
 	"lastfm"
 	"musicdb"
@@ -108,6 +108,7 @@ func (cfg *FinderConfig) Init(top *SynosConfig) error {
 	if len(path) == 0 {
 		return errors.New("no media directories found")
 	}
+	log.Println("media path:", cfg.MediaPath, "=>", path)
 	cfg.MediaPath = path
 	return nil
 }

@@ -72,6 +72,7 @@ export class TrackSelectionList {
     this._typing = '';
     this._clearTyping = null;
     this._sortKey = null;
+    this._reversed = false;
     this.onPlay = onPlay;
     this.onDelete = onDelete;
     this.onSkip = onSkip;
@@ -88,13 +89,25 @@ export class TrackSelectionList {
   }
 
   setTracks(tracks) {
+    //console.debug('setting tracks');
     this.allTracks = tracks.map((track, index) => this.wrap(track, index));
-    const sk = this._sortKey;
+    const sk = this.sortKey;
     this._sortKey = null;
+    this._reversed = null;
+    //console.debug('sorting tracks');
     this.sort(sk);
+    const applied = this.appliedFilters;
+    this.appliedFilters = {
+      [SEARCH_FILTER]: new Set(),
+      [GENRE_FILTER]:  new Set(),
+      [ARTIST_FILTER]: new Set(),
+      [ALBUM_FILTER]:  new Set(),
+    };
     [SEARCH_FILTER, GENRE_FILTER, ARTIST_FILTER, ALBUM_FILTER].forEach(f => {
-      this.allTracks = this.applyFilter(f, Array.from(this.appliedFilters[f]));
+      //console.debug('filtering tracks with %o %o', f, Array.from(applied[f]));
+      this.allTracks = this.applyFilter(f, Array.from(applied[f]));
     });
+    this.allTracks = this.allTracks.slice(0);
   }
 
   get allTracks() {
@@ -103,10 +116,14 @@ export class TrackSelectionList {
 
   set allTracks(tracks) {
     if (this._allTracks === tracks) {
+      //console.debug('no change to allTracks');
       return;
     }
-    this._allTracks = tracks;
+    //console.debug('updating tracks');
+    this._allTracks = tracks.map((tr, i) => Object.assign({}, tr, { index: i }));;
+    //console.debug('filtering tracks');
     this.tracks = this._allTracks.filter(tr => tr.filtered === 0);
+    //console.debug('setting display tracks');
     this.displayTracks = this.tracks.map(tr => tr.track);
     //console.error('updated tracks to %o, %o items', this.tracks.length, this.displayTracks.length);
     this.genres = this.filters(GENRE_FILTER);
@@ -176,7 +193,7 @@ export class TrackSelectionList {
       return this.allTracks;
     }
     this.appliedFilters[filter] = filts;
-    console.error('applyFilter(%o, %o)', filter, filts);
+    //console.error('applyFilter(%o, %o)', filter, filts);
     if (filts.size === 0) {
       return this.allTracks.map(track => this.filterTrack(track, filter, false));
     }
@@ -191,23 +208,54 @@ export class TrackSelectionList {
 
   sort(key) {
     if (key === null) {
+      //console.debug('no sort key');
       return;
     }
+    let rev = null;
+    if (key.startsWith('-')) {
+      rev = true;
+      key = key.substr(1);
+    } else if (key.startsWith('+')) {
+      rev = false;
+      key = key.substr(1);
+    }
     if (this._sortKey === key) {
-      if (key === null) {
+      if (rev && this._reversed) {
+        //console.debug('already sorted %o/%o', key, rev);
         return;
       }
+      if (rev !== null && !this._reversed) {
+        //console.debug('already sorted %o/%o', key, rev);
+        return;
+      }
+      //console.debug('already sorted, reversing');
+      this._reversed = !this._reversed;
       return this.reverse();
     }
     const skey = key === null ? 'origIndex' : key;
-    console.debug('sortBy(%o)', skey);
+    //console.debug('sortBy(%o)', skey);
     this.allTracks = sortBy(this.allTracks, [track => stringSorter(track.track[skey])])
       .map((track, index) => Object.assign({}, track, { index }));
     this._sortKey = key === 'origIndex' ? null : key;
+    if (rev) {
+      //console.debug('reversing');
+      this._reversed = true;
+      this.reverse();
+    } else {
+      this._reversed = false;
+    }
   }
 
   reverse() {
     this.allTracks = this.allTracks.slice().reverse()
+  }
+
+  get sortKey() {
+    const skey = this._sortKey === null ? 'origIndex' : this._sortKey;
+    if (this._reversed) {
+      return `-${skey}`;
+    }
+    return `+${skey}`;
   }
 
   onTrackClick(index, { shift = false, meta = false }) {

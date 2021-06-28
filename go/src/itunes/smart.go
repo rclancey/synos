@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
-	//"encoding/json"
+	"encoding/json"
 	"errors"
 	"fmt"
 	//"io"
@@ -15,6 +15,11 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 )
+
+func debugStruct(name string, obj interface{}) {
+	data, _ := json.Marshal(obj)
+	log.Println(name + ": " + string(data))
+}
 
 type FileKind struct {
 	Name string `json:"name"`
@@ -308,12 +313,14 @@ func (c *SmartPlaylistCriteria) Parse(raw []byte) error {
 		//fmt.Println("error reading ruleset header:", err)
 		return err
 	}
+	//debugStruct("rulesetHeader", rulesetHeader)
 	c.Conjunction = Conjunction(rulesetHeader.ConjunctionId)
 	c.Rules = make([]SmartRule, int(rulesetHeader.RuleCount))
 	//fmt.Printf("parsing smart criteria (%d rules)\n", rulesetHeader.RuleCount)
 	for i := uint32(0); i < rulesetHeader.RuleCount; i++ {
 		ruleHeader := &RuleHeader{}
 		binary.Read(buf, binary.BigEndian, ruleHeader)
+		//debugStruct("ruleHeader", ruleHeader)
 		data := make([]byte, int(ruleHeader.Length))
 		buf.Read(data)
 		var rule SmartRule
@@ -347,6 +354,7 @@ func (c *SmartPlaylistCriteria) Parse(raw []byte) error {
 		default:
 			return fmt.Errorf("unknown rule type: %d / %s / %s", ruleHeader.FieldId, ruleHeader.Field(), ruleHeader.Field().Type())
 		}
+		//debugStruct("rule", rule)
 		//rhd, _ := json.Marshal(ruleHeader)
 		//rd, _ := json.Marshal(rule)
 		//fmt.Println(string(rhd), string(rd))

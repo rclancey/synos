@@ -1,7 +1,29 @@
-import React from 'react';
+import React, { useState, useContext, useCallback } from 'react';
+import { useStack } from './Router/StackContext';
 import { QueueInfo } from '../Queue';
-import { MixCover } from './MixCover';
+import { MixCover } from '../MixCover';
+import { AlbumList } from './AlbumList';
+import { Album } from './SongList';
 import { useTheme } from '../../lib/theme';
+
+export const MenuContext = React.createContext({
+  onTrackMenu: (track) => null,
+  onPlaylistMenu: (title, tracks) => null,
+});
+
+export const useMenuContext = () => useContext(MenuContext);
+
+export const useMenus = () => {
+  const [trackMenuTrack, setTrackMenuTrack] = useState(null);
+  const [playlistMenuTracks, setPlaylistMenuTracks] = useState(null);
+  const [playlistMenuTitle, setPlaylistMenuTitle] = useState(null);
+  const onTrackMenu = setTrackMenuTrack;
+  const onPlaylistMenu = useCallback((title, tracks) => {
+    setPlaylistMenuTitle(title);
+    setPlaylistMenuTracks(tracks);
+  }, [setPlaylistMenuTitle, setPlaylistMenuTracks]);
+  return { onTrackMenu, onPlaylistMenu, trackMenuTrack, playlistMenuTitle, playlistMenuTracks };
+};
 
 const QueueButton = ({ title, onClick }) => (
   <div className="item" onClick={onClick}>
@@ -17,6 +39,43 @@ const QueueButton = ({ title, onClick }) => (
     `}</style>
   </div>
 );
+
+const ArtistLink = ({ track, onClose }) => {
+  const stack = useStack();
+  const artist = {
+    name: track.artist,
+    sort: track.sort_artist,
+  };
+  return (
+    <QueueButton
+      title="Show Artist Page"
+      onClick={() => {
+        
+        stack.onPush(artist.name, <AlbumList artist={artist} />);
+        onClose();
+      }}
+    />
+  );
+};
+
+const AlbumLink = ({ track, onClose }) => {
+  const stack = useStack();
+  const album = {
+    artist: {
+      sort: track.sort_album_artist || track.sort_artist,
+    },
+    sort: track.sort_album,
+  };
+  return (
+    <QueueButton
+      title="Show Album Page"
+      onClick={() => {
+        stack.onPush(track.album, <Album album={album} />);
+        onClose();
+      }}
+    />
+  );
+};
 
 const PlayNow = ({ tracks, controlAPI, onClose }) => (
   <QueueButton
@@ -182,25 +241,54 @@ export const TrackMenu = ({
   track,
   onClose,
   controlAPI,
-}) => (
-  <div className="disabler">
-    <div className="trackMenu">
-      <Header tracks={[track]} name={track.name} />
-      <div className="items">
-        <PlayNow tracks={[track]} controlAPI={controlAPI} onClose={onClose} />
-        <PlayNext tracks={[track]} controlAPI={controlAPI} onClose={onClose} />
-        <Append tracks={[track]} controlAPI={controlAPI} onClose={onClose} />
-        <Replace tracks={[track]} controlAPI={controlAPI} onClose={onClose} />
+}) => {
+  const colors = useTheme();
+  return (
+    <div className="disabler">
+      <div className="trackMenu">
+        <Header tracks={[track]} name={track.name} />
+        <div className="items">
+          <ArtistLink track={track} onClose={onClose} />
+          <AlbumLink track={track} onClose={onClose} />
+          <PlayNow tracks={[track]} controlAPI={controlAPI} onClose={onClose} />
+          <PlayNext tracks={[track]} controlAPI={controlAPI} onClose={onClose} />
+          <Append tracks={[track]} controlAPI={controlAPI} onClose={onClose} />
+          <Replace tracks={[track]} controlAPI={controlAPI} onClose={onClose} />
+        </div>
+        <CloseButton onClose={onClose} />
       </div>
-      <div className="cancel" onClick={onClose}>Cancel</div>
+      <style jsx>{`
+        .header {
+          display: flex;
+        }
+        .disabler {
+          position: fixed;
+          z-index: 2;
+          left: 0;
+          top: 0;
+          width: 100vw;
+          height: 100vh;
+          background-color: ${colors.disabler};
+        }
+        .trackMenu {
+          position: fixed;
+          z-index: 2;
+          left: 20px;
+          bottom: 75px;
+          width: calc(100vw - 40px);
+          border: solid transparent 1px;
+          border-radius: 20px;
+          max-height: 70vh;
+          background-color: ${colors.background};
+        }
+        .items {
+          height: auto;
+          color: ${colors.highlightText};
+        }
+      `}</style>
     </div>
-    <style jsx>{`
-      .header {
-        display: flex;
-      }
-    `}</style>
-  </div>
-);
+  );
+};
 
 export const DotsMenu = ({ track, onOpen }) => {
   const colors = useTheme();

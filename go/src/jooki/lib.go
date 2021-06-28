@@ -2,7 +2,12 @@ package jooki
 
 import (
 	"encoding/json"
+	"fmt"
+	"math"
 	"strconv"
+	"strings"
+
+	"musicdb"
 )
 
 type Playlist struct {
@@ -15,6 +20,27 @@ type Playlist struct {
 }
 
 //http://streams.calmradio.com/api/303/128/stream
+
+func (p *Playlist) String() string {
+	parts := []string{}
+	if p.ID != nil {
+		parts = append(parts, fmt.Sprintf(`ID:"%s"`, *p.ID))
+	}
+	if p.Audiobook != nil {
+		parts = append(parts, fmt.Sprintf(`Audiobook:"%t"`, *p.Audiobook))
+	}
+	if p.Token != nil {
+		parts = append(parts, fmt.Sprintf(`Token:"%s"`, *p.Token))
+	}
+	parts = append(parts, fmt.Sprintf(`Name:"%s"`, p.Name))
+	if p.Tracks != nil {
+		parts = append(parts, fmt.Sprintf(`Tracks:"[%d]"`, len(p.Tracks)))
+	}
+	if p.URL != nil {
+		parts = append(parts, fmt.Sprintf(`URL:"%s"`, *p.URL))
+	}
+	return fmt.Sprintf("&jooki.Playlist{%s}", strings.Join(parts, ", "))
+}
 
 func (p *Playlist) Clone() *Playlist {
 	clone := &Playlist{}
@@ -94,11 +120,44 @@ type Track struct {
 	Artist *string `json:"artist"`
 	Codec *string `json:"codec"`
 	Duration *FloatStr `json:"duration"`
-	Filename *string `json:"filename"`
+	Location *string `json:"filename"`
 	Format *string `json:"format"`
 	HasImage bool `json:"hasImage"`
 	Size *IntStr `json:"size"`
 	Name *string `json:"title"`
+}
+
+func (t *Track) String() string {
+	parts := []string{}
+	if t.ID != nil {
+		parts = append(parts, fmt.Sprintf(`ID:"%s"`, *t.ID))
+	}
+	if t.Album != nil {
+		parts = append(parts, fmt.Sprintf(`Album:"%s"`, *t.Album))
+	}
+	if t.Artist != nil {
+		parts = append(parts, fmt.Sprintf(`Artist:"%s"`, *t.Artist))
+	}
+	if t.Codec != nil {
+		parts = append(parts, fmt.Sprintf(`Codec:"%s"`, *t.Codec))
+	}
+	if t.Duration != nil {
+		parts = append(parts, fmt.Sprintf(`Duration:"%.3f"`, *t.Duration))
+	}
+	if t.Location != nil {
+		parts = append(parts, fmt.Sprintf(`Location:"%s"`, *t.Location))
+	}
+	if t.Format != nil {
+		parts = append(parts, fmt.Sprintf(`Format:"%s"`, *t.Format))
+	}
+	parts = append(parts, fmt.Sprintf(`HasImage:"%s"`, t.HasImage))
+	if t.Size != nil {
+		parts = append(parts, fmt.Sprintf(`Size:"%d"`, *t.Size))
+	}
+	if t.Name != nil {
+		parts = append(parts, fmt.Sprintf(`Name:"%s"`, *t.Name))
+	}
+	return fmt.Sprintf("&jooki.Track{%s}", strings.Join(parts, ", "))
 }
 
 func (t *Track) Clone() *Track {
@@ -107,6 +166,30 @@ func (t *Track) Clone() *Track {
 	}
 	clone := *t
 	return &clone
+}
+
+func (t *Track) Track(db *musicdb.DB) *musicdb.Track {
+	tr := &musicdb.Track{
+		JookiID: t.ID,
+		Artist: t.Artist,
+		Album: t.Album,
+		Name: t.Name,
+		Location: t.Location,
+	}
+	if t.Size != nil {
+		s := uint64(*t.Size)
+		tr.Size = &s
+	}
+	if t.Duration != nil {
+		tt := uint(*t.Duration * 1000)
+		tr.TotalTime = &tt
+	}
+	db.FindTrack(tr)
+	if tr.JookiID == nil {
+		tr.JookiID = t.ID
+		db.SaveTrack(tr)
+	}
+	return tr
 }
 
 type Library struct {
@@ -139,4 +222,57 @@ func (l *Library) Clone() *Library {
 		}
 	}
 	return clone
+}
+
+func (l *Library) FindTrack(tr *musicdb.Track) *Track {
+	if tr.JookiID != nil {
+		id := *tr.JookiID
+		jtr, ok := l.Tracks[id]
+		if ok {
+			jtr.ID = &id
+			return jtr
+		}
+	}
+	for id, jtr := range l.Tracks {
+		if tr.Name == nil || *tr.Name == "" {
+			if jtr.Name != nil && *jtr.Name != "" {
+				continue
+			}
+		} else {
+			if jtr.Name == nil || *jtr.Name != *tr.Name {
+				continue
+			}
+		}
+		if tr.Album != nil || *tr.Album == "" {
+			if jtr.Album != nil && *jtr.Album != "" {
+				continue
+			}
+		} else {
+			if jtr.Album == nil || *jtr.Album != *tr.Album {
+				continue
+			}
+		}
+		if tr.Artist == nil || *tr.Artist == "" {
+			if jtr.Artist != nil && *jtr.Artist != "" {
+				continue
+			}
+		} else {
+			if jtr.Artist == nil || *jtr.Artist != *tr.Artist {
+				continue
+			}
+		}
+		if tr.Size != nil && jtr.Size != nil {
+			if int64(*tr.Size) != int64(*jtr.Size) {
+				continue
+			}
+		}
+		if tr.TotalTime != nil && jtr.Duration != nil {
+			if math.Abs(float64(*tr.TotalTime) - float64(*jtr.Duration) * 1000) > 1000 {
+				continue
+			}
+		}
+		jtr.ID = &id
+		return jtr
+	}
+	return nil
 }

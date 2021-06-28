@@ -8,7 +8,7 @@ export const HomeItem = ({
   onOpen,
   children,
 }) => (
-  <div className="item" onClick={() => onOpen(children)}>
+  <div className="item" onClick={() => onOpen(name, children)}>
     <Icon name={icon} src={iconSrc} size={36} />
     <div className="title">{name}</div>
     <style jsx>{`

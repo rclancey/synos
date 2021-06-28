@@ -22,7 +22,11 @@ type Loader struct {
 }
 
 func NewLoader() *Loader {
-	return &Loader{}
+	return &Loader{
+		C: make(chan interface{}, 10),
+		quitCh: make(chan bool, 2),
+		trackIDMap: map[int]uint64{},
+	}
 }
 
 func (l *Loader) Abort() {
@@ -58,12 +62,14 @@ func (l *Loader) shutdown(err error) {
 }
 
 func (l *Loader) Load(fn string) {
+	/*
 	if l.C != nil {
 		return
 	}
 	l.C = make(chan interface{}, 10)
 	quitCh := make(chan bool, 2)
 	l.quitCh = quitCh
+	*/
 	f, err := os.Open(fn)
 	if err != nil {
 		l.shutdown(errors.Wrap(err, "can't open library file " + fn))
@@ -74,7 +80,7 @@ func (l *Loader) Load(fn string) {
 		FileName: &fn,
 	}
 	select {
-	case <-quitCh:
+	case <-l.quitCh:
 		l.shutdown(errors.WithStack(AbortError))
 		return
 	default:
@@ -96,7 +102,7 @@ func (l *Loader) Load(fn string) {
 		t := st.ModTime()
 		lib.Date = &t
 		select {
-		case <-quitCh:
+		case <-l.quitCh:
 			l.shutdown(errors.WithStack(AbortError))
 			return
 		default:

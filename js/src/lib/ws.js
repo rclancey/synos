@@ -6,6 +6,17 @@ class WebSocketSingleton {
     this.listeners = {};
     this.backoff = 1;
     this.reconnect();
+    this.lastMonitorUpdate = null;
+    this.monitorInterval = null;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibililtyState === 'visible') {
+        this.reconnect();
+      }
+    });
+  }
+
+  send(msg) {
+    this.ws.send(JSON.stringify(msg));
   }
 
   addEventListener(name, handler) {
@@ -13,6 +24,9 @@ class WebSocketSingleton {
       this.listeners[name] = [];
     }
     this.listeners[name] = this.listeners[name].concat([handler]);
+    if (name === 'open' && this.isOpen) {
+      handler();
+    }
   }
 
   removeEventListener(name, handler) {
@@ -68,17 +82,40 @@ class WebSocketSingleton {
 
   close() {
     if (this.isOpening()) {
+      this.ws.onClose = null;
       this.ws.close();
+      if (this.monitorInterval !== null) {
+        clearInterval(this.monitorInterval);
+        this.monitorInterval = null;
+      }
     }
+  }
+
+  monitor() {
+    // deal with ios PWA dropping websockets
+    // when backgrounding, and providing no useful
+    // event when foregrounding
+    const delay = 1000;
+    const fuzz = 1000;
+    this.lastMonitorUpdate = null;
+    this.monitorInterval = setInterval(() => {
+      if (this.lastMonitorUpdate !== null && this.lastMonitorUpate + delay + fuzz < Date.now()) {
+        clearInterval(this.monitorInterval);
+        this.monitorInterval = null;
+      } else {
+        this.monitorInterval = Date.now();
+      }
+    }, delay);
   }
 
   reconnect() {
     this.close();
     this.ws = new WebSocket(this.uri);
     this.ws.onopen = evt => {
-      console.debug('websocket open');
+      //console.debug('websocket open');
       this.backoff = 1;
       this.emit('open', evt);
+      this.monitor();
     };
     this.ws.onmessage = evt => {
       evt.data.split(/\n/)

@@ -5,6 +5,7 @@ import { JookiPlayer } from './JookiPlayer';
 
 export const Player = ({
   player,
+  setTiming,
   setPlaybackInfo,
   setControlAPI,
 }) => {
@@ -12,6 +13,7 @@ export const Player = ({
   if (player === 'local') {
     return (
       <LocalPlayer
+        setTiming={setTiming}
         setPlaybackInfo={setPlaybackInfo}
         setControlAPI={setControlAPI}
       />
@@ -20,6 +22,7 @@ export const Player = ({
   if (player === 'sonos') {
     return (
       <SonosPlayer
+        setTiming={setTiming}
         setPlaybackInfo={setPlaybackInfo}
         setControlAPI={setControlAPI}
       />
@@ -28,6 +31,7 @@ export const Player = ({
   if (player === 'jooki') {
     return (
       <JookiPlayer
+        setTiming={setTiming}
         setPlaybackInfo={setPlaybackInfo}
         setControlAPI={setControlAPI}
       />
@@ -35,6 +39,7 @@ export const Player = ({
   }
   return (
     <LocalPlayer
+      setTiming={setTiming}
       setPlaybackInfo={setPlaybackInfo}
       setControlAPI={setControlAPI}
     />

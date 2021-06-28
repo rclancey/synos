@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useStack } from './Router/StackContext';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import { GenreIndex } from './Index';
@@ -7,15 +8,12 @@ import { ArtistList } from './ArtistList';
 import { GenreImage } from './GenreImage';
 
 export const GenreList = ({
-  prev,
   controlAPI,
   adding,
-  onClose,
-  onTrackMenu,
   onAdd,
 }) => {
-  const [genres, setGenres] = useState([]);
-  const [genre, setGenre] = useState(null);
+  const stack = useStack();
+  const [genres, setGenres] = useState(null);
   const api = useAPI(API);
   useEffect(() => {
     api.genreIndex()
@@ -27,7 +25,11 @@ export const GenreList = ({
       });
   }, [api, setGenres]);
 
-  const rowRenderer = useCallback(({ key, index, style, onOpen }) => {
+  const onPush = stack.onPush;
+  const onOpen = useCallback((genre) => {
+    onPush(genre.name, <ArtistList genre={genre} />);
+  }, [onPush]);
+  const rowRenderer = useCallback(({ key, index, style }) => {
     const genre = genres[index];
     return (
       <div key={key} className="item" style={style} onClick={() => onOpen(genre)}>
@@ -35,24 +37,21 @@ export const GenreList = ({
         <div className="title">{genre.name}</div>
       </div>
     );
-  }, [genres]);
+  }, [genres, onOpen]);
+
+  if (genres === null) {
+    return null;
+  }
 
   return (
     <RowList
       name="Genres"
       items={genres}
-      selected={genre}
       Indexer={GenreIndex}
       indexerArgs={{ genres }}
-      onSelect={setGenre}
       rowRenderer={rowRenderer}
-      prev={prev}
       controlAPI={controlAPI}
       adding={adding}
-      onClose={onClose}
-      onTrackMenu={onTrackMenu}
-      Child={ArtistList}
-      childArgs={{ genre }}
       onAdd={onAdd}
     />
   );

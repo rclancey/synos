@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAPI } from '../../lib/useAPI';
 import { API } from '../../lib/api';
 import { SongList, PlaylistTitle } from './SongList';
-import { MixCover } from './MixCover';
+import { MixCover } from '../MixCover';
 
 export const RecentAdditions = ({
   prev,
@@ -25,6 +25,7 @@ export const RecentAdditions = ({
 
   return (
     <SongList
+      api={api}
       prev={prev}
       tracks={recents}
       withTrackNum={false}

@@ -1,64 +1,26 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useRef } from 'react';
+import { useStack } from './Router/StackContext';
 import { AutoSizeList } from '../AutoSizeList';
 import { ScreenHeader } from './ScreenHeader';
 
 export const RowList = ({
   name,
   items,
-  selected,
   Indexer,
   indexerArgs,
-  Child,
-  childArgs,
-  onSelect,
   rowRenderer,
-  prev,
   controlAPI,
   adding,
-  onClose,
-  onTrackMenu,
   onAdd,
 }) => {
-  const [scrollTop, setScrollTop] = useState(0);
+  const stack = useStack();
+  const page = stack.pages[stack.pages.length - 1];
+  const scrollTop = page ? page.scrollOffset : 0;
   const ref = useRef(null);
-
-  const onCloseMe = useCallback(() => {
-    if (selected === null) {
-      onClose();
-    } else {
-      onSelect(null);
-    }
-  }, [selected, onSelect, onClose]);
-
-  const onScroll = useCallback(({ scrollOffset }) => {
-    setScrollTop(scrollOffset);
-  }, [setScrollTop]);
-
-  const subRenderer = useCallback(({ key, index, style }) => {
-    return rowRenderer({ key, index, style, onOpen: onSelect });
-  }, [rowRenderer, onSelect]);
-
-  if (selected !== null) {
-    return (
-      <Child
-        prev={name}
-        onClose={onCloseMe}
-        onTrackMenu={onTrackMenu}
-        controlAPI={controlAPI}
-        adding={adding}
-        onAdd={onAdd}
-        {...childArgs}
-      />
-    );
-  }
 
   return (
     <div className="rowList">
-      <ScreenHeader
-        name={name}
-        prev={prev}
-        onClose={onCloseMe}
-      />
+      <ScreenHeader name={name} />
       <Indexer {...indexerArgs} height={45} list={ref} />
       <div className="items">
         <AutoSizeList
@@ -67,9 +29,9 @@ export const RowList = ({
           itemSize={45}
           offset={0}
           initialScrollOffset={scrollTop}
-          onScroll={onScroll}
+          onScroll={stack.onScroll}
         >
-          {subRenderer}
+          {rowRenderer}
         </AutoSizeList>
       </div>
 

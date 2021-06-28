@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useStack } from './Router/StackContext';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import { PLAYLIST_ORDER } from '../../lib/distinguished_kinds';
@@ -7,22 +8,27 @@ import { Icon } from '../Icon';
 import { Playlist } from './SongList';
 import { ScreenHeader } from './ScreenHeader';
 
-export const PlaylistList = ({
-  prev,
-  adding,
-  controlAPI,
-  onClose,
-  onTrackMenu,
-  onPlaylistMenu,
-  onAdd,
-}) => {
-  const [scrollTop, setScrollTop] = useState([0]);
-  const [path, setPath] = useState([]);
+export const PlaylistWrapper = ({ persistent_id }) => {
+  return null;
+};
+
+export const PlaylistFolder = ({ persistent_id }) => {
+  const stack = useStack();
+  const [playlist, setPlaylist] = useState({ name: 'Playlists' });
   const [playlists, setPlaylists] = useState([]);
   const api = useAPI(API);
 
   useEffect(() => {
-    api.loadPlaylists()
+    console.debug('history.pushState');
+    window.history.pushState({ persistent_id }, 'playlist folder', `/${persistent_id}`);
+    if (persistent_id) {
+      api.loadPlaylist(persistent_id).then(setPlaylist);
+    } else {
+      setPlaylist({ name: 'Playlists' });
+    }
+  }, [api, persistent_id]);
+  useEffect(() => {
+    api.loadPlaylists(persistent_id)
       .then(playlists => playlists.filter(pl => {
         const o = PLAYLIST_ORDER[pl.kind];
         if (o === null || o === undefined) {
@@ -33,51 +39,69 @@ export const PlaylistList = ({
         }
         return false;
       }))
-      .then(setPlaylists);
-  }, [api]);
+      .then(pls => {
+        setPlaylists(pls);
+        /*
+        let l = pls;
+        if (forcePath) {
+          forcePath.every(id => {
+            if (!l) {
+              return false;
+            }
+            const pl = l.find(x => x.persistent_id === id);
+            if (pl) {
+              onOpen(pl);
+              l = pl.children;
+              return true;
+            }
+            return false;
+          });
+        }
+        */
+      });
+  }, [api, persistent_id]);//, forcePath, onOpen]);
+  /*
+  useEffect(() => {
+    loadPlaylists();
+  }, [loadPlaylists]);
+  */
 
-  const onNewPlaylist = useCallback(console.debug, []);
-
+  const onPush = stack.onPush;
   const onOpen = useCallback((pl) => {
-    setScrollTop(orig => orig.concat([0]));
-    setPath(orig => orig.concat([pl]));
-  }, [setScrollTop, setPath]);
-
-  const onCloseMe = useCallback(() => {
-    if (path.length === 0) {
-      onClose();
+    console.debug('onOpen(%o)', pl);
+    if (pl.folder) {
+      onPush(pl.name, <PlaylistFolder persistent_id={pl.persistent_id} />);
     } else {
-      setScrollTop(orig => orig.slice(0, orig.length - 1));
-      setPath(orig => orig.slice(0, orig.length - 1));
+      onPush(pl.name, <Playlist playlist={pl} />);
     }
-  }, [path, setPath, setScrollTop, onClose]);
+  }, [onPush]);
 
-  const onScroll = useCallback(({ scrollOffset }) => {
-    setScrollTop(orig => orig.slice(0, orig.length - 1).concat([scrollOffset]));
-  }, [setScrollTop]);
-
-  const folder = useMemo(() => {
-    if (path.length === 0) {
-      return playlists;
-    }
-    return path[path.length - 1].children || [];
-  }, [path, playlists]);
+  const onNewPlaylist = useCallback(() => {
+    const playlist = {
+      parent_persistent_id: persistent_id,
+      kind: 'standard',
+      name: 'Untitled Playilst',
+      track_ids: [],
+    };
+    console.debug('createPlaylist(%o)', playlist);
+    api.createPlaylist(playlist).then(onOpen);
+  }, [api, persistent_id, onOpen]);
 
   const rowRenderer = useCallback(({ key, index, style }) => {
-    if (index >= folder.length) {
+    if (index >= playlists.length) {
       return (
         <div
           key="new"
           className="item addPlaylist"
           style={style}
-          onClick={() => onNewPlaylist(path.length === 0 ? null : path[path.length - 1])}
+          onClick={onNewPlaylist}
         >
           <Icon name="new-playlist" size={36} />
           <div className="title">New Playlist...</div>
         </div>
       );
     }
-    const pl = folder[index];
+    const pl = playlists[index];
     return (
       <div
         key={pl.persistent_id}
@@ -89,47 +113,19 @@ export const PlaylistList = ({
         <div className="title">{pl.name}</div>
       </div>
     );
-  }, [folder, path, onOpen, onNewPlaylist]);
-
-  let title = 'Playlists';
-  let prevTitle = prev;
-  if (path.length > 0) {
-    prevTitle = 'Playlists';
-    if (path.length > 1) {
-      prevTitle = path[path.length - 2].name;
-    }
-    const pl = path[path.length - 1];
-    if (pl.folder) {
-      title = pl.name;
-    } else {
-      return (
-        <Playlist
-          playlist={pl}
-          prev={prevTitle}
-          adding={adding}
-          onClose={onCloseMe}
-          onTrackMenu={onTrackMenu}
-          onPlaylistMenu={onPlaylistMenu}
-          onAdd={onAdd}
-        />
-      );
-    }
-  }
+  }, [playlists, onOpen, onNewPlaylist]);
 
   return (
     <div className="playlistList">
-      <ScreenHeader
-        name={title}
-        prev={prevTitle}
-        onClose={onCloseMe}
-      />
+      <ScreenHeader name={playlist.name} />
       <div className="items">
         <AutoSizeList
-          itemCount={folder.length + 1}
+          xkey={playlist.persistent_id}
+          itemCount={playlists.length + 1}
           itemSize={45}
           offset={0}
-          initialScrollOffset={scrollTop[scrollTop.length - 1]}
-          onScroll={onScroll}
+          initialScrollOffset={stack.pages[stack.pages.length - 1].scrollOffset}
+          onScroll={stack.onScroll}
         >
           {rowRenderer}
         </AutoSizeList>

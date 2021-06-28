@@ -9,9 +9,17 @@ export const colors = {
     text: '#999',
     text1: '#999',
     text2: '#777',
+    text3: '#333',
     blurHighlight: '#545456',
     highlightText: '#09c',
     highlightInverse: '#fff',
+    input: '#fff',
+    inputBackground: '#222',
+    inputGradient: '#555',
+    infoBackground: '#555',
+    tabBackground: '#888',
+    tabColor: '#fff',
+    disabledBackground: '#444',
     button: '#09c',
     switch: {
       border: {
@@ -26,6 +34,7 @@ export const colors = {
     disabler: 'rgba(0, 153, 204, 0.3)',
     panelBackground: '#32363b',
     panelText: '#fff',
+    panelBorder: '#444',
     dropTarget: {
       folderBackground: 'yellow',
       folderText: 'black',
@@ -55,9 +64,16 @@ export const colors = {
     text: '#000',
     text1: '#000',
     text2: '#666',
+    text3: '#ddd',
     blurHighlight: '#999',
     highlightText: '#09c',
     highlightInverse: '#fff',
+    input: '#000',
+    inputBackground: '#fff',
+    inputGradient: '#999',
+    infoBackground: '#ddd',
+    tabBackground: '#999',
+    tabColor: '#000',
     button: '$09c',
     switch: {
       border: {
@@ -72,6 +88,7 @@ export const colors = {
     disabler: 'rgba(0, 153, 204, 0.3)',
     panelBackground: '#ccc',
     panelText: '#000',
+    panelBorder: '#aaa',
     dropTarget: {
       folderBackground: 'yellow',
       folderText: 'black',

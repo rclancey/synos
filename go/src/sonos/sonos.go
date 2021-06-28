@@ -14,6 +14,7 @@ import (
 
 	"github.com/ianr0bkny/go-sonos"
 	"github.com/ianr0bkny/go-sonos/didl"
+	"github.com/ianr0bkny/go-sonos/model"
 	"github.com/ianr0bkny/go-sonos/ssdp"
 	"github.com/ianr0bkny/go-sonos/upnp"
 	"github.com/pkg/errors"
@@ -44,6 +45,7 @@ func NewSonos(iface string, rootUrl *url.URL, db *musicdb.DB) (*Sonos, error) {
 		return nil, err
 	}
 	mgr := ssdp.MakeManager()
+	defer mgr.Close()
 	mgr.Discover(iface, strconv.Itoa(mgrPort), false)
 	qry := ssdp.ServiceQueryTerms{
 		ssdp.ServiceKey("schemas-upnp-org-MusicServices"): -1,
@@ -71,6 +73,7 @@ func NewSonos(iface string, rootUrl *url.URL, db *musicdb.DB) (*Sonos, error) {
 				}()
 				s.dev = dev
 				s.player = sonos.Connect(dev, s.reactor, sonos.SVC_CONNECTION_MANAGER|sonos.SVC_CONTENT_DIRECTORY|sonos.SVC_RENDERING_CONTROL|sonos.SVC_AV_TRANSPORT)
+				s.PrepareQueue()
 				return s, nil
 			}
 		}
@@ -101,9 +104,21 @@ func parseTime(timestr string, layouts ...string) (int, error) {
 	return -1, errors.Wrap(err, "can't parse time " + timestr)
 }
 
-func (s *Sonos) Reconnect() error {
+func (s *Sonos) Reconnect() (xerr error) {
+	xerr = nil
+	defer func() {
+		if r := recover(); r != nil {
+			rs, isa := r.(string)
+			if isa {
+				xerr = errors.New(rs)
+			} else {
+				xerr = errors.New("error communicating with sonos")
+			}
+		}
+	}()
 	s.player = sonos.Connect(s.dev, s.reactor, sonos.SVC_CONNECTION_MANAGER|sonos.SVC_CONTENT_DIRECTORY|sonos.SVC_RENDERING_CONTROL|sonos.SVC_AV_TRANSPORT)
-	return nil
+	s.PrepareQueue()
+	return
 }
 
 func (s *Sonos) Closed() bool {
@@ -201,7 +216,19 @@ func (s *Sonos) GetQueuePos() (*Queue, error) {
 	return q, nil
 }
 
-func (s *Sonos) GetQueue() (*Queue, error) {
+func (s *Sonos) GetQueue() (queue *Queue, xerr error) {
+	queue = nil
+	xerr = nil
+	defer func() {
+		if r := recover(); r != nil {
+			rs, isa := r.(string)
+			if isa {
+				xerr = errors.New(rs)
+			} else {
+				xerr = errors.New("panic communicating with sonos")
+			}
+		}
+	}()
 	objs, err := s.player.GetQueueContents()
 	tracks := make([]*musicdb.Track, len(objs))
 	for i, item := range objs {
@@ -245,27 +272,32 @@ func (s *Sonos) GetQueue() (*Queue, error) {
 	}
 	q, err := s.GetPlaybackStatus()
 	if err != nil {
-		return nil, errors.Wrap(err, "can't get playback status")
+		xerr = errors.Wrap(err, "can't get playback status")
+		return
 	}
 	q.Tracks = tracks
 	pos, err := s.GetQueuePos()
 	if err != nil {
-		return nil, errors.Wrap(err, "can't get queue position")
+		xerr = errors.Wrap(err, "can't get queue position")
+		return
 	}
 	q.Index = pos.Index
 	q.Duration = pos.Duration
 	q.Time = pos.Time
 	vol, err := s.GetVolume()
 	if err != nil {
-		return nil, errors.Wrap(err, "can't get volume")
+		xerr = errors.Wrap(err, "can't get volume")
+		return
 	}
 	q.Volume = vol
 	mode, err := s.GetPlayMode()
 	if err != nil {
-		return nil, errors.Wrap(err, "can't get play mode")
+		xerr = errors.Wrap(err, "can't get play mode")
+		return
 	}
 	q.PlayMode = mode
-	return q, nil
+	queue = q
+	return
 }
 
 func (s *Sonos) trackUri(track *musicdb.Track) string {
@@ -329,6 +361,20 @@ func (s *Sonos) didlLitePl(pl *musicdb.Playlist) string {
 </DIDL-Lite>`, plId, plId, pl.Name)
 }
 
+func (s *Sonos) PrepareQueue() error {
+	info, err := s.player.GetMediaInfo(0)
+	if err != nil {
+		return errors.Wrap(err, "can't get current media info")
+	}
+	if info.CurrentURI == "" {
+		_, err = s.UseQueue("Q:0")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Sonos) ClearQueue() error {
 	err := s.player.Stop(0)
 	if err != nil {
@@ -346,7 +392,11 @@ func (s *Sonos) ReplaceQueue(tracks []*musicdb.Track) error {
 	if err != nil {
 		return errors.Wrap(err, "can't clear queue")
 	}
-	return s.AppendToQueue(tracks)
+	err = s.AppendToQueue(tracks)
+	if err != nil {
+		return err
+	}
+	return s.SetQueuePosition(0)
 }
 
 func (s *Sonos) ReplaceQueueWithPlaylist(pl *musicdb.Playlist) error {
@@ -489,6 +539,106 @@ func (s *Sonos) AlterVolume(delta int) error {
 		return errors.Wrap(err, "can't get current volume")
 	}
 	return errors.Wrapf(s.SetVolume(vol + delta), "can't add %d to current volume %d", delta, vol)
+}
+
+func (s *Sonos) Next() error {
+	return errors.Wrap(s.player.Next(0), "can't skip to next track")
+}
+
+func (s *Sonos) SetTrack(tr *musicdb.Track) error {
+	u := s.trackUri(tr)
+	return errors.Wrapf(s.player.SetAVTransportURI(0, u, ""), "can't set track url to %s", u)
+}
+
+func (s *Sonos) ListActions() ([]string, error) {
+	actions, err := s.player.GetCurrentTransportActions(0)
+	return actions, errors.Wrap(err, "can't get transport actions")
+}
+
+type SQ struct {
+	ID string
+	ParentID string
+	Restricted bool
+	Res string
+	Title string
+	Class string
+	AlbumArtURI string
+	Creator string
+	Album string
+	OriginalTrackNumber string
+	IsContainer bool
+	Type string
+}
+
+func objectToSq(obj model.Object) *SQ {
+	return &SQ{
+		ID: obj.ID(),
+		ParentID: obj.ParentID(),
+		Restricted: obj.Restricted(),
+		Res: obj.Res(),
+		Title: obj.Title(),
+		Class: obj.Class(),
+		AlbumArtURI: obj.AlbumArtURI(),
+		Creator: obj.Creator(),
+		Album: obj.Album(),
+		OriginalTrackNumber: obj.OriginalTrackNumber(),
+		IsContainer: obj.IsContainer(),
+		Type: fmt.Sprintf("%T", obj),
+	}
+}
+
+func (s *Sonos) ListQueues() ([]*SQ, error) {
+	queues, err := s.player.ListQueues()
+	sqs := make([]*SQ, len(queues))
+	for i, q := range queues {
+		sqs[i] = objectToSq(q)
+	}
+	return sqs, err
+}
+
+func (s *Sonos) UseQueue(id string) ([]*SQ, error) {
+	queues, err := s.player.ListQueues()
+	if err != nil {
+		return nil, errors.Wrap(err, "can't list queues")
+	}
+	for _, q := range queues {
+		if q.ID() == id {
+			u := q.Res()
+			err := s.player.SetAVTransportURI(0, u, "")
+			if err != nil {
+				return nil, errors.Wrapf(err, "can't set default queue %s", u)
+			}
+			items, err := s.player.ListChildren(q.ID())
+			if err != nil {
+				return nil, errors.Wrap(err, "can't get queue contents")
+			}
+			sqs := make([]*SQ, len(items))
+			for i, item := range items {
+				sqs[i] = objectToSq(item)
+			}
+			return sqs, nil
+		}
+	}
+	return nil, errors.New("default queue not found")
+}
+
+func (s *Sonos) GetChildren(id string) ([]*SQ, error) {
+	var items []model.Object
+	var err error
+	if id == "" {
+		items, err = s.player.GetRootLevelChildren()
+	} else {
+		items, err = s.player.ListChildren(id)
+	}
+	sqs := make([]*SQ, len(items))
+	for i, item := range items {
+		sqs[i] = objectToSq(item)
+	}
+	return sqs, errors.Wrapf(err, "can't get children of %s", id)
+}
+
+func (s *Sonos) GetMediaInfo() (*upnp.MediaInfo, error) {
+	return s.player.GetMediaInfo(0)
 }
 
 /*

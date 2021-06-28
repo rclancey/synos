@@ -35,7 +35,6 @@ export const ScreenHeader = ({ name, prev, onClose }) => {
   const colors = useTheme();
   return (
     <div>
-      <Back onClose={onClose}>{prev}</Back>
       <div className="header">
         <div className="title">{name}</div>
       </div>

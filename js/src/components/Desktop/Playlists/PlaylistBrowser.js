@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../../../lib/theme';
 import { useFocus } from '../../../lib/useFocus';
 import { PLAYLIST_ORDER } from '../../../lib/distinguished_kinds';
@@ -6,6 +6,9 @@ import { Folder } from './Folder';
 import { Playlist } from './Playlist';
 import { Label } from './Label';
 import { DevicePlaylists } from '../Device/Playlists';
+import { CreatePlaylist } from './CreatePlaylist';
+import { API } from '../../../lib/api';
+import { useAPI } from '../../../lib/useAPI';
 
 export const PlaylistBrowser = ({
   devices,
@@ -14,7 +17,9 @@ export const PlaylistBrowser = ({
   onSelect,
   onMovePlaylist,
   onAddToPlaylist,
+  onCreatePlaylist,
   controlAPI,
+  setPlayer,
 }) => {
   const colors = useTheme();
   const { focused, node, focus, onFocus, onBlur } = useFocus();
@@ -22,7 +27,7 @@ export const PlaylistBrowser = ({
   useEffect(() => {
     const handler = event => {
       if (focused.current) {
-        console.debug('playlist browser got key press %o', event);
+        //console.debug('playlist browser got key press %o', event);
         if (event.metaKey) {
           if (event.code === 'KeyN') {
             event.stopPropagation();
@@ -51,6 +56,9 @@ export const PlaylistBrowser = ({
     console.debug('rename playlist %o to %o', pl, name);
   }, []);
 
+  const [newPlaylistDialog, setNewPlaylistDialog] = useState(false);
+  const api = useAPI(API);
+
   return (
     <div
       ref={node}
@@ -59,6 +67,15 @@ export const PlaylistBrowser = ({
       onFocus={onFocus}
       onBlur={onBlur}
     >
+      { newPlaylistDialog ? (
+        <CreatePlaylist
+          onCreatePlaylist={(pl) => {
+            api.createPlaylist(pl);
+            setNewPlaylistDialog(false);
+          }}
+          onCancel={() => setNewPlaylistDialog(false)}
+        />
+      ) : null }
       <h1>Library</h1>
       <div className="groups">
         <Label
@@ -76,6 +93,7 @@ export const PlaylistBrowser = ({
             return true;
           }).map(pl => (
             <Label
+              key={pl.persistent_id}
               icon={pl.kind}
               name={pl.name}
               selected={selected === pl.persistent_id}
@@ -88,8 +106,12 @@ export const PlaylistBrowser = ({
         devices={devices}
         selected={selected}
         onSelect={onSelect}
+        setPlayer={setPlayer}
       />
-      <h1>Music Playlists</h1>
+      <div className="split">
+        <h1>Music Playlists</h1>
+        <h1 className="new" onClick={() => setNewPlaylistDialog(true)}>New...</h1>
+      </div>
       { playlists.filter(pl => {
           const o = PLAYLIST_ORDER[pl.kind];
           if (o === null || o === undefined || o >= 100) {
@@ -98,6 +120,7 @@ export const PlaylistBrowser = ({
           return false;
         }).map(pl => pl.folder ? (
           <Folder
+            key={pl.persistent_id}
             device="itunes"
             playlist={pl}
             depth={0}
@@ -113,6 +136,7 @@ export const PlaylistBrowser = ({
           />
         ) : (
           <Playlist
+            key={pl.persistent_id}
             device="itunes"
             playlist={pl}
             depth={0}
@@ -164,6 +188,16 @@ export const PlaylistBrowser = ({
         .playlistBrowser :global(.playlist>.label.dropTarget) {
           background-color: ${colors.dropTarget.playlistBackground} !important;
           color: ${colors.dropTarget.playlistText} !important;
+        }
+        .playlistBrowser .split {
+          display: flex;
+          flex-direction: row;
+        }
+        .playlistBrowser .split .new {
+          flex: 2;
+          margin-right: 1em;
+          text-align: right;
+          font-weight: bold;
         }
       `}</style>
     </div>

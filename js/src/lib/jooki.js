@@ -34,12 +34,18 @@ export class JookiAPI extends APIBase {
   loadTrackCount(since) {
     return this.loadTracks(0, 0, since)
       .then(tracks => tracks.length);
-  };
+  }
 
   loadPlaylists() {
+    //console.error(new Error('loading playlists'));
     const url = '/api/jooki/playlists';
     return this.get(url);
-  };
+  }
+
+  loadPlaylist(playlistId) {
+    const url = `/api/jooki/playlist/${playlistId}`;
+    return this.get(url);
+  }
 
   loadPlaylistTrackIds(pl) {
     return this.loadState()
@@ -51,6 +57,7 @@ export class JookiAPI extends APIBase {
       });
   }
 
+  /*
   copyPlaylist(pl) {
     const url = '/api/jooki/copy';
     const payload = {
@@ -58,83 +65,39 @@ export class JookiAPI extends APIBase {
     };
     return this.post(url, payload);
   }
+  */
 
   addToPlaylist(dst, tracks) {
-    console.error('jooki add tracks: %o', { dst, tracks });
-    throw new Error("not implemented");
-    const url = '/api/jooki/copy';
-    const payload = {
-      jooki_playlist_id: dst.persistent_id,
-      tracks: tracks,
-    };
-    const args = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(payload),
-    };
-    return this.fetch(url, args)
-      .then(pl => pl.track_ids);
-  };
+    const url = `/api/jooki/playlist/${dst.persistent_id}`;
+    return this.patch(url, tracks)
+  }
 
   reorderTracks(playlist, targetIndex, sourceIndices) {
-    console.error('jooki reorder tracks: %o', { playlist, targetIndex, sourceIndices });
-    const url = '/api/jooki/copy';
+    const url = `/api/jooki/playlist/${playlist.persistent_id}`;
     const moveIdx = new Set(sourceIndices);
     const before = playlist.tracks.slice(0, targetIndex)
       .filter((tr, i) => !moveIdx.has(i));
     const after = playlist.tracks.filter((tr, i) => i >= targetIndex && !moveIdx.has(i));
     const moved = playlist.tracks.filter((tr, i) => moveIdx.has(i));
     const tracks = before.concat(moved).concat(after)
-      .map(tr => ({ jooki_id: tr.persistent_id }));
-    const payload = {
-      jooki_playlist_id: playlist.persistent_id,
-      tracks: tracks,
-    };
-    return this.post(url, payload);
-    /*
-    const target = playlist.tracks[targetIndex];
-    const sources = sourceIndices.map(i => playlist.tracks[i]);
-    const tracks = playlist.tracks.filter((t, i) => !sourceIndices.includes(i));
-    const newIdx = tracks.findIndex(t => t === target);
-    const before = newIdx === -1 ? [] : tracks.slice(0, newIdx+1);
-    const after = newIdx === -1 ? tracks.slice(0) : tracks.slice(newIdx+1);
-    const newTracks = before.concat(sources).concat(after);
-    const url = `/api/playlist/${playlist.persistent_id}?replace=true`;
-    const args = {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(newTracks.map(track => { return { persistent_id: track.persistent_id }; })),
-    };
-    return this.fetch(url, args)
-      .then(pl => pl.track_ids);
-    */
+      .map(tr => ({ jooki_id: tr.jooki_id }));
+    const payload = Object.assign({}, playlist, { tracks });
+    return this.put(url, payload);
   }
 
   deletePlaylistTracks(playlist, selected) {
-    console.error('jooki delete tracks: %o', { playlist, selected });
-    const url = '/api/jooki/copy';
-    const delIdx = new Set(selected.map(sel => sel.index));
+    console.debug('delete %o from %o', selected, playlist);
+    const url = `/api/jooki/playlist/${playlist.persistent_id}`;
+    const delIdx = new Set(selected.map(sel => sel.track.origIndex));
     const tracks = playlist.tracks.filter((tr, i) => !delIdx.has(i))
-      .map(tr => ({ jooki_id: tr.persistent_id }));
-    const payload = {
-      jooki_playlist_id: playlist.persistent_id,
-      tracks: tracks,
-    };
-    return this.post(url, payload);
-    /*
-    const newTracks = playlist.tracks.filter(track => !selected[track.persistent_id]);
-    const url = `/api/playlist/${playlist.persistent_id}?replace=true`;
-    const args = {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(newTracks.map(track => { return { persistent_id: track.persistent_id }; })),
-    };
-    return this.fetch(url, args)
-      .then(pl => pl.track_ids);
-    */
+      .map(tr => ({ jooki_id: tr.jooki_id }));
+    const payload = Object.assign({}, playlist, { tracks });
+    return this.put(url, payload);
+  }
+
+  deletePlaylist(id) {
+    const url = `/api/jooki/playlist/${id}`;
+    return this.fetch(url, { method: 'DELETE' });
   }
 
   loadGenres() {
@@ -170,12 +133,8 @@ export class JookiAPI extends APIBase {
   }    
 
   setPlaylist(id, index) {
-    const url = '/api/jooki/playlist/play';
-    const payload = {
-      jooki_playlist_id: id,
-      index: (index || 0) + 1,
-    };
-    return this.post(url, payload);
+    const url = `/api/jooki/play/${id}/${index || 0}`;
+    return this.post(url);
   }
 
   play() {
@@ -190,7 +149,7 @@ export class JookiAPI extends APIBase {
 
   skipTo(idx) {
     const url = '/api/jooki/skip';
-    return this.post(url, idx + 1);
+    return this.post(url, idx);
   }
 
   skipBy(n) {

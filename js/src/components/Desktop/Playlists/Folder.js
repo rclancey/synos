@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { Label } from './Label';
 import { Playlist } from './Playlist';
@@ -45,6 +45,9 @@ export const Folder = ({
     },
   });
   const [open, setOpen] = useState(false);
+  const onToggleCallback = useCallback(() => setOpen(cur => !cur), [setOpen]);
+  const onRenameCallback = useCallback(name => onRename(playlist, name), [onRename, playlist]);
+  const onSelectCallback = useCallback(() => onSelect(playlist), [onSelect, playlist]);
   return connectDropTarget(connectDragSource(
     <div className="folder">
       <Label
@@ -56,14 +59,15 @@ export const Folder = ({
         open={open || (false && dropCollect.isOver)}
         highlight={dropCollect.isOverShallow}
         selected={selected === playlist.persistent_id}
-        onToggle={() => setOpen(cur => !cur)}
-        onRename={name => onRename(playlist, name)}
-        onSelect={() => onSelect(playlist)}
+        onToggle={onToggleCallback}
+        onRename={onRenameCallback}
+        onSelect={onSelectCallback}
       />
       { (open || (false && dropCollect.isOver)) && playlist.children ? (
         <div className="folderContents">
           { playlist.children.map(child => child.folder ? (
             <Folder
+              key={child.persistent_id}
               device={device}
               playlist={child}
               depth={depth+1}
@@ -79,6 +83,7 @@ export const Folder = ({
             />
           ) : (
             <Playlist
+              key={child.persistent_id}
               device={device}
               playlist={child}
               depth={depth+1}

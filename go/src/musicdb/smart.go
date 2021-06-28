@@ -16,6 +16,7 @@ import (
 type Smart struct {
 	RuleSet *RuleSet    `json:"ruleset"`
 	Limit   *SmartLimit `json:"limit,omitempty"`
+	LiveUpdating bool   `json:"live_updating"`
 }
 
 type RuleSet struct {
@@ -35,6 +36,7 @@ type Rule struct {
 	BoolValue      *bool         `json:"bool"`
 	MediaKindValue *MediaKind    `json:"media_kind,omitempty"`
 	PlaylistValue  *PersistentID `json:"playlist,omitempty"`
+	playlistKey    string
 }
 
 func (r *Rule) Not() bool {
@@ -231,8 +233,9 @@ func (r *Rule) Where() (string, []interface{}) {
 			} else {
 				qs += " < "
 			}
-			qs += "NOW() - interval ?"
-			args = append(args, int64(r.TimeValues[0]))
+			qs += fmt.Sprintf("NOW() - interval '%d seconds'", r.TimeValues[0] / -1000)
+			//qs += "NOW() - interval ?"
+			//args = append(args, strconv.FormatInt(int64(r.TimeValues[0]) / -1000, 10))
 		default:
 			if r.Not() {
 				qs += " != ?"
@@ -267,7 +270,21 @@ func (r *Rule) Where() (string, []interface{}) {
 		}
 		args = append(args, *r.MediaKindValue)
 	case PlaylistRule:
-		qs = "playlist_track.playlist_id"
+		qs = "pt" + r.playlistKey + ".playlist_id"
+		if r.Not() {
+			if r.PlaylistValue == nil {
+				qs += " IS NOT NULL"
+			} else {
+				qs += " IS NULL"
+			}
+		} else {
+			if r.PlaylistValue == nil {
+				qs += " IS NULL"
+			} else {
+				qs += " IS NOT NULL"
+			}
+		}
+		/*
 		if r.PlaylistValue == nil {
 			if r.Not() {
 				qs += " IS NOT NULL"
@@ -282,6 +299,7 @@ func (r *Rule) Where() (string, []interface{}) {
 			qs += " = ?"
 		}
 		args = append(args, *r.PlaylistValue)
+		*/
 	default:
 		qs = "1 = 1"
 	}
@@ -351,6 +369,7 @@ func SmartPlaylistFromITunes(ispl *itunes.SmartPlaylist) *Smart {
 	return &Smart{
 		RuleSet: ruleSetFromITunes(ispl.Criteria),
 		Limit: smartInfoFromITunes(ispl.Info),
+		LiveUpdating: ispl.Info.LiveUpdating,
 	}
 }
 

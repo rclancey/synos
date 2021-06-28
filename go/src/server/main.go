@@ -3,13 +3,18 @@ package main
 import (
 	//"fmt"
 	"log"
-	//"net/http"
+	"net/http"
 
-	"httpserver"
+	"github.com/rclancey/htpasswd"
+	"github.com/rclancey/httpserver"
+	"github.com/rclancey/logging"
 	"lastfm"
 	"musicdb"
 	"spotify"
 )
+
+type hf func(http.ResponseWriter, *http.Request) (interface{}, error)
+type Middleware func(hf) hf
 
 var db *musicdb.DB
 var cfg *SynosConfig
@@ -36,7 +41,18 @@ func main() {
 	if err != nil {
 		log.Fatal("error sending default log messages to error log:", err)
 	}
+	errlog.Colorize()
+	errlog.SetLevelColor(logging.INFO, logging.ColorCyan, logging.ColorDefault, logging.FontDefault)
+	errlog.SetLevelColor(logging.LOG, logging.ColorMagenta, logging.ColorDefault, logging.FontDefault)
+	errlog.SetLevelColor(logging.NONE, logging.ColorHotPink, logging.ColorDefault, logging.FontDefault)
+	errlog.SetTimeFormat("2006-01-02 15:04:05.000")
+	errlog.SetTimeColor(logging.ColorDefault, logging.ColorDefault, logging.FontItalic | logging.FontLight)
+	errlog.SetSourceFormat("%{basepath}:%{linenumber}:")
+	errlog.SetSourceColor(logging.ColorGreen, logging.ColorDefault, logging.FontDefault)
+	errlog.SetPrefixColor(logging.ColorOrange, logging.ColorDefault, logging.FontDefault)
+	errlog.SetMessageColor(logging.ColorDefault, logging.ColorDefault, logging.FontDefault)
 	errlog.MakeDefault()
+	errlog.Infoln("Synos server starting...")
 	go func() {
 		getSonos(false)
 	}()
@@ -59,46 +75,29 @@ func main() {
 		errlog.Error(err)
 	}
 
-	srv.Handle("/api/login", cfg.Auth.LoginHandler())
-	srv.Handle("/api/track/", TrackHandler)
-	srv.Handle("/api/tracks", TracksHandler)
-	srv.Handle("/api/tracks/count", TrackCount)
-	srv.Handle("/api/playlists", ListPlaylists)
-	srv.Handle("/api/playlist/", PlaylistHandler)
-	srv.Handle("/api/index/genres", ListGenres)
-	srv.Handle("/api/index/artists", ListArtists)
-	srv.Handle("/api/index/albums", ListAlbums)
-	srv.Handle("/api/index/album-artist", ListAlbumsByArtist)
-	srv.Handle("/api/index/songs", ListSongs)
-	srv.Handle("/api/art/track/", TrackArt)
-	srv.Handle("/api/art/artist", ArtistArt)
-	srv.Handle("/api/art/album", AlbumArt)
-	srv.Handle("/api/art/genre", GenreArt)
-	srv.Handle("/api/cron", CronHandler)
-	srv.Handle("/api/jooki/state", GetJookiState)
-	srv.Handle("/api/jooki/tokens", GetJookiTokens)
-	srv.Handle("/api/jooki/playlists", GetJookiPlaylists)
-	srv.Handle("/api/jooki/copy", CopyPlaylistToJooki)
-	srv.Handle("/api/jooki/playlist/play", PlayJookiPlaylist)
-	srv.Handle("/api/jooki/playlist/rename", RenameJookiPlaylist)
-	srv.Handle("/api/jooki/playlist/token", SetJookiPlaylistToken)
-	srv.Handle("/api/jooki/play", JookiPlay)
-	srv.Handle("/api/jooki/pause", JookiPause)
-	srv.Handle("/api/jooki/skip", JookiSkip)
-	srv.Handle("/api/jooki/seek", JookiSeek)
-	srv.Handle("/api/jooki/volume", JookiVolume)
-	srv.Handle("/api/jooki/playmode", JookiPlayMode)
-	srv.Handle("/api/jooki/art/", JookiArt)
-	srv.Handle("/api/radio/", RadioHandler)
-	srv.Handle("/api/sonos/available", HasSonos)
-	srv.Handle("/api/sonos/queue", SonosQueue)
-	srv.Handle("/api/sonos/skip", SonosSkip)
-	srv.Handle("/api/sonos/seek", SonosSeek)
-	srv.Handle("/api/sonos/play", SonosPlay)
-	srv.Handle("/api/sonos/pause", SonosPause)
-	srv.Handle("/api/sonos/volume", SonosVolume)
-	srv.Handle("/api/sonos/playmode", SonosPlayMode)
-	srv.Handle("/api/ws", ServeWS)
-
+	htp := htpasswd.NewHTPasswd(cfg.Auth.PasswordFile)
+	authmw := AuthenticationMiddleware(&cfg.Auth)
+	api := srv.Prefix("/api")
+	LoginAPI(api, authmw)
+	srv.SocialLogin("/api/login", htp)
+	TrackAPI(api, authmw)
+	PlaylistAPI(api, authmw)
+	IndexAPI(api, authmw)
+	ArtAPI(api, authmw)
+	CronAPI(api, authmw)
+	RadioAPI(api, authmw)
+	WebSocketAPI(api, authmw)
+	SonosAPI(api.Prefix("/sonos"), authmw)
+	JookiAPI(api.Prefix("/jooki"), authmw)
+	/*
+	if cfg.Sonos != SonosConfig{} {
+		SonosAPI(api.Prefix("/sonos"), authmw)
+	}
+	if cfg.Jooki != JookiConfig{} {
+		JookiAPI(api.Prefix("/jooki"), authmw)
+	}
+	*/
+	errlog.Infoln("Synos server ready")
 	srv.ListenAndServe()
+	errlog.Infoln("Synos server exiting")
 }

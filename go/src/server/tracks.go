@@ -6,11 +6,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	H "httpserver"
+	H "github.com/rclancey/httpserver"
 	"musicdb"
 )
 
@@ -25,6 +26,21 @@ var mimeTypes = map[string]string{
 	".mp4": "video/mp4",
 }
 */
+
+func TrackAPI(router H.Router, authmw Middleware) {
+	router.GET("/track/:id/info", H.HandlerFunc(GetTrackInfo))
+	router.GET("/track/:id/cover", H.HandlerFunc(GetTrackCover))
+	router.GET("/track/:id/hascover", H.HandlerFunc(TrackHasCover))
+	router.GET("/track/:id", H.HandlerFunc(GetTrack))
+	router.PUT("/track/:id", H.HandlerFunc(authmw(UpdateTrack)))
+	router.POST("/track", H.HandlerFunc(authmw(AddTrack)))
+	router.PUT("/track/:id/skip", H.HandlerFunc(authmw(SkipTrack)))
+	router.PUT("/track/:id/rate", H.HandlerFunc(authmw(RateTrack)))
+	router.GET("/tracks/count", H.HandlerFunc(authmw(TrackCount)))
+	router.GET("/tracks/search", H.HandlerFunc(authmw(SearchTracks)))
+	router.GET("/tracks", H.HandlerFunc(authmw(ListTracks)))
+	router.PUT("/tracks", H.HandlerFunc(authmw(UpdateTracks)))
+}
 
 func TrackHandler(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	switch req.Method {
@@ -124,10 +140,6 @@ func GetTrackCover(w http.ResponseWriter, req *http.Request) (interface{}, error
 }
 
 func AddTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	var pat string
 	ct := req.Header.Get("Content-Type")
 	switch ct {
@@ -144,11 +156,11 @@ func AddTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	case "audio/webm":
 		pat = "*.weba"
 	default:
-		return nil, H.BadRequest.Raise(nil, "Unknown file type: %s", ct)
+		return nil, H.BadRequest.Wrapf(nil, "Unknown file type: %s", ct)
 	}
 	tfn, err := H.CopyToFile(req.Body, pat, false)
 	if err != nil {
-		return nil, FilesystemError.Raise(err, "")
+		return nil, FilesystemError.Wrap(err, "")
 	}
 	defer os.Remove(tfn)
 
@@ -160,29 +172,25 @@ func AddTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 
 	tf, err := os.Open(tfn)
 	if err != nil {
-		return nil, FilesystemError.Raise(err, "")
+		return nil, FilesystemError.Wrap(err, "")
 	}
 	savefn := filepath.Join(musicdb.GetGlobalFinder().GetMediaFolder(), track.CanonicalPath())
 	outfn, err := H.CopyToFile(tf, savefn, false)
 	if err != nil {
 		if os.IsExist(err) {
-			return nil, H.BadRequest.Raise(err, "%s already exists", savefn)
+			return nil, H.BadRequest.Wrapf(err, "%s already exists", savefn)
 		}
-		return nil, FilesystemError.Raise(err, "")
+		return nil, FilesystemError.Wrap(err, "")
 	}
 	track.Location = stringp(musicdb.GetGlobalFinder().Clean(outfn))
 	err = db.SaveTrack(track)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	return track, nil
 }
 
 func UpdateTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	tr, err := getTrackById(req)
 	if err != nil {
 		return nil, err
@@ -199,16 +207,20 @@ func UpdateTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 	}
 	err = db.SaveTrack(tr)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
+	}
+	hub, err := getWebsocketHub()
+	if err == nil {
+		evt := &LibraryEvent{
+			Type: "library",
+			Tracks: tracks,
+		}
+		hub.BroadcastEvent(evt)
 	}
 	return tr, nil
 }
 
 func SkipTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	tr, err := getTrackById(req)
 	if err != nil {
 		return nil, err
@@ -220,16 +232,12 @@ func SkipTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	tr.SkipDate.Set(time.Now().In(time.UTC))
 	err = db.SaveTrack(tr)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	return tr, nil
 }
 
 func RateTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	tr, err := getTrackById(req)
 	if err != nil {
 		return nil, err
@@ -242,16 +250,12 @@ func RateTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	tr.Rating = rating
 	err = db.SaveTrack(tr)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	return tr, nil
 }
 
 func DeleteTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	tr, err := getTrackById(req)
 	if err != nil {
 		return nil, err
@@ -284,11 +288,13 @@ func ListTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	if params.DateAdded != nil {
 		args["date_added"] = *params.DateAdded
 	}
-	tracks, err := db.TracksSince(params.Since, params.Page - 1, params.Count, args)
+	tracks, err := db.TracksSince(musicdb.Music, params.Since, params.Page - 1, params.Count, args)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		log.Println("database error:", err)
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	if len(tracks) == 0 {
+		log.Println("no tracks")
 		return nil, H.NoContent
 	}
 	return tracks, nil
@@ -301,29 +307,25 @@ func TrackCount(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	if since_s != "" {
 		since_i, err := strconv.ParseInt(since_s, 10, 64)
 		if err != nil {
-			return nil, H.BadRequest.Raise(err, "since param %s not an int", since_s)
+			return nil, H.BadRequest.Wrapf(err, "since param %s not an int", since_s)
 		}
 		since = musicdb.Time(since_i)
 	}
-	count, err := db.TracksSinceCount(since)
+	count, err := db.TracksSinceCount(musicdb.Music, since)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	return count, nil
 }
 
 type MultiTrackUpdate struct {
-	TrackIDs []musicdb.PersistentID
-	Update map[string]interface{}
+	TrackIDs []musicdb.PersistentID `json:"track_ids"`
+	Update map[string]interface{} `json:"update"`
 }
 
 func UpdateTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	_, err := cfg.Auth.Authenticate(w, req)
-	if err != nil {
-		return nil, err
-	}
 	var mtu MultiTrackUpdate
-	err = H.ReadJSON(req, &mtu)
+	err := H.ReadJSON(req, &mtu)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +333,7 @@ func UpdateTracks(w http.ResponseWriter, req *http.Request) (interface{}, error)
 	for i, tid := range mtu.TrackIDs {
 		tracks[i], err = db.GetTrack(tid)
 		if err != nil {
-			return nil, DatabaseError.Raise(err, "")
+			return nil, DatabaseError.Wrap(err, "")
 		}
 	}
 	err = ApplyTrackUpdates(tracks, mtu.Update)
@@ -340,7 +342,15 @@ func UpdateTracks(w http.ResponseWriter, req *http.Request) (interface{}, error)
 	}
 	err = db.SaveTracks(tracks)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
+	}
+	hub, err := getWebsocketHub()
+	if err == nil {
+		evt := &LibraryEvent{
+			Type: "library",
+			Tracks: tracks,
+		}
+		hub.BroadcastEvent(evt)
 	}
 	return tracks, nil
 }
@@ -352,12 +362,116 @@ func getTrackById(req *http.Request) (*musicdb.Track, error) {
 	}
 	tr, err := db.GetTrack(pid)
 	if err != nil {
-		return nil, DatabaseError.Raise(err, "")
+		return nil, DatabaseError.Wrap(err, "")
 	}
 	if tr == nil {
 		log.Printf("track %s does not exist", pid)
-		return nil, H.NotFound.Raise(nil, "Track %s does not exist", pid)
+		return nil, H.NotFound.Wrapf(nil, "Track %s does not exist", pid)
 	}
 	return tr, nil
+}
+
+type SearchParams struct {
+	Query *string `url:"q" json:"q,omitempty"`
+	Genre *string `url:"genre" json:"genre,omitempty"`
+	Song *string `url:"song" json:"song,omitempty"`
+	Album *string `url:"album" json:"album,omitempty"`
+	Artist *string `url:"artist" json:"artist,omitempty"`
+	Count *int `url:"count" json:"count,omitempty"`
+	Page *int `url:"page" json:"page,omitempty"`
+}
+
+type SearchResponse struct {
+	Params *musicdb.Search `json:"params"`
+	TotalResults int `json:"total_results"`
+	ResultsPerPage int `json:"results_per_page"`
+	More bool `json:"more"`
+	Tracks []*musicdb.Track `json:"tracks"`
+}
+
+var searchRe = regexp.MustCompile(`(?:^|\s+)(song:|album:|artist:|genre:|)("[^"]*(?:"|$)|'[^']*(?:'|$)|\S*)`)
+
+func constructSearch(req *http.Request) (musicdb.Search, int, int, error) {
+	q := musicdb.Search{}
+	search := &SearchParams{}
+	err := H.QueryScan(req, search)
+	if err != nil {
+		return q, -1, -1, H.BadRequest.Wrap(err, "")
+	}
+	if search.Query != nil && *search.Query != "" {
+		ms := searchRe.FindAllStringSubmatch(*search.Query, -1)
+		any := []string{}
+		for _, m := range ms {
+			key := strings.ToLower(strings.TrimSuffix(m[1], `:`))
+			val := strings.TrimPrefix(m[2], `"`)
+			val = strings.TrimSuffix(val, `"`)
+			val = strings.TrimPrefix(val, `'`)
+			val = strings.TrimSuffix(val, `'`)
+			switch key {
+			case "song":
+				q.LooseName = &val
+			case "album":
+				q.LooseAlbum = &val
+			case "artist":
+				q.LooseArtist = &val
+			case "genre":
+				q.Genre = &val
+			default:
+				any = append(any, val)
+			}
+		}
+		if len(any) > 0 {
+			any_s := strings.Join(any, " ")
+			q.Any = &any_s
+		}
+	}
+	if search.Genre != nil && *search.Genre != "" {
+		q.Genre = search.Genre
+	}
+	if search.Song != nil && *search.Song != "" {
+		q.LooseName = search.Song
+	}
+	if search.Album != nil && *search.Album != "" {
+		q.LooseAlbum = search.Album
+	}
+	if search.Artist != nil && *search.Artist != "" {
+		q.LooseArtist = search.Artist
+	}
+	limit := 100
+	offset := 0
+	if search.Count != nil && *search.Count > 0 {
+		if *search.Count > 1000 {
+			limit = 1000
+		} else {
+			limit = *search.Count
+		}
+	}
+	if search.Page != nil {
+		offset = limit * *search.Page
+	}
+	return q, limit, offset, nil
+}
+
+func SearchTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	q, limit, offset, err := constructSearch(req)
+	if err != nil {
+		return nil, err
+	}
+	n, err := db.SearchTracksCount(q)
+	if err != nil {
+		return nil, DatabaseError.Wrap(err, "")
+	}
+	tracks, err := db.SearchTracks(q, limit, offset)
+	if err != nil {
+		return nil, DatabaseError.Wrap(err, "")
+	}
+	res := &SearchResponse{
+		Params: &q,
+		TotalResults: n,
+		ResultsPerPage: limit,
+		More: offset + len(tracks) < n,
+		Tracks: tracks,
+	}
+	return res, nil
 }
 

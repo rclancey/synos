@@ -1,11 +1,28 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import displayTime from '../lib/displayTime';
 
-export const TrackInfo = ({ track, className }) => (
+export const TrackInfo = ({ track, className, onList }) => {
+  const onListArtist = useCallback(() => {
+    if (track && onList) {
+      onList({ artist: track });
+    }
+  }, [track, onList]);
+  const onListAlbum = useCallback(() => {
+    if (track && onList) {
+      onList({ album: track });
+    }
+  }, [track, onList]);
+  return (
   <div className={`trackInfo ${className}`}>
-    <div className="title">{track.name}</div>
+    <div className="title">{track ? track.name : '--'}</div>
     <div className="artist">
-      {track.artist}{' \u2014 '}{track.album}
+      { track ? (
+        <>
+          <span onClick={onListArtist}>{track.artist}</span>
+          {' \u2014 '}
+          <span onClick={onListAlbum}>{track.album}</span>
+        </>
+      ) : '\u2014' }
     </div>
     <style jsx>{`
       .trackInfo {
@@ -83,6 +100,7 @@ export const TrackInfo = ({ track, className }) => (
     `}</style>
   </div>
 );
+};
 
 export const TrackTime = ({ ms, ...props }) => (
   <div {...props}>{displayTime(ms)}</div>
