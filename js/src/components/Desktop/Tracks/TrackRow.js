@@ -20,6 +20,7 @@ export const TrackRow = ({
   const colors = useTheme();
 
   const [, connectDragSource] = useDrag({
+    type: 'TrackList',
     item: {
       type: 'TrackList',
       device,

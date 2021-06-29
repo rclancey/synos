@@ -231,10 +231,10 @@ export const PlayPauseSkip = ({ width, height, paused, onPlay, onPause, onSkipBy
 export const Volume = ({ volume, onChange, ...props }) => {
   const colors = useTheme();
   const up = useMemo(() => {
-    if (up >= 50) {
+    if (volume >= 50) {
       return Math.min(100, volume + 5);
     }
-    if (up >= 25) {
+    if (volume >= 25) {
       return Math.min(100, volume + 2);
     }
     return Math.min(100, volume + 1);

@@ -12,6 +12,9 @@ export const SongRow = React.memo(({
   index,
   style,
 }) => {
+  const track = useMemo(() => {
+    return data.tracks[data.editing ? index + 1 : index];
+  }, [data, index]);
   if (data.onBeginAdd && index === 0) {
     return (
       <div className="item add" style={style} onClick={() => data.onBeginAdd()}>
@@ -20,9 +23,6 @@ export const SongRow = React.memo(({
       </div>
     );
   }
-  const track = useMemo(() => {
-    return data.tracks[data.editing ? index + 1 : index];
-  }, [data, index]);
 
   return (
     <div className="item" style={style}>
