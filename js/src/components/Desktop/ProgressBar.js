@@ -52,7 +52,7 @@ export const ProgressBar = React.memo(({ total, complete }) => {
         } 
         #loading .progress .complete {
           height: 100%;
-          background: url(/progress-alpha.png);
+          background: url(/assets/progress-alpha.png);
           background-color: #6cf;
           animation: Prog-Scroll infinite 1s linear;
         }

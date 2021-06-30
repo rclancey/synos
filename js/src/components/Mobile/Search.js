@@ -100,7 +100,7 @@ const ComplexRow = ({
     <>
       <div className="key">{name}</div>
       <div>
-        <input type="text" value={val || ''} onChange={onChange} />
+        <input type="text" value={val || ''} onInput={onChange} />
       </div>
     </>
   );
@@ -162,7 +162,7 @@ const SimpleQuery = ({
   return (
     <div className="query">
       <div className="input">
-        <input type="text" value={query || ''} onChange={onChange} />
+        <input type="text" value={query || ''} onInput={onChange} />
       </div>
       <span className="expand" onClick={onExpand}>
         <span className="fas fa-search-plus" />

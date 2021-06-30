@@ -55,7 +55,7 @@ export const JookiDevicePlaylist = ({
       indentPixels={12}
       device="jooki"
       playlist={playlist}
-      icon="/jooki.png"
+      icon="/assets/icons/jooki.png"
       name="Jooki"
       selected={selected}
       onSelect={pl => {

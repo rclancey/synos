@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useContext } from 'react';
 import { ThemeContext } from '../lib/theme';
-import MusicIcon from '../icons/music.png';
+import MusicIcon from '../assets/icons/music.png';
 
 const icons = {
   downloaded_music: 'downloaded',
@@ -28,7 +28,7 @@ export const Icon = ({ name, src, size = 16, style, ...props }) => {
       if (loaded[modSrc]) {
         setIcon(loaded[modSrc]);
       } else {
-        import(`../icons/${modSrc}.png`)
+        import(`../assets/icons/${modSrc}.png`)
           .then(mod => {
             loaded[modSrc] = mod.default;
             if (mounted.current) {

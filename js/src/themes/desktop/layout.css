@@ -50,7 +50,7 @@
 
 #app.desktop #loading .progress .complete {
   height: 100%;
-  background: url(../../icons/progress-alpha.png);
+  background: url(../../assets/progress-alpha.png);
   background-color: #6cf;
   animation: Prog-Scroll infinite 1s linear;
 }

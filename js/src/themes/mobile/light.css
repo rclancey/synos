@@ -1,6 +1,6 @@
 #app.mobile.light .back {
   background-color: #f7f7f7;
-  background-image: url(../../icons/back.png);
+  background-image: url(../../assets/icons/back.png);
 }
 
 #app.mobile.light .header {
@@ -8,11 +8,11 @@
 }
 
 #app.mobile.light .header .icon.artists {
-  background-image: url(../../icons/artists.png);
+  background-image: url(../../assets/icons/artists.png);
 }
 
 #app.mobile.light .header .icon.playlists {
-  background-image: url(../../icons/playlist.png);
+  background-image: url(../../assets/icons/playlist.png);
 }
 
 #app.mobile.light .home .item .title {
@@ -152,7 +152,7 @@
 }
 
 #app.mobile.light .queue .item .coverart .current {
-  background-image: url(../../icons/equalizer.gif);
+  background-image: url(../../assets/icons/equalizer.gif);
 }
 
 #app.mobile.light .queue .item .trackInfo {

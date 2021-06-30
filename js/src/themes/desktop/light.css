@@ -11,7 +11,7 @@
 }
 
 #app.desktop.light #loading .progress .complete {
-  background: url(../../icons/progress-alpha.png);
+  background: url(../../assets/progress-alpha.png);
   background-color: #6cf;
 }
 

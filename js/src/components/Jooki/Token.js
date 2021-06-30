@@ -3,7 +3,7 @@ import { PlaylistMenu } from './PlaylistMenu';
 
 export const jookiTokenImgUrl = (starId) => {
   const src = starId.toLowerCase().replace(/\./g, '-');
-  return `/${src}.png`;
+  return `/assets/icons/${src}.png`;
 };
 
 export const JookiToken = ({ starId, size, className }) => {

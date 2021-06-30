@@ -48,7 +48,7 @@ export const Login = ({ username, onLogin }) => {
               <input
                 type="text"
                 value={tmpUsername}
-                onChange={evt => setUsername(evt.target.value)}
+                onInput={evt => setUsername(evt.target.value)}
               />
             </div>
             <div>Password:</div>
@@ -56,7 +56,7 @@ export const Login = ({ username, onLogin }) => {
               <input
                 type="password"
                 value={password}
-                onChange={evt => setPassword(evt.target.value)}
+                onInput={evt => setPassword(evt.target.value)}
               />
             </div>
             { error !== null ? (<>
@@ -167,7 +167,7 @@ export const Login = ({ username, onLogin }) => {
         .login .social a.github .logo {
           width: 18px;
           height: auto;
-          background-image: url(/logos/github/logo.png);
+          background-image: url(/assets/logos/github/logo.png);
           background-repeat: no-repeat;
           background-position: center;
           background-size: 18px 18px;
@@ -180,7 +180,7 @@ export const Login = ({ username, onLogin }) => {
         .login .social a.google .logo {
           width: 18px;
           height: auto;
-          background-image: url(/logos/google/logo.svg);
+          background-image: url(assets//logos/google/logo.svg);
           background-repeat: no-repeat;
           background-position: center;
         }
@@ -198,7 +198,7 @@ export const Login = ({ username, onLogin }) => {
         .login .social a.facebook .logo {
           width: 18px;
           height: auto;
-          background-image: url(/logos/facebook/logo.png);
+          background-image: url(/assets/logos/facebook/logo.png);
           background-repeat: no-repeat;
           background-position: center;
           background-size: 18px 18px;

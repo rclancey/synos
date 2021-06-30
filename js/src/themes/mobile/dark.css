@@ -5,7 +5,7 @@
 
 #app.mobile.dark .back {
   background-color: #222;
-  background-image: url(../../icons/back.png);
+  background-image: url(../../assets/icons/back.png);
 }
 
 #app.mobile.dark .header {
@@ -13,11 +13,11 @@
 }
 
 #app.mobile.dark .header .icon.artists {
-  background-image: url(../../icons/artists.png);
+  background-image: url(../../assets/icons/artists.png);
 }
 
 #app.mobile.dark .header .icon.playlists {
-  background-image: url(../../icons/playlist.png);
+  background-image: url(../../assets/icons/playlist.png);
 }
 
 #app.mobile.dark .items {
@@ -179,7 +179,7 @@
 }
 
 #app.mobile.dark .queue .item .coverart .current {
-  background-image: url(../../icons/equalizer.gif);
+  background-image: url(../../assets/icons/equalizer.gif);
 }
 
 #app.mobile.dark .queue .item .trackInfo {

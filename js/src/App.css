@@ -76,7 +76,7 @@ body {
 
 #loading .progress .complete {
   height: 100%;
-  background: url('icons/progress-alpha.png');
+  background: url('assets/progress-alpha.png');
   background-color: #6cf;
   animation: Prog-Scroll infinite 1s linear;
 }
@@ -329,91 +329,91 @@ body {
 }
 
 .icon.sonos {
-    background-image: url('icons/sonos.png');
+    background-image: url('assets/icons/sonos.png');
 }
 
 .icon.appletv {
-    background-image: url('icons/appletv.png');
+    background-image: url('assets/icons/appletv.png');
 }
 
 .icon.computer {
-    background-image: url('icons/computer.png');
+    background-image: url('assets/icons/computer.png');
 }
 
 .icon.airplay {
-    background-image: url('icons/airplay.png');
+    background-image: url('assets/icons/airplay.png');
 }
 
 .icon.artists {
-  background-image: url('icons/artists.png');
+  background-image: url('assets/icons/artists.png');
 }
 
 .icon.albums {
-  background-image: url('icons/albums.png');
+  background-image: url('assets/icons/albums.png');
 }
 
 .icon.genres {
-  background-image: url('icons/genres.png');
+  background-image: url('assets/icons/genres.png');
 }
 
 .icon.songs {
-  background-image: url('icons/songs.png');
+  background-image: url('assets/icons/songs.png');
 }
 
 .icon.audiobooks {
-  background-image: url('icons/audiobooks.png');
+  background-image: url('assets/icons/audiobooks.png');
 }
 
 .icon.books {
-  background-image: url('icons/books.png');
+  background-image: url('assets/icons/books.png');
 }
 
 .icon.music {
-  background-image: url('icons/music.png');
+  background-image: url('assets/icons/music.png');
 }
 
 .icon.tvshows {
-  background-image: url('icons/tvshows.png');
+  background-image: url('assets/icons/tvshows.png');
 }
 
 .icon.movies {
-  background-image: url('icons/movies.png');
+  background-image: url('assets/icons/movies.png');
 }
 
 .icon.podcasts {
-  background-image: url('icons/podcasts.png');
+  background-image: url('assets/icons/podcasts.png');
 }
 
 .icon.purchased {
-  background-image: url('icons/purchased.png');
+  background-image: url('assets/icons/purchased.png');
 }
 
 .icon.recent {
-  background-image: url('icons/recent.png');
+  background-image: url('assets/icons/recent.png');
 }
 
 .icon.downloaded_music,
 .icon.downloaded_tvshows,
 .icon.downloaded_movies {
-  background-image: url('icons/downloaded.png');
+  background-image: url('assets/icons/downloaded.png');
 }
 
 .icon.folder {
-  background-image: url('icons/folder.png');
+  background-image: url('assets/icons/folder.png');
 }
 
 .icon.smart {
-  background-image: url('icons/smart.png');
+  background-image: url('assets/icons/smart.png');
 }
 
 .icon.genius {
-  background-image: url('icons/genius.png');
+  background-image: url('assets/icons/genius.png');
 }
 
 .icon.playlists,
 .icon.standard,
 .icon.playlist {
-  background-image: url('icons/playlist.png');
+  background-image: url('assets/icons/playlist.png');
 }
 
 .desktop .playlistBrowser .rstcustom__collapseButton,

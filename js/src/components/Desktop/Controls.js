@@ -102,7 +102,7 @@ const OutputDevice = React.memo(({ name, icon, enabled, onEnable }) => (
       <input
         type="checkbox"
         checked={enabled}
-        onChange={evt => onEnable(evt.target.checked)}
+        onClick={evt => onEnable(evt.target.checked)}
       />
     </div>
     <style jsx>{`
@@ -353,7 +353,7 @@ const Search = React.memo(({ search, onSearch }) => {
         type="text"
         placeholder={'\u{1f50d} Search'}
         value={search || ''}
-        onChange={evt => onSearch(evt.target.value)}
+        onInput={evt => onSearch(evt.target.value)}
       />
       <div className="padding" />
       <style jsx>{`

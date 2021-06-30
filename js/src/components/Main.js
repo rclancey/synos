@@ -14,6 +14,9 @@ const InstallAppButton = ({ onInstall }) => (
 );
 
 const initState = () => {
+  if (typeof window === 'undefined') {
+    return 'local';
+  }
   const saved = window.localStorage.getItem('outputDevice');
   switch (saved) {
   case 'sonos':
@@ -24,6 +27,9 @@ const initState = () => {
 };
 
 const saveState = state => {
+  if (typeof window === 'undefined') {
+    return state;
+  }
   window.localStorage.setItem('outputDevice', state);
   return state;
 };

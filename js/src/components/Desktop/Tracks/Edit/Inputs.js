@@ -12,7 +12,7 @@ export const TextInput = ({
       type="text"
       size={50}
       value={track[field] || ''}
-      onChange={evt => onChange({ [field]: evt.target.value || null })}
+      onInput={evt => onChange({ [field]: evt.target.value || null })}
     />
   );
 };
@@ -32,7 +32,7 @@ export const IntegerInput = ({
       max={max}
       step={step}
       value={track[field] || ''}
-      onChange={evt => {
+      onInput={evt => {
         const v = parseInt(evt.target.value);
         const n = Number.isNaN(v) ? null : v;
         return onChange({ [field]: n });
@@ -52,7 +52,7 @@ export const DateInput = ({
       type="date"
       value={isoDate(track[field]) || ''}
       style={{fontFamily: 'inherit'}}
-      onChange={evt => onChange({ [field]: fromIsoDate(evt.target.value) })}
+      onInput={evt => onChange({ [field]: fromIsoDate(evt.target.value) })}
     />
   );
 };
@@ -92,7 +92,7 @@ export const BooleanInput = ({ track, field, children, onChange }) => {
         type="checkbox"
         value="true"
         checked={!!track[field]}
-        onChange={evt => onChange({ [field]: evt.target.checked })}
+        onClick={evt => onChange({ [field]: evt.target.checked })}
       />
       {' '}
       {children}
@@ -108,7 +108,7 @@ export const GenreInput = ({ track, genres, onChange }) => {
         type="text"
         value={track.genre || ''}
         list={listid}
-        onChange={evt => onChange({ genre: evt.target.value || null })}
+        onInput={evt => onChange({ genre: evt.target.value || null })}
       />
       <datalist id={listid}>
         {genres.map(genre => <option key={genre} value={genre} />)}
@@ -154,7 +154,7 @@ export const TimeInput = ({
     }
   };
   return (
-    <input type="number" min={0} max={formatTime(max)} step={0.001} value={formatTime(value) || ''} placeholder={formatTime(placeholder)} onChange={onChangeParsed} {...props} />
+    <input type="number" min={0} max={formatTime(max)} step={0.001} value={formatTime(value) || ''} placeholder={formatTime(placeholder)} onInput={onChangeParsed} {...props} />
   );
 };
 
@@ -171,7 +171,7 @@ export const RangeInput = ({
         max={255}
         step={1}
         value={value || 0}
-        onChange={evt => {
+        onInput={evt => {
           const v = parseInt(evt.target.value);
           if (Number.isNaN(v) || Math.abs(v) < 5) {
             onChange(null);
