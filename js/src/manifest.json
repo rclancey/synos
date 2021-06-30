@@ -1,6 +1,11 @@
 {
-  "short_name": "Synos",
-  "name": "iTunes + Synology + Sonos",
+  "name": "Synos",
+  "short_name": "iTunes + Synology + Sonos",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "favicon.ico",
@@ -21,10 +26,16 @@
       "src": "apple-touch-icon-167.png",
       "sizes": "167x167",
       "type": "image/png"
+    },
+    {
+      "src": "/assets/icons/android-chrome-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/assets/icons/android-chrome-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
-  ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  ]
 }
