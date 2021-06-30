@@ -202,6 +202,8 @@ github.com/rclancey/htpasswd v0.0.0-20200904003938-f0a6b7a375b1 h1:fWFfB0HWgMD7W
 github.com/rclancey/htpasswd v0.0.0-20200904003938-f0a6b7a375b1/go.mod h1:0/3bYWqCcjkKnxPsqea8HD+CKyQ5ZeZS6njSdZWQZGk=
 github.com/rclancey/httpserver v1.0.3 h1:yAcSlASNxmFAyUrD6kuW8BxW3lO5BIOg1ihoRC5e17s=
 github.com/rclancey/httpserver v1.0.3/go.mod h1:gsm3mGdgnXN2sZR50IgPvvjw9KtK6Msgeu8e6rvWgXk=
+github.com/rclancey/httpserver v1.1.2 h1:XacBA9zMuz3ISXh09pqDKM4Fa6j8N90wqTDc3CG438g=
+github.com/rclancey/httpserver v1.1.2/go.mod h1:gsm3mGdgnXN2sZR50IgPvvjw9KtK6Msgeu8e6rvWgXk=
 github.com/rclancey/itunes v0.0.1 h1:++2MGTevWJel8TYtSYC7GjZPk88Pb+UD7h6YPi7ZQWw=
 github.com/rclancey/itunes v0.0.1/go.mod h1:3IRWFX/w06lSjfVQe5GaT6/wZqoTUy8VK4Z9WgqlryU=
 github.com/rclancey/jooki v0.0.1 h1:jAzlsCbnhJsp1bljEu1atXOKpbAhzuU5gSBTUFOZyFo=

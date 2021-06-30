@@ -30,6 +30,9 @@ const (
 var refTime = time.Date(0, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 type Sonos struct {
+	iface string
+	mgrPort int
+	reactorPort int
 	dev ssdp.Device
 	player *sonos.Sonos
 	reactor upnp.Reactor
@@ -44,37 +47,48 @@ func NewSonos(iface string, rootUrl *url.URL, db *musicdb.DB) (*Sonos, error) {
 	if err != nil {
 		return nil, err
 	}
-	mgr := ssdp.MakeManager()
-	defer mgr.Close()
-	mgr.Discover(iface, strconv.Itoa(mgrPort), false)
-	qry := ssdp.ServiceQueryTerms{
-		ssdp.ServiceKey("schemas-upnp-org-MusicServices"): -1,
-	}
-	result := mgr.QueryServices(qry)
 	s := &Sonos{
+		iface: iface,
+		mgrPort: mgrPort,
+		reactorPort: reactorPort,
 		rootUrl: rootUrl,
 		db: db,
 		closed: false,
 		Events: make(chan interface{}, 1024),
 	}
+	dev, err := s.getSonosDevice()
+	if err != nil {
+		return nil, err
+	}
+	s.reactor = sonos.MakeReactor(iface, strconv.Itoa(reactorPort))
+	go func() {
+		c := s.reactor.Channel()
+		for {
+			ev := <-c
+			evt, err := s.prettyEvent(ev)
+			if err == nil {
+				s.Events <- evt
+			}
+		}
+	}()
+	s.dev = dev
+	s.player = sonos.Connect(dev, s.reactor, sonos.SVC_CONNECTION_MANAGER|sonos.SVC_CONTENT_DIRECTORY|sonos.SVC_RENDERING_CONTROL|sonos.SVC_AV_TRANSPORT)
+	s.PrepareQueue()
+	return s, nil
+}
+
+func (s *Sonos) getSonosDevice() (ssdp.Device, error) {
+	mgr := ssdp.MakeManager()
+	defer mgr.Close()
+	mgr.Discover(s.iface, strconv.Itoa(s.mgrPort), false)
+	qry := ssdp.ServiceQueryTerms{
+		ssdp.ServiceKey("schemas-upnp-org-MusicServices"): -1,
+	}
+	result := mgr.QueryServices(qry)
 	if dev_list, has := result["schemas-upnp-org-MusicServices"]; has {
 		for _, dev := range dev_list {
 			if dev.Product() == "Sonos" {
-				s.reactor = sonos.MakeReactor(iface, strconv.Itoa(reactorPort))
-				go func() {
-					c := s.reactor.Channel()
-					for {
-						ev := <-c
-						evt, err := s.prettyEvent(ev)
-						if err == nil {
-							s.Events <- evt
-						}
-					}
-				}()
-				s.dev = dev
-				s.player = sonos.Connect(dev, s.reactor, sonos.SVC_CONNECTION_MANAGER|sonos.SVC_CONTENT_DIRECTORY|sonos.SVC_RENDERING_CONTROL|sonos.SVC_AV_TRANSPORT)
-				s.PrepareQueue()
-				return s, nil
+				return dev, nil
 			}
 		}
 	}
@@ -116,6 +130,11 @@ func (s *Sonos) Reconnect() (xerr error) {
 			}
 		}
 	}()
+	dev, err := s.getSonosDevice()
+	if err != nil {
+		return err
+	}
+	s.dev = dev
 	s.player = sonos.Connect(s.dev, s.reactor, sonos.SVC_CONNECTION_MANAGER|sonos.SVC_CONTENT_DIRECTORY|sonos.SVC_RENDERING_CONTROL|sonos.SVC_AV_TRANSPORT)
 	s.PrepareQueue()
 	return
