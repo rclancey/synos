@@ -13,17 +13,17 @@
       "type": "image/x-icon"
     },
     {
-      "src": "apple-touch-icon-152.png",
+      "src": "/assets/apple-touch-icon-152.png",
       "sizes": "152x152",
       "type": "image/png"
     },
     {
-      "src": "apple-touch-icon-180.png",
+      "src": "/assets/apple-touch-icon-180.png",
       "sizes": "180x180",
       "type": "image/png"
     },
     {
-      "src": "apple-touch-icon-167.png",
+      "src": "/assets/apple-touch-icon-167.png",
       "sizes": "167x167",
       "type": "image/png"
     },

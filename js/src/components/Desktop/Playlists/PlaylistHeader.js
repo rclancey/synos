@@ -2,10 +2,10 @@ import React, { useState, useCallback } from 'react';
 import { useTheme } from '../../../lib/theme';
 import { MixCover } from '../../MixCover';
 import { EditPlaylist } from './EditPlaylist';
-import Random from '../../../icons/random.svg';
-import Play from '../../../icons/play.svg';
-import Insert from '../../../icons/insert.svg';
-import Append from '../../../icons/append.svg';
+import Random from '../../../assets/icons/random.svg';
+import Play from '../../../assets/icons/play.svg';
+import Insert from '../../../assets/icons/insert.svg';
+import Append from '../../../assets/icons/append.svg';
 
 const plural = (n, singular, plural) => {
   return `${n} ${n === 1 ? singular : (plural || singular+'s')}`;

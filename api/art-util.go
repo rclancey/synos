@@ -36,7 +36,7 @@ var genreImages = map[string]string{
 	"disco": "disco-ball.jpg",
 	"easylistening": "crooner.jpg",
 	"electronic": "roland-303.jpg",
-	"emo": "guitar.jpg",
+	"emo": "emo.png",
 	"folk": "folk.jpg",
 	"funk": "",
 	"generalalternative": "electric-guitar.jpg",

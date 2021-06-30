@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '../../logo.svg';
+import logo from '../../assets/logo.svg';
 
 export const ProgressBar = React.memo(({ total, complete }) => {
   if (total <= 0) {
