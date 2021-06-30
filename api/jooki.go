@@ -66,7 +66,7 @@ func JookiArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	id := pathVar(req, "id")
 	client, err := getJooki(true)
 	if err != nil || client == nil {
-		return H.Redirect("/nocover.jpg"), nil
+		return H.Redirect("/assets/nocover.jpg"), nil
 	}
 	u := &url.URL{
 		Scheme: "http",
@@ -76,7 +76,7 @@ func JookiArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	c := &http.Client{}
 	res, err := c.Get(u.String())
 	if err != nil {
-		return H.Redirect("/nocover.jpg"), nil
+		return H.Redirect("/assets/nocover.jpg"), nil
 	}
 	for k, vs := range res.Header {
 		for _, v := range vs {

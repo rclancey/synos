@@ -91,17 +91,17 @@ var genreImages = map[string]string{
 
 func GetGenreImageURL(sortGenre string) (string, error) {
 	if sortGenre == "" {
-		return "/piano.jpg", nil
+		return "/assets/genres/piano.jpg", nil
 	}
 	key := strings.ReplaceAll(sortGenre, " ", "")
 	img, ok := genreImages[key]
 	if ok {
 		if img != "" {
-			return "/" + img, nil
+			return "/assets/genres/" + img, nil
 		}
-		return "/piano.jpg", nil
+		return "/assets/genres/piano.jpg", nil
 	}
-	return "/piano.jpg", nil
+	return "/assets/genres/piano.jpg", nil
 }
 
 func GetArtistImageFilename(name string) (string, error) {

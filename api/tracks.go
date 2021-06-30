@@ -134,7 +134,7 @@ func GetTrackCover(w http.ResponseWriter, req *http.Request) (interface{}, error
 	fn, err := GetAlbumArtFilename(tr)
 	if err != nil {
 		log.Println("error getting cover art:", err)
-		return H.Redirect("/nocover.jpg"), nil
+		return H.Redirect("/assets/nocover.jpg"), nil
 	}
 	return H.StaticFile(fn), nil
 }
