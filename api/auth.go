@@ -105,6 +105,9 @@ func AuthenticationMiddleware(cfg *H.AuthConfig) Middleware {
 			var err error
 			user := cfg.ReadCookie(r)
 			if user == nil {
+				user = cfg.ReadHeader(r, "X-API-Auth")
+			}
+			if user == nil {
 				username, password, ok := r.BasicAuth()
 				if ok {
 					user, err = htp.Authenticate(username, password)
