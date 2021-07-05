@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icon } from '../Icon';
+import SVGIcon from '../SVGIcon';
 
 export const HomeItem = ({
   name,
@@ -9,7 +9,7 @@ export const HomeItem = ({
   children,
 }) => (
   <div className="item" onClick={() => onOpen(name, children)}>
-    <Icon name={icon} src={iconSrc} size={36} />
+    <SVGIcon icn={icon} size={36} />
     <div className="title">{name}</div>
     <style jsx>{`
       .item {

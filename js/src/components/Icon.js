@@ -14,10 +14,10 @@ const icons = {
 const loaded = {};
 
 export const Icon = ({ name, src, size = 16, style, ...props }) => {
-  const theme = useContext(ThemeContext);
+  const { dark } = useContext(ThemeContext);
   let modSrc = src;
   if (!src) {
-    modSrc = `${icons[name] || name}${theme === 'dark' ? '-dark' : ''}`;
+    modSrc = `${icons[name] || name}`;
   }
   const [icon, setIcon] = useState(src || loaded[modSrc] || MusicIcon);
   const mounted = useRef(true);
@@ -38,7 +38,7 @@ export const Icon = ({ name, src, size = 16, style, ...props }) => {
           .catch(err => {
             console.error("error loading %o: %o", modSrc, err);
             if (mounted.current) {
-              setIcon(MusicIcon);
+              setIcon(null);
             }
           });
       }
@@ -46,12 +46,15 @@ export const Icon = ({ name, src, size = 16, style, ...props }) => {
     return () => {
       mounted.current = false;
     };
-  }, [name, src, modSrc, theme]);
+  }, [name, src, modSrc]);
+  if (icon === null) {
+    return null;
+  }
   return (
     <div className="icon" style={style} {...props}>
       <style jsx>{`
         .icon {
-          background-image: url(${icon});
+          background: url(${icon});
           min-width: ${size}px;
           max-width: ${size}px;
           width: ${size}px;

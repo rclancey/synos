@@ -89,9 +89,12 @@ export const ColumnBrowser = ({
           border-right-style: solid;
           border-right-width: 1px;
           overflow: hidden;
+          /*
           background-color: ${colors.trackList.background};
-          border-right-color: ${colors.trackList.separator};
-          color: ${colors.trackList.text};
+          */
+          background-color: var(--contrast3);
+          border-right-color: var(--border);
+          color: var(--text);
           font-size: 12px;
           cursor: default;
         }
@@ -99,9 +102,12 @@ export const ColumnBrowser = ({
           outline: none;
         }
         .columnBrowser .header {
+          /*
           background-color: ${colors.trackList.background};
-          color: ${colors.trackList.text};
-          border-bottom: solid ${colors.trackList.border} 1px;
+          */
+          background-color: var(--contrast3);
+          color: var(--text);
+          border-bottom: solid var(--border) 1px;
           border-right: none !important;
           font-weight: bold;
           white-space: nowrap;
@@ -111,11 +117,14 @@ export const ColumnBrowser = ({
           height: 18px;
         }
         .columnBrowser :global(.row.selected) {
+          /*
           background-color: ${colors.blurHighlight};
+          */
+          background-color: var(--highlight-blur);
         }
         .columnBrowser:focus-within :global(.row.selected) {
-          background-color: ${colors.highlightText};
-          color: ${colors.highlightInverse};
+          background-color: var(--highlight);
+          color: var(--inverse);
         }
       `}</style>
     </div>

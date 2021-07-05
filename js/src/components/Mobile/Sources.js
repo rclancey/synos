@@ -60,7 +60,7 @@ export const Sources = React.memo(({ prev, children, onOpen, onFinish, ...props 
           font-weight: bold;
           margin-top: 0.5em;
           padding-left: 0.5em;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
         .items {
           width: 100vw;

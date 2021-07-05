@@ -47,7 +47,7 @@ export const Queue = React.memo(({ playMode, tracks, index, onSelect, onShuffle,
           width: 100vw;
           height: 100%;
           overflow: auto;
-          background-color: ${colors.background};
+          background: var(--gradient);
         }
         .queue .items {
           height: calc(100vh - 33px);

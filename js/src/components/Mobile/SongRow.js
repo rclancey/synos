@@ -227,7 +227,7 @@ const InteriorRow = React.memo(({
         .item :global(.move) {
           display: flex;
           flex-direction: column;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
         .item :global(.move) .disabled {
           color: ${colors.text};

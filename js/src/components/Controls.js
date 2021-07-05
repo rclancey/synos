@@ -1,4 +1,5 @@
 import React, { useMemo, useRef } from 'react';
+import { RangeInput } from './RangeInput';
 import { TrackTime } from './TrackInfo';
 import { useTheme } from '../lib/theme';
 import { SHUFFLE, REPEAT } from '../lib/api';
@@ -24,7 +25,7 @@ export const Triangle = ({ orientation, size = 24, ...props }) => {
     style[`border${d}`] = `solid transparent ${size / root3}px`;
   });
   const d = ori[2];
-  style[`border${d}`] = `solid ${colors.button} ${size}px`;
+  style[`border${d}`] = `solid var(--highlight) ${size}px`;
   return (<div style={style} {...props} />);
 };
 
@@ -38,10 +39,10 @@ export const ShuffleButton = ({ playMode, onShuffle, style }) => {
     >
       <style jsx>{`
         .shuffle {
-          color: ${colors.text};
+          color: var(--text);
         }
         .shuffle.on {
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>
@@ -58,10 +59,10 @@ export const RepeatButton = ({ playMode, onRepeat, style }) => {
     >
       <style jsx>{`
         .repeat {
-          color: ${colors.text};
+          color: var(--text);
         }
         .repeat.on {
-          color: ${colors.highlightText};
+          color: var(-highlight);
         }
       `}</style>
     </div>
@@ -74,7 +75,7 @@ export const CloseButton = ({ onClose, style }) => {
     <div className="close fas fa-times" onClick={onClose} style={style}>
       <style jsx>{`
         .close {
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>
@@ -90,8 +91,8 @@ export const PauseButton = ({ size, onPause }) => {
   const style = {
     width: `${size / 4}px`,
     height: `${size * 2 / root3}px`,
-    borderLeft: `solid ${colors.button} ${size * 7 / 24}px`,
-    borderRight: `solid ${colors.button} ${size * 7 / 24}px`,
+    borderLeft: `solid var(--highlight) ${size * 7 / 24}px`,
+    borderRight: `solid var(--highlight) ${size * 7 / 24}px`,
     marginLeft: `${size / 12}px`,
     marginRight: `${size / 12}px`,
   };
@@ -249,8 +250,7 @@ export const Volume = ({ volume, onChange, ...props }) => {
         onClick={() => onChange(down)}
       />
       <div className="slider">
-        <input
-          type="range"
+        <RangeInput
           min={0}
           max={100}
           step={1}
@@ -266,7 +266,7 @@ export const Volume = ({ volume, onChange, ...props }) => {
       <style jsx>{`
         .volumeControl {
           display: flex;
-          color: ${colors.button};
+          color: var(--highlight);
         }
         .volumeControl div.fas {
           flex: 1;

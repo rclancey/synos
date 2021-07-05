@@ -52,8 +52,8 @@ export const DeleteIcon = ({ size, onDelete }) => {
             background-color: #cc0000;
           }
           .cancel {
-            background-color: ${colors.highlightText};
-            color: ${colors.highlightInverse};
+            background-color: var(--highlight);
+            color: var(--highlight-inverse);
           }
         `}</style>
       </div>

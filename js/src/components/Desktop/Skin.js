@@ -13,6 +13,7 @@ import 'react-sortable-tree/style.css';
 
 export const DesktopSkin = ({
   theme,
+  dark,
   player,
   setPlayer,
   setPlaybackInfo,
@@ -110,7 +111,7 @@ export const DesktopSkin = ({
   const playbackInfo = usePlaybackInfo();
 
   return (
-    <div id="app" className={`desktop ${theme}`}>
+    <div id="app" className={`desktop ${theme} ${dark ? 'dark' : 'light'}`}>
       <Controls
         player={player}
         search={search[playlist]}
@@ -144,8 +145,11 @@ export const DesktopSkin = ({
           height: 100vh;
           display: flex;
           flex-direction: column;
+          /*
           background-color: ${colors.background};
-          color: ${colors.text};
+          */
+          background: var(--gradient);
+          color: var(--text);
         }
       `}</style>
 

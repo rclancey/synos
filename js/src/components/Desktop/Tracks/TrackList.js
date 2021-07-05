@@ -137,28 +137,37 @@ export const TrackList = ({
           flex: 10;
           width: 100%;
           overflow: hidden;
+          /*
           background-color: ${colors.trackList.background};
+          */
           font-size: 12px;
-          color: ${colors.trackList.text};
+          color: var(--text);
         }
         .trackList .header {
-          border-bottom-color: ${colors.trackList.border};
+          border-bottom-color: var(--border);
+          /*
           background-color: ${colors.trackList.background};
-          color: ${colors.trackList.text};
+          */
+          background-color: var(--contrast3);
+          color: var(--text);
           display: flex;
           flex-direction: row;
-          border-bottom: solid ${colors.trackList.border} 1px;
+          border-bottom: solid var(--border) 1px;
         }
         .trackList :global(.ReactVirtualized__Table__headerColumn) {
-          border-right-color: ${colors.trackList.separator};
+          border-right-color: var(--border);
         }
         .trackList:focus {
           outline: none;
         }
         .trackList:focus :global(.row.selected),
         .trackList:focus-within :global(.row.selected) {
+          /*
           background-color: ${colors.highlightText};
           color: ${colors.highlightInverse};
+          */
+          background-color: var(--highlight);
+          color: var(--inverse);
         }
         .trackList :global(.DragHandle) {
           flex: 0 0 16px;

@@ -103,6 +103,11 @@ export const TrackInfo = ({ track, className, onList }) => {
 };
 
 export const TrackTime = ({ ms, ...props }) => (
-  <div {...props}>{displayTime(ms)}</div>
+  <div {...props}>
+    <style jsx>{`
+      font-variant: tabular-nums;
+    `}</style>
+    {displayTime(ms)}
+  </div>
 );
 

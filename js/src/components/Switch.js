@@ -18,11 +18,11 @@ export const Switch = ({ on, onToggle }) => {
           border-width: 2px;
           border-radius: 20px;
           overflow: hidden;
-          border-color: ${colors.switch.border.off};
+          border-color: rgba(127, 127, 127, 0.4);
           transition: border-color 0.25s;
         }
         .switch.on {
-          border-color: ${colors.switch.border.on};
+          border-color: var(--higlight-muted);
         }
         .switch .onbg {
           width: 20px;
@@ -30,7 +30,7 @@ export const Switch = ({ on, onToggle }) => {
           border: solid transparent 0px;
           border-radius: 10px;
           padding-left: 0px;
-          background-color: ${colors.button};
+          background-color: var(--highlight);
           transition: padding-left 0.25s;
         }
         .switch.on .onbg {
@@ -42,8 +42,8 @@ export const Switch = ({ on, onToggle }) => {
           border: solid transparent 1px;
           border-radius: 10px;
           overflow: hidden;
-          background-color: ${colors.switch.knob.background};
-          box-shadow: 0px 0px 0px 1px ${colors.switch.knob.shadow};
+          background-color: white;
+          box-shadow: 0px 0px 0px 1px var(--highlight-muted);
         }
       `}</style>
     </div>

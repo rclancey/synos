@@ -172,7 +172,7 @@ const QueueActions = ({ tracks, controlAPI, onClose }) => {
       <style jsx>{`
         .items {
           height: auto;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>
@@ -189,7 +189,7 @@ const CloseButton = ({ onClose }) => {
           padding: 1.5em;
           text-align: center;
           font-weight: bold;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>
@@ -218,7 +218,8 @@ export const PlaylistMenu = ({
           top: 0;
           width: 100vw;
           height: 100vh;
-          background-color: ${colors.disabler};
+          background-color: var(--blur-background);
+          backdrop-filter: blur(0.7px);
         }
         .playlistMenu {
           position: fixed;
@@ -226,10 +227,9 @@ export const PlaylistMenu = ({
           left: 20px;
           bottom: 75px;
           width: calc(100vw - 40px);
-          border: solid transparent 1px;
           border-radius: 20px;
           max-height: 60vh;
-          background-color: ${colors.background};
+          background: var(--gradient);
         }
 
       `}</style>
@@ -283,7 +283,7 @@ export const TrackMenu = ({
         }
         .items {
           height: auto;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>
@@ -314,7 +314,7 @@ export const DotsMenu = ({ track, onOpen }) => {
           font-size: 12px;
           padding-top: 6px;
           text-align: center;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>

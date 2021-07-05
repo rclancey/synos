@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useContext, useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import displayTime from '../../lib/displayTime';
 import { Player } from '../Player/Player';
 import { currentTrack, usePlaybackInfo, useControlAPI } from '../Player/Context';
@@ -7,8 +7,13 @@ import { CoverArt } from '../CoverArt';
 import { TrackInfo } from '../TrackInfo';
 import { Queue } from './Queue';
 import { Icon } from '../Icon';
+import { SVGIcon } from '../SVGIcon';
 import { Cover } from '../Cover';
-import { useTheme } from '../../lib/theme';
+import { useTheme, ThemeContext } from '../../lib/theme';
+
+import HeadphonesIcon from '../icons/Headphones';
+import HamburgerMenuIcon from '../icons/HamburgerMenu';
+import GearIcon from '../icons/Gear';
 
 const Buttons = React.memo(({
   status,
@@ -87,7 +92,7 @@ const Buttons = React.memo(({
         .fa-redo-alt {
           padding-right: 1em;
           line-height: 52px;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>
@@ -126,26 +131,23 @@ const OutputDevice = React.memo(({ name, icon, enabled, onEnable }) => (
 const ButtonMenu = ({
   icon,
   maxWidth = 322,
+  open = false,
+  setOpen,
   children,
 }) => {
   const colors = useTheme();
   const menuRef = useRef();
-  const [open, setOpen] = useState(false);
+  const onOpen = useCallback(() => setOpen(true), []);
   const rect = menuRef.current ? menuRef.current.getBoundingClientRect() : { x: 0, y: 0 };
   return (
-    <div ref={menuRef} className="buttonMenu"  onClick={() => setOpen(cur => !cur)}>
-      <Icon name={icon} size={18} style={{
-        marginLeft: 'auto',
-        marginRight: 'auto',
-        marginTop: '4px',
-      }} />
+    <div ref={menuRef} className="buttonMenu">
+      <div className="button" onClick={onOpen}>
+        <SVGIcon icn={icon} size={18} />
+      </div>
       { open ? (
         <>
           <Cover zIndex={9} onClear={() => setOpen(false)} />
-          <div
-            className="menu"
-            style={{ left: `${rect.x}px`, top: `${rect.y}px` }}
-          >
+          <div className="menu">
             {children}
           </div>
         </>
@@ -153,6 +155,8 @@ const ButtonMenu = ({
       <style jsx>{`
         .buttonMenu {
           flex: 1;
+        }
+        .button {
           width: 40px;
           height: 26px;
           min-height: 26px;
@@ -160,16 +164,25 @@ const ButtonMenu = ({
           border-style: solid;
           border-width: 1px;
           border-radius: 5px;
+          border-color: var(--border);
+        }
+        .button :global(.svgIcon), .button :global(.icon) {
+          margin-left: auto;
+          margin-right: auto;
+          margin-top: 4px;
         }
         .menu {
           position: absolute;
           z-index: 10;
+          left: ${rect.x}px;
+          top: ${rect.y}px;
           width: ${maxWidth}px;
           border-style: solid;
           border-width: 1px;
           border-radius: 5px;
+          border-color: var(--border);
           box-sizing: border-box;
-          background-color: ${colors.background};
+          background: var(--gradient);
           overflow: hidden;
         }
       `}</style>
@@ -177,28 +190,39 @@ const ButtonMenu = ({
   );
 };
 
-const AirplayButton = React.memo(({
+const AirplayButton = ({
   sonos,
   onEnableSonos,
   onDisableSonos
-}) => (
-  <ButtonMenu icon="airplay">
-    <div style={{ padding: '5px' }}>
-      <OutputDevice
-        name="Computer"
-        icon="computer"
-        enabled={!sonos}
-        onEnable={() => { console.debug('disable sonos'); onDisableSonos(); }}
-      />
-      <OutputDevice
-        name="Sonos"
-        icon="sonos"
-        enabled={sonos}
-        onEnable={() => { console.debug('enable sonos'); onEnableSonos(); }}
-      />
-    </div>
-  </ButtonMenu>
-));
+}) => {
+  const [open, setOpen] = useState(false);
+  const onLocal = useCallback(() => {
+    onDisableSonos();
+    setOpen(false);
+  }, [onDisableSonos]);
+  const onSonos = useCallback(() => {
+    onEnableSonos();
+    setOpen(false);
+  }, [onEnableSonos]);
+  return (
+    <ButtonMenu icon={HeadphonesIcon} open={open} setOpen={setOpen}>
+      <div style={{ padding: '5px' }}>
+        <OutputDevice
+          name="Computer"
+          icon="computer"
+          enabled={!sonos}
+          onEnable={onLocal}
+        />
+        <OutputDevice
+          name="Sonos"
+          icon="sonos"
+          enabled={sonos}
+          onEnable={onSonos}
+        />
+      </div>
+    </ButtonMenu>
+  );
+};
 
 
 const NotPlaying = React.memo(() => (
@@ -238,6 +262,7 @@ const Timer = React.memo(({ t, children }) => (
         text-align: right;
         padding-right: 5px;
         padding-bottom: 5px;
+        font-variant: tabular-nums;
       }
     `}</style>
   </div>
@@ -275,7 +300,7 @@ const NowPlaying = React.memo(({
       <style jsx>{`
         .nowplaying {
           width: 34%;
-          border-color: ${colors.panelBorder};
+          border-color: var(--border);
           border-left-style: solid;
           border-left-width: 1px;
           border-right-style: solid;
@@ -283,7 +308,10 @@ const NowPlaying = React.memo(({
           display: flex;
           height: 56px;
           overflow: hidden;
+          /*
           background-color: ${colors.sectionBackground};
+          */
+          background-color: rgba(255, 255, 255, 0.05);
         }
         .outerwrapper {
           flex: 100;
@@ -302,26 +330,113 @@ const NowPlaying = React.memo(({
   );
 });
 
-const QueueMenu = React.memo(({
+const QueueMenu = ({
   playMode,
   queue,
   queueIndex,
   onSkipTo,
   onShuffle,
   onRepeat,
-}) => (
-  <ButtonMenu icon="queue" maxWidth={375}>
-    <Queue
-      playMode={playMode}
-      tracks={queue || []}
-      index={queueIndex}
-      onSkipTo={onSkipTo}
-      onShuffle={onShuffle}
-      onRepeat={onRepeat}
-      onSelect={(track, index) => onSkipTo(index)}
-    />
-  </ButtonMenu>
-));
+}) => {
+  const [open, setOpen] = useState(false);
+  const onSelect = useCallback((track, index) => {
+    onSkipTo(index);
+    setOpen(false);
+  }, [onSkipTo]);
+  return (
+    <ButtonMenu icon={HamburgerMenuIcon} maxWidth={375} open={open} setOpen={setOpen}>
+      <Queue
+        playMode={playMode}
+        tracks={queue || []}
+        index={queueIndex}
+        onSkipTo={onSkipTo}
+        onShuffle={onShuffle}
+        onRepeat={onRepeat}
+        onSelect={onSelect}
+      />
+    </ButtonMenu>
+  );
+};
+
+const DarkMode = ({ darkMode, onChange }) => (
+  <div>
+    <style jsx>{`
+      margin-top: 1em;
+    `}</style>
+    Dark Mode:
+    <input type="radio" name="darkmode" value="on" checked={darkMode === true} onClick={onChange} />
+    {'On\u00a0\u00a0\u00a0'}
+    <input type="radio" name="darkmode" value="off" checked={darkMode === false} onClick={onChange} />
+    {'Off\u00a0\u00a0\u00a0'}
+    <input type="radio" name="darkmode" value="default" checked={darkMode === null} onClick={onChange} />
+    {'Default'}
+  </div>
+);
+
+const themes = [
+  'grey',
+  'red',
+  'orange',
+  'yellow',
+  'green',
+  'seafoam',
+  'teal',
+  'slate',
+  'blue',
+  'indigo',
+  'purple',
+  'fuchsia',
+];
+
+const ThemeChooser = ({ theme, onChange }) => (
+  <div>
+    <style jsx>{`
+      margin-top: 1em;
+    `}</style>
+    Theme:
+    <select value={theme} onChange={onChange}>
+      {themes.map((t) => (<option key={t} value={t}>{`${t.substr(0, 1).toUpperCase()}${t.substr(1)}`}</option>))}
+    </select>
+  </div>
+);
+
+const PrefsContent = ({ onClose }) => {
+  const { theme, darkMode, setTheme, setDarkMode } = useContext(ThemeContext);
+  const onChangeTheme = useCallback((evt) => setTheme(evt.target.value), [setTheme]);
+  const onChangeDark = useCallback((evt) => {
+    switch (evt.target.value) {
+      case 'on':
+        return setDarkMode(true);
+      case 'off':
+        return setDarkMode(false);
+      default:
+        return setDarkMode(null);
+    }
+  }, [setDarkMode]);
+  return (
+    <div className="prefs">
+      <style jsx>{`
+        .prefs {
+          background: var(--gradient);
+          overflow: auto;
+          padding: 1em;
+        }
+      `}</style>
+      <DarkMode darkMode={darkMode} onChange={onChangeDark} />
+      <ThemeChooser theme={theme} onChange={onChangeTheme} />
+    </div>
+  );
+};
+
+const PrefsMenu = () => {
+  const [open, setOpen] = useState(false);
+  const onClose = useCallback((evt) => setOpen(false), []);
+  return (
+    <ButtonMenu icon={GearIcon} maxWidth={350} open={open} setOpen={setOpen}>
+      <PrefsContent onClose={onClose} />
+    </ButtonMenu>
+  );
+};
 
 const Search = React.memo(({ search, onSearch }) => {
   const node = useRef(null);
@@ -405,6 +520,11 @@ const Tools = React.memo(({
         onShuffle={onShuffle}
         onRepeat={onRepeat}
       />
+      <div className="padding" />
+    </div>
+    <div className="queuebutton">
+      <div className="padding" />
+      <PrefsMenu />
       <div className="padding" />
     </div>
     <div className="padding" />
@@ -497,8 +617,11 @@ export const Controls = ({
           min-height: 56px;
           max-height: 56px;
           height: 56px;
+          /*
           background-color: ${colors.panelBackground};
-          border-bottom: solid ${colors.panelBorder} 1px;
+          */
+          background-color: var(--contrast3);
+          border-bottom: solid var(--border) 1px;
         }
       `}</style>
     </div>

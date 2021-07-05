@@ -21,7 +21,7 @@ export const Index = ({ index, list }) => {
           right: 5px;
           font-size: 12px;
           line-height: 17px;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
         .index .disabled {
           color: ${colors.text2};

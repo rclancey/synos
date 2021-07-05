@@ -1,6 +1,36 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../../../lib/theme';
+import { SVGIcon } from '../../SVGIcon';
 import { Icon } from '../../Icon';
+
+import CassetteIcon from '../../icons/Cassette';
+import BrainIcon from '../../icons/Brain';
+import AtomIcon from '../../icons/Atom';
+import PlaylistFolderIcon from '../../icons/PlaylistFolder';
+import BroadcastMicrophoneIcon from '../../icons/BroadcastMicrophone';
+import BoomboxIcon from '../../icons/Boombox';
+import EighthNoteIcon from '../../icons/EighthNote';
+
+const XIcon = ({ name, size, ...props }) => {
+  switch (name) {
+    case 'folder':
+      return <SVGIcon icn={PlaylistFolderIcon} size={size} />;
+    case 'genius':
+      return <SVGIcon icn={AtomIcon} size={size} />;
+    case 'smart':
+      return <SVGIcon icn={BrainIcon} size={size} />;
+    case 'standard':
+      return <SVGIcon icn={CassetteIcon} size={size} />;
+    case 'podcasts':
+      return <SVGIcon icn={BroadcastMicrophoneIcon} size={size} />;
+    case 'music':
+      return <SVGIcon icn={EighthNoteIcon} size={size} />;
+    case 'songs':
+      return <SVGIcon icn={BoomboxIcon} size={size} />;
+    default:
+      return <Icon name={name} size={size} {...props} />;
+  }
+};
 
 const FolderToggle = ({
   folder,
@@ -29,7 +59,7 @@ const FolderToggle = ({
           position: relative;
           top: 4px;
           left: 1px;
-          border-left-color: ${colors.text1};
+          border-left-color: var(--text);
         }
         .folderToggle.open {
           border-left-color: transparent !important;
@@ -39,7 +69,7 @@ const FolderToggle = ({
           left: -2px;
           top: 6px;
           margin-right: -21px;
-          border-top-color: ${colors.text1};
+          border-top-color: var(--text);
         }
       `}</style>
     </div>
@@ -86,9 +116,10 @@ export const Label = ({
   return (
     <div className={cls.join(' ')} style={indent}>
       <FolderToggle folder={folder} open={open} onToggle={onToggle} />
-      <Icon
+      <XIcon
         name={icon && !icon.includes(".") ? icon : ''}
         src={icon && icon.includes(".") ? icon : null}
+        size={16}
       />
       <div className="title" onClick={(selected && !editing && onRename) ? () => { setNameUpdate(name); setEditing(true); } : onSelect}>
         { (selected && editing) ? (

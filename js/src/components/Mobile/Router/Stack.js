@@ -52,7 +52,7 @@ export const ScreenHeader = () => {
           font-weight: bold;
           margin-top: 0.5em;
           padding-left: 0.5em;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>
@@ -86,7 +86,7 @@ export const Back = () => {
           box-sizing: border-box;
           font-size: 18px;
           font-weight: bold;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
         .fa-chevron-left {
           margin-right: 0.5em;

@@ -63,7 +63,7 @@ export const PlaylistInfo = ({ name, tracks, smart, onEdit }) => {
         }
         .playlistInfo .edit {
           text-decoration: none;
-          color: ${colors.highlightText};
+          color: var(--highlight);
           cursor: pointer;
         }
       `}</style>
@@ -86,7 +86,7 @@ export const QueueButton = ({ title, icon, onClick }) => {
         .item .icon {
           width: 18px;
           height: 18px;
-          background-color: ${colors.highlightText};
+          background-color: var(--highlight);
           mask: url(${icon});
           mask-size: contain;
           mask-repeat: no-repeat;
@@ -95,7 +95,7 @@ export const QueueButton = ({ title, icon, onClick }) => {
           margin: 0;
           padding: 0;
           margin-left: 0.5em;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>
@@ -190,7 +190,7 @@ export const PlaylistHeader = ({
   return (
     <div className="playlistHeader">
       { editing && <EditPlaylist playlist={playlist} onSavePlaylist={onSavePlaylist} onCancel={() => setEditing(false)} /> }
-      <MixCover tracks={playlist.items || playlist.tracks} size={80} />
+      <MixCover tracks={playlist.items || playlist.tracks} size={120} />
       <PlaylistInfo name={playlist.name} tracks={playlist.items || playlist.tracks} smart={playlist.smart} onEdit={onEdit} />
       <div className="queueOptions">
         <PlayNow persistent_id={playlist.persistent_id} tracks={playlist.items || playlist.tracks} controlAPI={controlAPI} />
@@ -202,7 +202,9 @@ export const PlaylistHeader = ({
         .playlistHeader {
           display: flex;
           padding: 2em;
+          /*
           background-color: ${colors.sectionBackground};
+          */
           border-bottom: solid ${colors.trackList.separator} 1px;
         }
       `}</style>

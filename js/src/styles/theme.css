@@ -1,0 +1,210 @@
+:root {
+  --darkish: rgba(0, 0, 0, 0.1);
+  --darken: rgba(0, 0, 0, 0.3);
+  --darker: rgba(0, 0, 0, 0.5);
+  --darkest: rgba(0, 0, 0, 0.7);
+  --superdark: rgba(0, 0, 0, 0.9);
+
+  --lightish: rgba(255, 255, 255, 0.1);
+  --lighten: rgba(255, 255, 255, 0.3);
+  --lighter: rgba(255, 255, 255, 0.5);
+  --lightest: rgba(255, 255, 255, 0.7);
+  --superlight: rgba(255, 255, 255, 0.9);
+
+  /*
+  --highlight: #09c;
+  --highlight-inverse: #fff;
+  */
+}
+
+#app {
+  --hue: 0;
+  --sat: 100%;
+  --lightness-muted: calc((var(--lightness) + var(--lightness-contrast)) / 2);
+  --gradient-dir: -20deg;
+  --gradient-stretch: -10%;
+  --gradient-compress: 90%;
+  --highlight: hsl(calc(var(--hue) - 10), var(--sat), var(--lightness-contrast));
+  --highlight-muted: hsl(calc(var(--hue) - 10), calc(var(--sat) * 0.8), var(--lightness-muted));
+  --gradient: linear-gradient(var(--gradient-dir), hsl(var(--hue), var(--sat), var(--lightness)) var(--gradient-stretch), var(--gradient-end) var(--gradient-compress));
+
+  color: var(--text);
+}
+
+#app.dark {
+  --gradient-end: black;
+  --lightness: 30%;
+  --lightness-contrast: 60%;
+  --inverse: black;
+  --highlight-blur: var(--lightish);
+  --blur-background: var(--lighten);
+  --text: var(--lightest);
+  --contrast1: var(--darkish);
+  --contrast2: var(--darken);
+  --contrast3: var(--darker);
+  --contrast4: var(--darkest);
+  --contrast5: var(--superdark);
+  --border: var(--lighten);
+}
+
+#app.light {
+  --gradient-end: white;
+  --lightness: 60%;
+  --lightness-contrast: 30%;
+  --inverse: white;
+  --highlight-blur: var(--darkish);
+  --blur-background: var(--darkest);
+  --text: var(--darkest);
+  --contrast1: var(--lightish);
+  --contrast2: var(--lighten);
+  --contrast3: var(--lighter);
+  --contrast4: var(--lightest);
+  --contrast5: var(--superlight);
+  --border: var(--darken);
+}
+
+#app.grey {
+  --hue: 0;
+  --sat: 0%;
+  --lightness: 50%;
+  --gradient-stretch: -30%;
+  --gradient-compress: 80%;
+}
+
+#app.dark.grey {
+  --lightness-contrast: 80%;
+}
+
+#app.red {
+  --hue: 0;
+}
+
+#app.orange {
+  --hue: 25;
+}
+
+#app.yellow {
+  --hue: 60;
+}
+
+#app.light.yellow {
+  --gradient-stretch: -30%;
+}
+
+#app.green {
+  --hue: 120;
+}
+
+#app.light.green {
+  --gradient-stretch: -40%;
+}
+
+#app.dark.green {
+  --gradient-stretch: -25%;
+}
+
+#app.seafoam {
+  --hue: 165;
+}
+
+#app.dark.seafoam {
+  --gradient-stretch: -25%;
+}
+
+#app.teal {
+  --hue: 180;
+}
+
+#app.dark.teal {
+  --gradient-stretch: -30%;
+}
+
+#app.slate {
+  --hue: 210;
+}
+
+#app.dark.slate {
+  --gradient-stretch: -30%;
+}
+
+#app.blue {
+  --hue: 240;
+  --inverse: white;
+}
+
+#app.dark.blue {
+  --highlight-lightness: 75%;
+}
+
+#app.indigo {
+  --hue: 278;
+  --inverse: white;
+}
+
+#app.dark.indigo {
+  --lightness: 20%;
+  --highlight-lightness: 75%;
+}
+
+#app.purple {
+  --hue: 295;
+}
+
+#app.dark.purple {
+  --lightness: 20%;
+  --highlight-lightness: 75%;
+}
+
+#app.fuchsia {
+  --hue: 320;
+}
+
+#app.dark.fuchsia {
+  --gradient-stretch: -20%;
+}
+
+#app.darkpurple {
+  --hue: 290;
+  /*
+  */
+}
+
+#app.darkred {
+  --hue: 0;
+  /*
+  --gradient: linear-gradient(-20deg, darkred, black);
+  */
+}
+
+#app.darkblue {
+  --hue: 240;
+  /*
+  --gradient: linear-gradient(-20deg, darkblue, black);
+  */
+}
+
+#app.darkgreen {
+  --hue: 120;
+  /*
+  --gradient: linear-gradient(-20deg, darkgreen, black);
+  */
+}
+
+#app.darkorange {
+  --hue: 25;
+  /*
+  --gradient: linear-gradient(-20deg, #930, black);
+  */
+}
+
+#app.darkfuchsia {
+  --hue: 320;
+  /*
+  --gradient: linear-gradient(-20deg, fuchsia, black);
+  */
+}
+
+
+input[type="range"]::-webkit-slider-thumb {
+  color: red;
+}

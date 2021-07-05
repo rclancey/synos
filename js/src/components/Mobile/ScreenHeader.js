@@ -21,7 +21,7 @@ export const Back = ({ onClose, children }) => {
           box-sizing: border-box;
           font-size: 18px;
           font-weight: bold;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
         .fa-chevron-left {
           margin-right: 0.5em;
@@ -42,14 +42,14 @@ export const ScreenHeader = ({ name, prev, onClose }) => {
         .header {
           padding: 0.5em;
           padding-top: 54px;
-          background-color: ${colors.sectionBackground};
+          background-color: var(--contrast3);
         }
         .header .title {
           font-size: 24pt;
           font-weight: bold;
           margin-top: 0.5em;
           padding-left: 0.5em;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>

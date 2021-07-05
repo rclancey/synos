@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '../../assets/logo.svg';
+import ReactLogo from '../icons/ReactLogo';
 
 export const ProgressBar = React.memo(({ total, complete }) => {
   if (total <= 0) {
@@ -7,7 +7,9 @@ export const ProgressBar = React.memo(({ total, complete }) => {
   }
   return (
     <div id="loading">
-      <img src={logo} alt="loading..." className="App-logo" />
+      <div className="App-logo">
+        <ReactLogo />
+      </div>
       <div className="progress">
         <div className="complete" style={{ width: (100 * complete / total)+'%' }} />
       </div>
@@ -53,7 +55,7 @@ export const ProgressBar = React.memo(({ total, complete }) => {
         #loading .progress .complete {
           height: 100%;
           background: url(/assets/progress-alpha.png);
-          background-color: #6cf;
+          background-color: var(--highlight);
           animation: Prog-Scroll infinite 1s linear;
         }
         .App-logo {
@@ -65,6 +67,10 @@ export const ProgressBar = React.memo(({ total, complete }) => {
           left: 50vw;
           margin-top: -20vmin;
           margin-left: -28.25vmin;
+          color: var(--highlight);
+        }
+        .App-logo :global(svg) {
+          height: 40vmin;
         }
       `}</style>
     </div>

@@ -157,13 +157,17 @@ export const PlaylistBrowser = ({
           font-size: 13px;
           height: 100%;
           overflow: auto;
+          /*
           background-color: ${colors.panelBackground};
-          color: ${colors.panelText};
+          */
+          background-color: var(--dark);
+          color: var(--text);
+          border-right: solid var(--border) 1px;
         }
         .playlistBrowser:focus {
           outline: none;
         }
-        .playlistBrowser :global(.icon) {
+        .playlistBrowser :global(.icon), .playlistBrowser :global(.svgIcon) {
           margin-left: 25px;
           margin-right: 0.25em;
         }
@@ -175,11 +179,14 @@ export const PlaylistBrowser = ({
           margin-left: 1em;
         }
         .playlistBrowser :global(.selected) {
+          /*
           background-color: ${colors.blurHighlight};
+          */
+          background-color: var(--dark);
         }
         .playlistBrowser:focus-within :global(.selected) {
-          background-color: ${colors.highlightText};
-          color: ${colors.highlightInverse};
+          background-color: var(--highlight);
+          color: var(--inverse);
         }
         .playlistBrowser :global(.folder>.label.dropTarget) {
           background-color: ${colors.dropTarget.folderBackground};

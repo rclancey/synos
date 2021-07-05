@@ -101,7 +101,7 @@ export const PlaylistTitle = ({
           text-align: right;
           font-size: 18px;
           line-height: 30px;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>
@@ -246,7 +246,7 @@ export const SongList = ({
         }
         .songList :global(.action) {
           line-height: 44px;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>
@@ -435,7 +435,7 @@ const Header = React.memo(({ colors, children }) => (
         flex-direction: row;
         padding: 0.5em;
         padding-top: 54px;
-        background-color: ${colors.sectionBackground};
+        background-color: var(--contrast4);
       }
     `}</style>
   </div>

@@ -13,31 +13,42 @@ const InstallAppButton = ({ onInstall }) => (
   </div>
 );
 
+const defaultState = {
+  dark: null,
+  theme: 'grey',
+  output: 'local',
+};
+
 const initState = () => {
   if (typeof window === 'undefined') {
-    return 'local';
+    return defaultState;
   }
-  const saved = window.localStorage.getItem('outputDevice');
-  switch (saved) {
-  case 'sonos':
-    return saved;
-  default:
-    return 'local';
+  const saved = window.localStorage.getItem('prefs');
+  if (saved === null || saved === undefined || saved === '') {
+    return defaultState;
   }
+  const state = JSON.parse(saved);
+  return { ...defaultState, ...state };
 };
 
 const saveState = state => {
   if (typeof window === 'undefined') {
     return state;
   }
-  window.localStorage.setItem('outputDevice', state);
+  window.localStorage.setItem('prefs', JSON.stringify(state));
   return state;
 };
 
 const reducer = (state, action) => {
   switch (action.type) {
-  case 'set':
-    return saveState(action.value || 'local');
+  case 'setOutput':
+    return saveState({ ...state, output: (action.value || 'local') });
+  case 'setDarkMode':
+    return saveState({ ...state, dark: action.value });
+  case 'setTheme':
+    return saveState({ ...state, theme: action.value });
+  case 'clone':
+    return { ...state };
   default:
     console.error("unhandled action: %o", action);
   }
@@ -45,15 +56,28 @@ const reducer = (state, action) => {
 };
 
 export const Main = () => {
-  const [player, dispatch] = useReducer(reducer, null, initState);
+  const [state, dispatch] = useReducer(reducer, null, initState);
   const [playbackInfo, setPlaybackInfo] = useState({});
   const [controlAPI, setControlAPI] = useState({});
   const mobile = useMobile();
   const dark = useDarkMode();
   const [installPrompt, setInstallPrompt] = useState(null);
-  const setPlayer = useMemo(() => {
-    return (value) => dispatch({ type: 'set', value });
+  const setTheme = useMemo(() => {
+    return (value) => dispatch({ type: 'setTheme', value });
   }, [dispatch]);
+  const setDarkMode = useMemo(() => {
+    return (value) => dispatch({ type: 'setDarkMode', value });
+  }, [dispatch]);
+  const setPlayer = useMemo(() => {
+    return (value) => dispatch({ type: 'setOutput', value });
+  }, [dispatch]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      console.debug('clone');
+      dispatch({ type: 'clone' });
+    }, 100);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -82,14 +106,19 @@ export const Main = () => {
     });
   };
 
-  const theme = dark ? 'dark' : 'light';
+  const themeCtx = useMemo(() => ({
+    dark: state.dark === null ? dark : state.dark,
+    darkMode: state.dark,
+    theme: state.theme,
+    setTheme,
+    setDarkMode,
+  }), [dark, state, setTheme, setDarkMode]);
 
+  const clsName = `App ${themeCtx.dark ? 'dark' : 'light'} ${themeCtx.theme}`;
+  console.debug('rendering Main: %o %o', { state, dark, themeCtx }, clsName)
   return (
-    <div className="App">
-      { installPrompt ? (
-        <InstallAppButton onInstall={onInstall} />
-      ) : null }
-      <ThemeContext.Provider value={theme}>
+    <ThemeContext.Provider value={themeCtx}>
+      <div id="main" className={clsName}>
         <CheckLogin>
           {/*
           <Player
@@ -105,16 +134,18 @@ export const Main = () => {
               <Suspense fallback={<div>loading...</div>}>
                 { mobile ? (
                   <MobileSkin
-                    theme={theme}
-                    player={player}
+                    dark={state.dark}
+                    theme={state.theme}
+                    player={state.output}
                     setPlayer={setPlayer}
                     setControlAPI={setControlAPI}
                     setPlaybackInfo={setPlaybackInfo}
                   />
                 ) : (
                   <DesktopSkin
-                    theme={theme}
-                    player={player}
+                    dark={state.dark}
+                    theme={state.theme}
+                    player={state.output}
                     setPlayer={setPlayer}
                     setControlAPI={setControlAPI}
                     setPlaybackInfo={setPlaybackInfo}
@@ -124,7 +155,7 @@ export const Main = () => {
             </PlayerStateContext.Provider>
           </PlayerControlContext.Provider>
         </CheckLogin>
-      </ThemeContext.Provider>
-    </div>
+      </div>
+    </ThemeContext.Provider>
   );
 };
