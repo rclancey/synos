@@ -30,8 +30,8 @@ export default {
 	 **/
 	webpack(config, env, helpers, options) {
 		/** you can change the config here **/
-    console.log('config = %o', config);
-    console.log('env = %o', env);
+    //console.log('config = %o', config);
+    //console.log('env = %o', env);
     const { rule } = helpers.getLoadersByName(config, 'babel-loader')[0];
     rule.options.plugins.push(require.resolve('styled-jsx/babel'));
     const isEnvProduction = env.production;
@@ -77,6 +77,6 @@ export default {
       config.mode = 'development';
       config.optimization = {};
     }
-    console.debug('final config = %o', config);
+    //console.debug('final config = %o', config);
 	},
 };
