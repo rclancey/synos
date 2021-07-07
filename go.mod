@@ -24,7 +24,7 @@ require (
 	github.com/rclancey/htpasswd v0.0.0-20200904003938-f0a6b7a375b1
 	github.com/rclancey/httpserver v1.1.5
 	github.com/rclancey/itunes v0.0.1
-	github.com/rclancey/jooki v0.0.1
+	github.com/rclancey/jooki v0.1.0
 	github.com/rclancey/lastfm v0.0.0-20210510164243-0116f005e8c8
 	github.com/rclancey/logging v1.0.1
 	github.com/rclancey/logrotate v1.0.1
