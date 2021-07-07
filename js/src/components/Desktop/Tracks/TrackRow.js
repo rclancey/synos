@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { useDrag, useDrop } from 'react-dnd';
 import { useTheme } from '../../../lib/theme';
 
@@ -20,6 +21,7 @@ export const TrackRow = ({
   const colors = useTheme();
 
   const [, connectDragSource] = useDrag({
+    type: 'TrackList',
     item: {
       type: 'TrackList',
       device,
@@ -87,7 +89,7 @@ export const TrackRow = ({
           flex-direction: row;
           border-bottom: solid transparent 1px;
           box-sizing: border-box;
-          color: ${colors.trackList.text};
+          color: var(--text);
         }
         .current {
           display: inline-block;
@@ -98,10 +100,16 @@ export const TrackRow = ({
           line-height: 20px;
         }
         .even {
+          background-color: var(--contrast2);
+          /*
           background-color: ${colors.trackList.evenBg};
+          */
         }
         .selected, .even.selected {
+          /*
           background-color: ${colors.blurHighlight};
+          */
+          background-color: var(--highlight-blur);
         }
         .dropTarget {
           border-bottom-color: blue;
@@ -138,7 +146,7 @@ const Cell = React.memo(({ rowData, col, colors, selected }) => (
       }
       .stars {
         font-family: monospace;
-        color: ${selected ? colors.highlightInverse : colors.highlightText};
+        color: var(${selected ? '--inverse' : '--highlight'});
         font-size: 20px;
       }
       .empty {

@@ -1,4 +1,5 @@
 import React from 'react';
+import _JSXStyle from "styled-jsx/style";
 
 export const Center = ({ orientation = 'horizontal', style, children }) => {
   const vert = orientation.substr(0, 1).toLowerCase() === 'v';

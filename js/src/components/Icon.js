@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useContext } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { ThemeContext } from '../lib/theme';
-import MusicIcon from '../icons/music.png';
+import MusicIcon from '../assets/icons/music.png';
 
 const icons = {
   downloaded_music: 'downloaded',
@@ -14,10 +15,10 @@ const icons = {
 const loaded = {};
 
 export const Icon = ({ name, src, size = 16, style, ...props }) => {
-  const theme = useContext(ThemeContext);
+  const { dark } = useContext(ThemeContext);
   let modSrc = src;
   if (!src) {
-    modSrc = `${icons[name] || name}${theme === 'dark' ? '-dark' : ''}`;
+    modSrc = `${icons[name] || name}`;
   }
   const [icon, setIcon] = useState(src || loaded[modSrc] || MusicIcon);
   const mounted = useRef(true);
@@ -28,7 +29,7 @@ export const Icon = ({ name, src, size = 16, style, ...props }) => {
       if (loaded[modSrc]) {
         setIcon(loaded[modSrc]);
       } else {
-        import(`../icons/${modSrc}.png`)
+        import(`../assets/icons/${modSrc}.png`)
           .then(mod => {
             loaded[modSrc] = mod.default;
             if (mounted.current) {
@@ -38,7 +39,7 @@ export const Icon = ({ name, src, size = 16, style, ...props }) => {
           .catch(err => {
             console.error("error loading %o: %o", modSrc, err);
             if (mounted.current) {
-              setIcon(MusicIcon);
+              setIcon(null);
             }
           });
       }
@@ -46,12 +47,15 @@ export const Icon = ({ name, src, size = 16, style, ...props }) => {
     return () => {
       mounted.current = false;
     };
-  }, [name, src, modSrc, theme]);
+  }, [name, src, modSrc]);
+  if (icon === null) {
+    return null;
+  }
   return (
     <div className="icon" style={style} {...props}>
       <style jsx>{`
         .icon {
-          background-image: url(${icon});
+          background: url(${icon});
           min-width: ${size}px;
           max-width: ${size}px;
           width: ${size}px;

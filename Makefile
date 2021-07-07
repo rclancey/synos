@@ -26,7 +26,9 @@ TARFILE = $(PKGNAME)-$(TARGET)-$(VERSION).tar.gz
 endif
 
 GOSRC := $(shell find * -type f -name "*.go")
-JSSRC := $(shell find js/public js/src -type f)
+JSSRC := $(shell find js/*.js js/*.json js/src -type f)
+
+NODE_ENV ?= production
 
 all: compile
 
@@ -34,9 +36,10 @@ $(BUILDDIR)/$(PKGNAME)/bin/%: $(GOSRC) go.mod go.sum
 	mkdir -p $(BUILDDIR)/$(PKGNAME)/bin
 	env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) go build -o $@ cmd/$*.go
 
-$(BUILDDIR)/$(PKGNAME)/htdocs/index.html: $(JSSRC) js/package.json
+$(BUILDDIR)/$(PKGNAME)/htdocs/index.html: $(JSSRC)
+	cd js && yarn install && env NODE_ENV=$(NODE_ENV) yarn build
+	rm -rf $(BUILDDIR)/$(PKGNAME)/htdocs
 	mkdir -p $(BUILDDIR)/$(PKGNAME)/htdocs
-	cd js && yarn install && yarn build
 	rsync -a js/build/ $(BUILDDIR)/$(PKGNAME)/htdocs/
 
 go-compile: $(BUILDDIR)/$(PKGNAME)/bin/synos
@@ -67,3 +70,7 @@ version:
 	echo $(VERSION)
 
 .PHONY: version
+
+clean:
+	rm -rf $(BUILDDIR)
+	rm -rf js/build

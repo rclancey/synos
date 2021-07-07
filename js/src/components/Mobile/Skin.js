@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { StackContext, usePages } from './Router/StackContext';
 import { Stack } from './Router/Stack';
 import { Home } from './Home';
@@ -12,6 +13,7 @@ import { Screen } from './Screen';
 
 export const MobileSkin = ({
   theme,
+  dark,
   player,
   setPlayer,
   setControlAPI,
@@ -33,7 +35,7 @@ export const MobileSkin = ({
       pages.onPush('Library', <Home controlAPI={controlAPI} setPlayer={setPlayer} />);
     }
     return () => {
-      window.removeEventListner('popstate', handler);
+      window.removeEventListener('popstate', handler);
       window.removeEventListener('pushstate', handler);
     };
   // eslint-disable-next-line
@@ -74,12 +76,17 @@ export const MobileSkin = ({
   */
 
   useEffect(() => {
-    document.body.style.background = colors.sectionBackground;
-  }, [colors]);
+    document.body.style.background = dark ? 'black' : 'white';
+  }, [dark]);
 
   const onList = null;
   return (
-    <div id="app" className={`mobile ${theme}`}>
+    <div id="app" className={`mobile ${theme} ${dark ? 'dark' : 'light'}`}>
+      <style jsx>{`
+        #app {
+          background: var(--gradient);
+        }
+      `}</style>
   {/*
     <WithRouter
       state={null}
@@ -134,8 +141,6 @@ export const MobileSkin = ({
       <style jsx>{`
         #app {
           height: 100vh;
-          background-color: ${colors.background};
-          color: ${colors.text};
         }
       `}</style>
     </div>

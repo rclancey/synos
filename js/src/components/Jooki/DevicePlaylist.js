@@ -11,7 +11,7 @@ export const JookiDevicePlaylist = ({
     return null;
   }
   return (
-    <HomeItem name="Jooki" iconSrc="/jooki.png" onOpen={onOpen}>
+    <HomeItem name="Jooki" iconSrc="/assets/icons/jooki.png" onOpen={onOpen}>
       <JookiDevice device={device} onClose={onClose} />
     </HomeItem>
   );

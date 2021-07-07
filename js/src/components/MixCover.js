@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { CoverArt } from './CoverArt';
 
 export const MixCover = ({ tracks, size = 140, radius = 5 }) => {

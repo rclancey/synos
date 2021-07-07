@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import css from 'styled-jsx/css';
 import { Cover } from '../Cover';
 import { useTheme } from '../../lib/theme';

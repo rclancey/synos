@@ -1,4 +1,5 @@
 import React from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { useTheme } from '../../lib/theme';
 import { HomeItem } from './HomeItem';
 import { PlaylistFolder } from './PlaylistList';
@@ -60,7 +61,7 @@ export const Sources = React.memo(({ prev, children, onOpen, onFinish, ...props 
           font-weight: bold;
           margin-top: 0.5em;
           padding-left: 0.5em;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
         .items {
           width: 100vw;

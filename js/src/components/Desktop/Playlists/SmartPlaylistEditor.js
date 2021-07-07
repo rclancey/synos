@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { API } from '../../../lib/api';
 import { useAPI } from '../../../lib/useAPI';
 import { useTheme } from '../../../lib/theme';
@@ -295,7 +296,7 @@ export const SmartPlaylistStringRule = ({
     <input
       type="text"
       value={strings[0]}
-      onChange={evt => onUpdate({ strings: [evt.target.value].concat(strings.slice(1)) })}
+      onInput={evt => onUpdate({ strings: [evt.target.value].concat(strings.slice(1)) })}
     />
   );
 };
@@ -309,11 +310,11 @@ export const SmartPlaylistIntRule = ({
 }) => {
   return (
     <>
-      <input type="number" value={ints[0]} onChange={evt => onUpdate({ ints: [parseInt(evt.target.value)].concat(ints.slice(1)) })} />
+      <input type="number" value={ints[0]} onInput={evt => onUpdate({ ints: [parseInt(evt.target.value)].concat(ints.slice(1)) })} />
       { op === 'BETWEEN' ? (
         <>
           {'\u00a0 to \u00a0'}
-          <input type="number" value={ints[1]} onChange={evt => onUpdate({ ints: ints.slice(0, 1).concat([parseInt(evt.target.value)]).concat(ints.slice(2)) })} />
+          <input type="number" value={ints[1]} onInput={evt => onUpdate({ ints: ints.slice(0, 1).concat([parseInt(evt.target.value)]).concat(ints.slice(2)) })} />
         </>
       ) : null }
       { fields[field].unit }
@@ -323,7 +324,7 @@ export const SmartPlaylistIntRule = ({
 
 export const SmartPlaylistBooleanRule = ({
   onUpdate,
-  ...rule,
+  ...rule
 }) => {
   const ops = rule.bool ? [
     { op: "IS", name: "is true", sign: "POS" },
@@ -365,7 +366,7 @@ export const SmartPlaylistDateRule = ({
         <input
           type="number"
           value={t / m}
-          onChange={evt => onUpdate({ times: [parseInt(evt.target.value) * m].concat(times.slice(1)) })}
+          onInput={evt => onUpdate({ times: [parseInt(evt.target.value) * m].concat(times.slice(1)) })}
         />
         <DurationMenu
           value={m}
@@ -379,13 +380,13 @@ export const SmartPlaylistDateRule = ({
         <input
           type="date"
           value={dates[0]}
-          onChange={evt => onUpdate({ times: [new Date(evt.target.value).getTime()].concat(times.slice(1)) })}
+          onInput={evt => onUpdate({ times: [new Date(evt.target.value).getTime()].concat(times.slice(1)) })}
         />
         {'\u00a0 to \u00a0'}
         <input
           type="date"
           value={dates[1]}
-          onChange={evt => onUpdate({ times: times.slice(0, 1).concat([new Date(evt.target.value).getTime()]).concat(times.slice(2)) })}
+          onInput={evt => onUpdate({ times: times.slice(0, 1).concat([new Date(evt.target.value).getTime()]).concat(times.slice(2)) })}
         />
       </>
     );
@@ -394,7 +395,7 @@ export const SmartPlaylistDateRule = ({
       <input
         type="date"
         value={dates[0]}
-        onChange={evt => onUpdate({ times: [new Date(evt.target.value).getTime()].concat(times.slice(1)) })}
+        onInput={evt => onUpdate({ times: [new Date(evt.target.value).getTime()].concat(times.slice(1)) })}
       />
     );
   }
@@ -518,7 +519,7 @@ export const SmartPlaylistLocationRule = ({
 
 const SmartPlaylistRuleData = ({
   type,
-  ...props,
+  ...props
 }) => {
   switch (type) {
   case "string":
@@ -645,7 +646,7 @@ const SmartPlaylistLimits = ({
       <input
         type="checkbox"
         checked={limit !== null}
-        onChange={evt => {
+        onClick={evt => {
           if (limit) {
             onChange(null);
           } else {
@@ -741,7 +742,7 @@ const SmartPlaylistItemLimit = ({
         max={Math.max((items || 0) + 1, 99)}
         step={1}
         value={items || 0}
-        onChange={evt => {
+        onInput={evt => {
           const n = parseInt(evt.target.value);
           if (n === 0 || Number.isNaN(n)) {
             onChange(null);
@@ -770,7 +771,7 @@ const SmartPlaylistSizeLimit = ({
         max={1023}
         step={1}
         value={Math.round((size || 0) / sizeUnit)}
-        onChange={evt => {
+        onInput={evt => {
           const n = parseInt(evt.target.value);
           if (n === 0 || Number.isNaN(n)) {
             onChange(null);
@@ -822,7 +823,7 @@ const SmartPlaylistTimeLimit = ({
         max={99}
         step={1}
         value={Math.round((time || 0) / timeUnit)}
-        onChange={evt => {
+        onInput={evt => {
           const n = parseInt(evt.target.value);
           if (n === 0 || Number.isNaN(n)) {
             onChange(null);

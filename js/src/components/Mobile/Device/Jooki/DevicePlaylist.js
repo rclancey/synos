@@ -7,13 +7,13 @@ export const JookiDevicePlaylist = ({
   onOpen,
   onClose,
   setPlayer,
-  ...props,
+  ...props
 }) => {
   if (!device) {
     return null;
   }
   return (
-    <HomeItem name="Jooki" iconSrc="/jooki.png" onOpen={onOpen}>
+    <HomeItem name="Jooki" iconSrc="/assets/icons/jooki.png" onOpen={onOpen}>
       <JookiDevice device={device} setPlayer={setPlayer} onClose={onClose} {...props} />
     </HomeItem>
   );

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { TrackBrowser } from '../../Tracks/TrackBrowser.js';
 import * as COLUMNS from '../../../../lib/columns';
 import { useControlAPI } from '../../../Player/Context';

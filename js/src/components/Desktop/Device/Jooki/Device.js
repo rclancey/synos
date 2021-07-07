@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { WS } from '../../../../lib/ws';
 import { Calendar } from '../../../Jooki/Calendar';
 import { TokenList } from '../../../Jooki/Token';

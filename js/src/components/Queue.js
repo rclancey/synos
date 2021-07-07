@@ -1,4 +1,5 @@
 import React from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { useTheme } from '../lib/theme';
 import { ShuffleButton, RepeatButton, CloseButton } from './Controls';
 import { CoverArt } from './CoverArt';
@@ -36,7 +37,7 @@ export const QueueHeader = ({ playMode, tracks, onShuffle, onRepeat, onClose }) 
           flex-direction: row;
           width: 100%;
           padding: 0.5em;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
         .header .title {
           flex: 1;
@@ -123,8 +124,8 @@ export const QueueItem = ({
           cursor: pointer;
         }
         .item.selected {
-          background-color: ${colors.highlightText};
-          color: ${colors.background};
+          background-color: var(--highlight);
+          color: var(--inverse);
         }
         .item :global(.coverart) {
           flex: 1;

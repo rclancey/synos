@@ -1,15 +1,34 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { useStack } from './Router/StackContext';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import { PLAYLIST_ORDER } from '../../lib/distinguished_kinds';
 import { AutoSizeList } from '../AutoSizeList';
-import { Icon } from '../Icon';
 import { Playlist } from './SongList';
 import { ScreenHeader } from './ScreenHeader';
+import { SVGIcon } from '../SVGIcon';
+
+import CassetteIcon from '../icons/Cassette';
+import BrainIcon from '../icons/Brain';
+import AtomIcon from '../icons/Atom';
+import PlaylistFolderIcon from '../icons/PlaylistFolder';
 
 export const PlaylistWrapper = ({ persistent_id }) => {
   return null;
+};
+
+const Icon = ({ name, size }) => {
+  switch (name) {
+    case 'folder':
+      return <SVGIcon icn={PlaylistFolderIcon} size={size} />;
+    case 'genius':
+      return <SVGIcon icn={AtomIcon} size={size} />;
+    case 'smart':
+      return <SVGIcon icn={BrainIcon} size={size} />;
+    default:
+      return <SVGIcon icn={CassetteIcon} size={size} />;
+  }
 };
 
 export const PlaylistFolder = ({ persistent_id }) => {

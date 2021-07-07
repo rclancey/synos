@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { useAPI } from '../../../../lib/useAPI';
 import { JookiAPI } from '../../../../lib/jooki';
 import { Icon } from '../../../Icon';

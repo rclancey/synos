@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { AutoSizeList } from '../AutoSizeList';
 import { QueueHeader, QueueItem } from '../Queue';
 import { useTheme } from '../../lib/theme';
@@ -33,6 +34,7 @@ export const Queue = ({ playMode, tracks, index, onSelect, onShuffle, onRepeat }
         <AutoSizeList
           itemCount={tracks.length}
           itemSize={50}
+          offset={0}
           initialScrollOffset={Math.max(0, index - 2) * 50}
         >
           {rowRenderer}
@@ -43,7 +45,7 @@ export const Queue = ({ playMode, tracks, index, onSelect, onShuffle, onRepeat }
           max-height: 80vh;
           overflow: auto;
           cursor: default;
-          background-color: ${colors.background};
+          background: var(--gradient);
         }
         .queue .items {
           height: calc(80vh - 33px);

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { useMeasure } from '../../../lib/useMeasure';
 import { useTheme } from '../../../lib/theme';
 import {
@@ -14,6 +15,29 @@ import { ColumnBrowser } from './ColumnBrowser';
 
 const tsl = new TrackSelectionList([], {});
 window.tsl = tsl;
+
+const playlistColors = [
+  'purple',
+  'darkred',
+  'darkblue',
+  'darkgreen',
+  '#930',
+  'fuchsia',
+  'deeppink',
+  'darkorchid',
+  'darkslateblue',
+  '#356',
+  '#365',
+  'indigo',
+  'maroon',
+  'midnightblue',
+  'teal',
+  'sienna',
+  'olive',
+  '#444',
+  'darkmagenta',
+  'crimson',
+];
 
 const defaultColumns = [
   Object.assign({}, COLUMNS.PLAYLIST_POSITION, { width: 100 /*1*/ }),
@@ -239,6 +263,13 @@ export const TrackBrowser = ({
       },
     }));
   }, [update, genres, artists, albums]);
+  const bgstyle = useMemo(() => {
+    const color = (playlist ? playlist.color : null) || playlistColors[Math.floor(Math.random() * playlistColors.length)];
+    const dir = Math.random() < 0.5 ? -20 : -200;
+    return {
+      background: `linear-gradient(${dir}deg, ${color} 0%, black)`,
+    };
+  }, [playlist]);
 
   return (
     <div className="trackBrowser">
@@ -281,8 +312,7 @@ export const TrackBrowser = ({
           overflow: hidden;
         }
         .trackBrowser .columnBrowserContainer {
-          border-top-color: ${colors.trackList.separator};
-          border-bottom-color: ${colors.trackList.separator};
+          border-bottom-color: var(--border);
         }
         .trackBrowser :global(.ReactVirtualized__Table__headerRow:focus),
         .trackBrowser :global(.ReactVirtualized__Table__row:focus) {
@@ -322,8 +352,7 @@ export const TrackBrowser = ({
           min-height: 200px;
           display: flex;
           flex-direction: row;
-          border-top-style: solid;
-          border-top-width: 1px;
+          border-top: none;
           border-bottom-style: solid;
           border-bottom-width: 1px;
         }

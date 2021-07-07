@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 
 export const ThemeContext = React.createContext('dark');
 
@@ -113,8 +113,36 @@ export const colors = {
   },
 };
 
-export const useTheme = () => {
-  const theme = useContext(ThemeContext);
-  return colors[theme];
-};
+const gradientColors = [
+  'purple',
+  'darkred',
+  'darkblue',
+  'darkgreen',
+  '#930',
+  'fuchsia',
+  'deeppink',
+  'darkorchid',
+  'darkslateblue',
+  '#356',
+  '#365',
+  'indigo',
+  'maroon',
+  'midnightblue',
+  'teal',
+  'sienna',
+  'olive',
+  '#444',
+  'darkmagenta',
+  'crimson',
+];
 
+export const useTheme = () => {
+  const { theme } = useContext(ThemeContext);
+  const base = theme.match(/dark/) ? 'dark' : 'light';
+  return useMemo(() => ({
+    ...colors[base],
+    ...colors[theme],
+    gradient: gradientColors[Math.floor(Math.random() * gradientColors.length)],
+    gradientDir: Math.random() < 0.5 ? -20 : -200,
+  }), [base, theme]);
+};

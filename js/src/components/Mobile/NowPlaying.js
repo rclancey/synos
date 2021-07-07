@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { useTheme } from '../../lib/theme';
+import React, { useContext, useState, useMemo, useCallback } from 'react';
+import _JSXStyle from 'styled-jsx/style';
+import { useTheme, ThemeContext } from '../../lib/theme';
 import { usePlaybackInfo, useControlAPI, currentTrack } from '../Player/Context';
 import { TrackInfo } from '../TrackInfo';
 import { CoverArt } from '../CoverArt';
@@ -15,7 +16,7 @@ const Expander = ({ onExpand }) => {
     <div className="fas fa-angle-up" onClick={onExpand}>
       <style jsx>{`
         div {
-          color: ${colors.highlightText};
+          color: var(--highlight);
           padding: 1em 1em 1em 0;
         }
       `}</style>
@@ -29,7 +30,7 @@ const Collapser = ({ onCollapse }) => {
     <div className="collapse fas fa-angle-down" onClick={onCollapse}>
       <style jsx>{`
         div {
-          color: ${colors.highlightText};
+          color: var(--highlight);
           padding: 5px 1em;
         }
       `}</style>
@@ -43,7 +44,7 @@ const Hamburger = ({ onOpen }) => {
     <div className="showQueue fas fa-bars" onClick={onOpen}>
       <style jsx>{`
         div {
-          color: ${colors.highlightText};
+          color: var(--highlight);
           text-align: right;
           padding: 5px 1em;
         }
@@ -125,10 +126,10 @@ export const MiniControls = ({
           border-top-width: 1px;
           display: flex;
           flex-direction: row;
-          background: ${colors.background};
+          background: var(--contrast5);
         }
         .fa-angle-up {
-          color: ${colors.highlightText};
+          color: var(--highlight);
           padding: 1em 1em 1em 0;
         }
       `}</style>
@@ -211,6 +212,8 @@ export const ExpandedControls = ({
           onChange={controlAPI.onSetVolumeTo}
         />
         <SonosSwitch state={sonos} on={onEnableSonos} off={onDisableSonos} />
+        <DarkMode />
+        <ThemeChooser />
 
       </div>
       <style jsx>{`
@@ -227,7 +230,10 @@ export const ExpandedControls = ({
           height: 100%;
           padding: 0;
           border-top: none;
-          background-color: ${colors.background};
+          background-color: var(--contrast5);
+        }
+        .nowplaying.big {
+          background: var(--gradient);
         }
         .content {
           flex: 10;
@@ -396,6 +402,55 @@ const SonosSwitch = ({ state, on, off }) => (
     `}</style>
   </div>
 );
+
+const DarkMode = () => {
+  const { darkMode, setDarkMode } = useContext(ThemeContext);
+  return (
+    <div>
+      <style jsx>{`
+        margin-top: 1em;
+      `}</style>
+      Dark Mode:
+      <input type="radio" name="darkmode" value="on" checked={darkMode === true} onClick={() => setDarkMode(true)} />
+      {'On\u00a0\u00a0\u00a0'}
+      <input type="radio" name="darkmode" value="off" checked={darkMode === false} onClick={() => setDarkMode(false)} />
+      {'Off\u00a0\u00a0\u00a0'}
+      <input type="radio" name="darkmode" value="default" checked={darkMode === null} onClick={() => setDarkMode(null)} />
+      {'Default'}
+    </div>
+  );
+};
+
+const themes = [
+  'grey',
+  'red',
+  'orange',
+  'yellow',
+  'green',
+  'seafoam',
+  'teal',
+  'slate',
+  'blue',
+  'indigo',
+  'purple',
+  'fuchsia',
+];
+
+const ThemeChooser = () => {
+  const { theme, setTheme } = useContext(ThemeContext);
+  const onChange = useCallback((evt) => setTheme(evt.target.value), [setTheme]);
+  return (
+    <div>
+      <style jsx>{`
+        margin-top: 1em;
+      `}</style>
+      Theme:
+      <select value={theme} onChange={onChange}>
+        {themes.map((t) => (<option key={t} value={t}>{`${t.substr(0, 1).toUpperCase()}${t.substr(1)}`}</option>))}
+      </select>
+    </div>
+  );
+};
 
 /*
 const Expanded = ({

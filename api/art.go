@@ -26,7 +26,7 @@ func TrackArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	}
 	fn, err := GetAlbumArtFilename(tr)
 	if err != nil {
-		return H.Redirect("/nocover.jpg"), nil
+		return H.Redirect("/assets/nocover.jpg"), nil
 	}
 	return H.StaticFile(fn), nil
 }
@@ -132,7 +132,7 @@ func AlbumArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		}
 		log.Println("error getting album art:", err)
 	}
-	return H.Redirect("/nocover.jpg"), nil
+	return H.Redirect("/assets/nocover.jpg"), nil
 }
 
 func GenreArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {

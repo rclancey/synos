@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { useTheme } from '../../lib/theme';
 import { AutoSizeList } from '../AutoSizeList';
 import { QueueHeader, QueueItem } from '../Queue';
@@ -47,7 +48,7 @@ export const Queue = React.memo(({ playMode, tracks, index, onSelect, onShuffle,
           width: 100vw;
           height: 100%;
           overflow: auto;
-          background-color: ${colors.background};
+          background: var(--gradient);
         }
         .queue .items {
           height: calc(100vh - 33px);

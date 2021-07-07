@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import { SongList } from './SongList';
@@ -100,7 +101,7 @@ const ComplexRow = ({
     <>
       <div className="key">{name}</div>
       <div>
-        <input type="text" value={val || ''} onChange={onChange} />
+        <input type="text" value={val || ''} onInput={onChange} />
       </div>
     </>
   );
@@ -162,7 +163,7 @@ const SimpleQuery = ({
   return (
     <div className="query">
       <div className="input">
-        <input type="text" value={query || ''} onChange={onChange} />
+        <input type="text" value={query || ''} onInput={onChange} />
       </div>
       <span className="expand" onClick={onExpand}>
         <span className="fas fa-search-plus" />

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { Icon } from '../Icon';
 import { useTheme } from '../../lib/theme';
 
@@ -52,8 +53,8 @@ export const DeleteIcon = ({ size, onDelete }) => {
             background-color: #cc0000;
           }
           .cancel {
-            background-color: ${colors.highlightText};
-            color: ${colors.highlightInverse};
+            background-color: var(--highlight);
+            color: var(--highlight-inverse);
           }
         `}</style>
       </div>

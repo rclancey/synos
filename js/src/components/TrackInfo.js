@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import displayTime from '../lib/displayTime';
 
 export const TrackInfo = ({ track, className, onList }) => {
@@ -103,6 +104,11 @@ export const TrackInfo = ({ track, className, onList }) => {
 };
 
 export const TrackTime = ({ ms, ...props }) => (
-  <div {...props}>{displayTime(ms)}</div>
+  <div {...props}>
+    <style jsx>{`
+      font-variant: tabular-nums;
+    `}</style>
+    {displayTime(ms)}
+  </div>
 );
 

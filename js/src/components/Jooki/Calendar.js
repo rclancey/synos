@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { PlaylistMenu } from './PlaylistMenu';
 import { useTheme } from '../../lib/theme';
 

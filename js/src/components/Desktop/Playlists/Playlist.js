@@ -19,6 +19,7 @@ export const Playlist = ({
 }) => {
   const api = useAPI(API);
   const [, connectDragSource] = useDrag({
+    type: 'Playlist',
     item: {
       type: 'Playlist',
       device,

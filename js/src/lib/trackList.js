@@ -1,4 +1,4 @@
-import sortBy from 'lodash.sortBy';
+import sortBy from 'lodash.sortby';
 
 const setsEqual = (a, b) => {
   if (a.size !== b.size) {

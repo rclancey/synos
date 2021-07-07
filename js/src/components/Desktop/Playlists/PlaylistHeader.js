@@ -1,11 +1,12 @@
 import React, { useState, useCallback } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { useTheme } from '../../../lib/theme';
 import { MixCover } from '../../MixCover';
 import { EditPlaylist } from './EditPlaylist';
-import Random from '../../../icons/random.svg';
-import Play from '../../../icons/play.svg';
-import Insert from '../../../icons/insert.svg';
-import Append from '../../../icons/append.svg';
+import Random from '../../../assets/icons/random.svg';
+import Play from '../../../assets/icons/play.svg';
+import Insert from '../../../assets/icons/insert.svg';
+import Append from '../../../assets/icons/append.svg';
 
 const plural = (n, singular, plural) => {
   return `${n} ${n === 1 ? singular : (plural || singular+'s')}`;
@@ -63,7 +64,7 @@ export const PlaylistInfo = ({ name, tracks, smart, onEdit }) => {
         }
         .playlistInfo .edit {
           text-decoration: none;
-          color: ${colors.highlightText};
+          color: var(--highlight);
           cursor: pointer;
         }
       `}</style>
@@ -86,7 +87,7 @@ export const QueueButton = ({ title, icon, onClick }) => {
         .item .icon {
           width: 18px;
           height: 18px;
-          background-color: ${colors.highlightText};
+          background-color: var(--highlight);
           mask: url(${icon});
           mask-size: contain;
           mask-repeat: no-repeat;
@@ -95,7 +96,7 @@ export const QueueButton = ({ title, icon, onClick }) => {
           margin: 0;
           padding: 0;
           margin-left: 0.5em;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
       `}</style>
     </div>
@@ -190,7 +191,7 @@ export const PlaylistHeader = ({
   return (
     <div className="playlistHeader">
       { editing && <EditPlaylist playlist={playlist} onSavePlaylist={onSavePlaylist} onCancel={() => setEditing(false)} /> }
-      <MixCover tracks={playlist.items || playlist.tracks} size={80} />
+      <MixCover tracks={playlist.items || playlist.tracks} size={120} />
       <PlaylistInfo name={playlist.name} tracks={playlist.items || playlist.tracks} smart={playlist.smart} onEdit={onEdit} />
       <div className="queueOptions">
         <PlayNow persistent_id={playlist.persistent_id} tracks={playlist.items || playlist.tracks} controlAPI={controlAPI} />
@@ -202,7 +203,9 @@ export const PlaylistHeader = ({
         .playlistHeader {
           display: flex;
           padding: 2em;
+          /*
           background-color: ${colors.sectionBackground};
+          */
           border-bottom: solid ${colors.trackList.separator} 1px;
         }
       `}</style>

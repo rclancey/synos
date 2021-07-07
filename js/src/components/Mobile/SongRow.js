@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 //import { useDrag, useDrop } from 'react-dnd';
 import { areEqual } from 'react-window';
 import { DotsMenu } from './TrackMenu';
@@ -12,6 +13,9 @@ export const SongRow = React.memo(({
   index,
   style,
 }) => {
+  const track = useMemo(() => {
+    return data.tracks[data.editing ? index + 1 : index];
+  }, [data, index]);
   if (data.onBeginAdd && index === 0) {
     return (
       <div className="item add" style={style} onClick={() => data.onBeginAdd()}>
@@ -20,9 +24,6 @@ export const SongRow = React.memo(({
       </div>
     );
   }
-  const track = useMemo(() => {
-    return data.tracks[data.editing ? index + 1 : index];
-  }, [data, index]);
 
   return (
     <div className="item" style={style}>
@@ -227,7 +228,7 @@ const InteriorRow = React.memo(({
         .item :global(.move) {
           display: flex;
           flex-direction: column;
-          color: ${colors.highlightText};
+          color: var(--highlight);
         }
         .item :global(.move) .disabled {
           color: ${colors.text};

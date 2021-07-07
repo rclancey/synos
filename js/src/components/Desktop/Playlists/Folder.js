@@ -18,6 +18,7 @@ export const Folder = ({
   controlAPI,
 }) => {
   const [, connectDragSource] = useDrag({
+    type: 'Folder',
     item: {
       type: 'Folder',
       device,
