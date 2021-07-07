@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 
 import RouterContext from '../../lib/router';
 

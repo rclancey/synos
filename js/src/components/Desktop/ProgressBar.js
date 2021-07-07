@@ -1,4 +1,5 @@
 import React from 'react';
+import _JSXStyle from "styled-jsx/style";
 import ReactLogo from '../icons/ReactLogo';
 
 export const ProgressBar = React.memo(({ total, complete }) => {

@@ -1,4 +1,5 @@
 import React, { useMemo, useRef } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { RangeInput } from './RangeInput';
 import { TrackTime } from './TrackInfo';
 import { useTheme } from '../lib/theme';

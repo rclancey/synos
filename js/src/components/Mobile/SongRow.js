@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 //import { useDrag, useDrop } from 'react-dnd';
 import { areEqual } from 'react-window';
 import { DotsMenu } from './TrackMenu';

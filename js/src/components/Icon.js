@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useContext } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { ThemeContext } from '../lib/theme';
 import MusicIcon from '../assets/icons/music.png';
 

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { StackContext, usePages } from './Router/StackContext';
 import { Stack } from './Router/Stack';
 import { Home } from './Home';

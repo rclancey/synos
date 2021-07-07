@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { useTheme } from '../../../lib/theme';
 import { MixCover } from '../../MixCover';
 import { EditPlaylist } from './EditPlaylist';

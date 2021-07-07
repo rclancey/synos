@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { useDrag, useDrop } from 'react-dnd';
 import { useTheme } from '../../../lib/theme';
 

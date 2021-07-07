@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { Dialog, ButtonRow, Button, Padding } from '../Dialog';
 import { SmartPlaylistEditor } from './SmartPlaylistEditor';
 import { useTheme } from '../../../lib/theme';

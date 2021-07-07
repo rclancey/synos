@@ -1,4 +1,5 @@
 import React from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { Icon } from './Icon';
 
 export const SVGIcon = ({ icn, size }) => {

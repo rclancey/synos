@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { useTheme } from '../../lib/theme';
 
 export const Index = ({ index, list }) => {

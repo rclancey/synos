@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { useTheme } from '../../../lib/theme';
 import { SVGIcon } from '../../SVGIcon';
 import { Icon } from '../../Icon';

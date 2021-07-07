@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { useTheme } from '../../lib/theme';
 import { AutoSizeList } from '../AutoSizeList';
 import { QueueHeader, QueueItem } from '../Queue';

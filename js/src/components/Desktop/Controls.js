@@ -1,4 +1,5 @@
 import React, { useContext, useRef, useState, useEffect, useMemo, useCallback } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import displayTime from '../../lib/displayTime';
 import { Player } from '../Player/Player';
 import { currentTrack, usePlaybackInfo, useControlAPI } from '../Player/Context';

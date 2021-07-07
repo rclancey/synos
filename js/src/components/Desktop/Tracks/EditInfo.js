@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { CoverArt } from '../../CoverArt';
 import { Dialog, ButtonRow, Button, Padding } from '../Dialog';
 import { useTheme } from '../../../lib/theme';

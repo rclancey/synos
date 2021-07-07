@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import displayTime from '../lib/displayTime';
 
 export const TrackInfo = ({ track, className, onList }) => {

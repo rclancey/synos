@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { useTheme } from '../../../lib/theme';
 import { useFocus } from '../../../lib/useFocus';
 import { AutoSizeList } from '../../AutoSizeList';

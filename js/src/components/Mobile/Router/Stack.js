@@ -1,4 +1,5 @@
 import React from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { useStack } from './StackContext';
 import { useTheme } from '../../../lib/theme';
 import { Home } from '../Home';

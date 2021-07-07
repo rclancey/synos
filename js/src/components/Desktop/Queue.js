@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { AutoSizeList } from '../AutoSizeList';
 import { QueueHeader, QueueItem } from '../Queue';
 import { useTheme } from '../../lib/theme';

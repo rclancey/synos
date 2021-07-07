@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import _JSXStyle from "styled-jsx/style";
 
 export const RangeInput = ({ value, min, max, ...props }) => {
   const pct = 100 * (value - min) / (max - min);

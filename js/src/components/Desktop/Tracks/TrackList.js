@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import Draggable from 'react-draggable';
 import { useTheme } from '../../../lib/theme';
 import { useColumns } from '../../../lib/colsize';

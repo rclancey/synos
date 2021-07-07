@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { Icon } from '../Icon';
 import { useTheme } from '../../lib/theme';
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import _JSXStyle from "styled-jsx/style";
 import { usePlaybackInfo } from '../Player/Context';
 import { Controls } from './Controls';
 import { Library } from './Library';

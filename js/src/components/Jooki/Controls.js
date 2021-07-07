@@ -1,4 +1,5 @@
 import React from 'react';
+import _JSXStyle from "styled-jsx/style";
 import displayTime from '../../lib/displayTime';
 import { PlayPauseSkip, Volume, Progress, ShuffleButton, RepeatButton } from '../Controls';
 import { JookiCoverArt } from './CoverArt';

@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback, useRef, useMemo } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 
 export const Artwork = ({
   track,

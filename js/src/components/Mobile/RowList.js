@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import _JSXStyle from 'styled-jsx/style';
 import { useStack } from './Router/StackContext';
 import { AutoSizeList } from '../AutoSizeList';
 import { ScreenHeader } from './ScreenHeader';
