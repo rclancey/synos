@@ -115,7 +115,6 @@ export const Main = () => {
   }), [dark, state, setTheme, setDarkMode]);
 
   const clsName = `App ${themeCtx.dark ? 'dark' : 'light'} ${themeCtx.theme}`;
-  console.debug('rendering Main: %o %o', { state, dark, themeCtx }, clsName)
   return (
     <ThemeContext.Provider value={themeCtx}>
       <div id="main" className={clsName}>
