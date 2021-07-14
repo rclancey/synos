@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/base64"
 	"io"
 	"math/rand"
@@ -13,9 +12,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 
-	"github.com/rclancey/htpasswd"
-	H "github.com/rclancey/httpserver"
-	"github.com/rclancey/httpserver/auth"
+	H "github.com/rclancey/httpserver/v2"
 )
 
 func randStr(n int) string {
@@ -24,20 +21,11 @@ func randStr(n int) string {
 	return base64.StdEncoding.EncodeToString(data)[:n]
 }
 
-func LoginAPI(router H.Router, authmw Middleware) {
-	router.POST("/login", H.HandlerFunc(authmw(LoginHandler)))
+func DebugAPI(router H.Router, authmw H.Middleware) {
 	router.GET("/status", H.HandlerFunc(StatusHandler))
 	router.GET("/rawprof", H.HandlerFunc(RawPProfHandler))
 	router.GET("/pprof", H.HandlerFunc(PProfHandler))
 	router.GET("/hprof", http.HandlerFunc(hprof.Profile))
-}
-
-func LoginHandler(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	user := GetAuthUser(r)
-	if user == nil {
-		return nil, H.Unauthorized
-	}
-	return user, nil
 }
 
 func StatusHandler(w http.ResponseWriter, r *http.Request) (interface{}, error) {
@@ -88,51 +76,3 @@ func PProfHandler(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	return nil, nil
 }
 
-type authKey string
-
-func GetAuthUser(r *http.Request) *auth.User {
-	user, isa := r.Context().Value(authKey("authUser")).(*auth.User)
-	if isa {
-		return user
-	}
-	return nil
-}
-
-func AuthenticationMiddleware(cfg *H.AuthConfig) Middleware {
-	htp := htpasswd.NewHTPasswd(cfg.PasswordFile)
-	return func(handler hf) hf {
-		f := func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-			var err error
-			user := cfg.ReadCookie(r)
-			if user == nil {
-				user = cfg.ReadHeader(r, "X-API-Auth")
-			}
-			if user == nil {
-				username, password, ok := r.BasicAuth()
-				if ok {
-					user, err = htp.Authenticate(username, password)
-					if err != nil {
-						return nil, H.InternalServerError.Wrap(err, "")
-					}
-				}
-			}
-			if user == nil {
-				return nil, H.Unauthorized
-			}
-			if user.Provider != "htpasswd" {
-				user, err = htp.GetUserByEmail(user.Email)
-				if err != nil {
-					return nil, H.InternalServerError.Wrap(err, "")
-				}
-			}
-			if user == nil {
-				return nil, H.Unauthorized
-			}
-			cfg.SetCookie(w, user)
-			ctx := context.WithValue(r.Context(), authKey("authUser"), user)
-			r = r.Clone(ctx)
-			return handler(w, r)
-		}
-		return hf(f)
-	}
-}

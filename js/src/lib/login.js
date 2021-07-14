@@ -33,13 +33,13 @@ export const checkLoginCookie = () => {
 
 export const doLogin = (username, password) => {
   const headers = new Headers();
-  if (username !== undefined && username !== null && username !== '' && password !== undefined && password !== null && password !== '') {
-    headers.set('Authorization', 'Basic ' + base64.encode(username + ":" + password));
-  } 
+  headers['Content-Type'] = 'application/json';
+  const body = { username, password };
   return fetch('/api/login', { 
     method: 'POST',
     credientials: 'include',
     headers,
+    body: JSON.stringify(body),
   })
     .then(resp => {
       if (resp.status === 200) {

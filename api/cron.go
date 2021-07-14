@@ -9,12 +9,12 @@ import (
 	//"github.com/pkg/errors"
 
 	"github.com/rclancey/synos/cron"
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 )
 
-func CronAPI(router H.Router, authmw Middleware) {
-	router.GET("/cron", H.HandlerFunc(authmw(LoadSchedule)))
-	router.POST("/cron", H.HandlerFunc(authmw(UpdateSchedule)))
+func CronAPI(router H.Router, authmw H.Middleware) {
+	router.GET("/cron", authmw(H.HandlerFunc(LoadSchedule)))
+	router.POST("/cron", authmw(H.HandlerFunc(UpdateSchedule)))
 }
 
 var sched *cron.Schedule

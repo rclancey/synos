@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"strings"
 
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/synos/musicdb"
 )
 
-func ArtAPI(router H.Router, authmw Middleware) {
+func ArtAPI(router H.Router, authmw H.Middleware) {
 	router.GET("/art/track/:id", H.HandlerFunc(TrackArt))
-	router.PUT("/art/track/:id", H.HandlerFunc(authmw(UpdateArtwork)))
+	router.PUT("/art/track/:id", authmw(H.HandlerFunc(UpdateArtwork)))
 	router.GET("/art/artist", H.HandlerFunc(ArtistArt))
 	router.GET("/art/album", H.HandlerFunc(AlbumArt))
 	router.GET("/art/genre", H.HandlerFunc(GenreArt))

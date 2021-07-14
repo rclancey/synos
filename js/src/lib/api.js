@@ -63,6 +63,11 @@ export class APIBase {
     return this.fetch(url, Object.assign({}, args, { method, body }));
   }
 
+  delete(url) {
+    const method = 'DELETE';
+    return this.fetch(url, { method });
+  }
+
 }
 
 export class API extends APIBase {
@@ -145,6 +150,16 @@ export class API extends APIBase {
     const url = `/api/playlist/${playlist.persistent_id}`;
     const body = Object.assign({}, playlist, { parent_persistent_id: folder ? folder.persistent_id : null });
     return this.put(url, body);
+  }
+
+  sharePlaylist(playlistId) {
+    const url = `/api/shared/${playlistId}`;
+    return this.put(url);
+  }
+
+  unsharePlaylist(playlistId) {
+    const url = `/api/shared/${playlistId}`;
+    return this.delete(url);
   }
 
   loadGenres() {

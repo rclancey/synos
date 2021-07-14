@@ -7,16 +7,16 @@ import (
 	"path"
 	"strings"
 
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/synos/musicdb"
 	"github.com/rclancey/synos/radio"
 )
 
-func RadioAPI(router H.Router, authmw Middleware) {
-	router.GET("/radio", H.HandlerFunc(authmw(ListStations)))
+func RadioAPI(router H.Router, authmw H.Middleware) {
+	router.GET("/radio", authmw(H.HandlerFunc(ListStations)))
 	router.GET("/radio/:id", H.HandlerFunc(PlayStation))
-	router.POST("/radio", H.HandlerFunc(authmw(CreateStation)))
-	router.DELETE("/radio/:id", H.HandlerFunc(authmw(DeleteStation)))
+	router.POST("/radio", authmw(H.HandlerFunc(CreateStation)))
+	router.DELETE("/radio/:id", authmw(H.HandlerFunc(DeleteStation)))
 }
 
 var streams = map[string]*radio.Stream{}

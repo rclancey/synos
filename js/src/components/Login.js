@@ -4,7 +4,7 @@ import { checkLoginCookie, doLogin, LoginContext } from '../lib/login';
 import { useTheme } from '../lib/theme';
 import { Center } from './Center';
 
-export const CheckLogin = ({ children }) => {
+export const CheckLogin = ({ theme, dark, children }) => {
   const [login, setLogin] = useState({ loggedIn: null, username: null });
   useEffect(() => {
     setLogin(checkLoginCookie());
@@ -29,17 +29,17 @@ export const CheckLogin = ({ children }) => {
     );
   }
   return (
-    <Login username={login.username} onLogin={onLogin} />
+    <Login theme={theme} dark={dark} username={login.username} onLogin={onLogin} />
   );
 };
 
-export const Login = ({ username, onLogin }) => {
+export const Login = ({ theme, dark, username, onLogin }) => {
   const colors = useTheme();
   const [tmpUsername, setUsername] = useState(username || '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   return (
-    <div id="login">
+    <div id="app" className={`${theme} ${dark ? 'dark' : 'light'}`}>
       <Center orientation="horizontal" style={{ height: '100vh' }}>
         <Center orientation="vertical">
           <div className="login">
@@ -102,8 +102,8 @@ export const Login = ({ username, onLogin }) => {
         </Center>
       </Center>
       <style jsx>{`
-        #login {
-          background-color: ${colors.background};
+        #app {
+          background: var(--gradient-end);
         }
         .login {
           flex: 1;
@@ -115,9 +115,10 @@ export const Login = ({ username, onLogin }) => {
           grid-template-columns: min-content min-content;
           grid-column-gap: 10px;
           grid-row-gap: 10px;
-          border-color: ${colors.login.border};
-          color: ${colors.login.text};
-          box-shadow: ${colors.login.shadow} 0px 0px 50px 20px;
+          border-color: transparent;
+          color: var(--text);
+          box-shadow: var(--gradient-start) 0px 0px 50px 20px;
+          background: var(--gradient);
         }
         .login .header {
           grid-column: span 2;
@@ -132,13 +133,17 @@ export const Login = ({ username, onLogin }) => {
           border-radius: 4px;
           padding: 4px 8px;
           font-size: 12pt;
-          border-color: ${colors.login.text};
-          background-color: ${colors.login.background};
-          color: ${colors.login.text};
+          border-color: var(--border);
+          background-color: var(--gradient-end);
+          color: var(--text);
+        }
+        .login input:focus-visible {
+          outline: var(--highlight) auto 1px;
         }
         .login input[type="button"] {
           font-weight: bold;
-          background-image: linear-gradient(${colors.login.gradient1}, ${colors.login.gradient2});
+          background-image: linear-gradient(var(--gradient-start), var(--gradient-end));
+          border-color: var(--highlight);
         }
         .login .social {
           grid-column: span 2;
@@ -148,7 +153,7 @@ export const Login = ({ username, onLogin }) => {
           width: calc(100% - 2em);
           margin: 5px 1em 2px 1em;
           padding: 0.5em;
-          border: solid ${colors.login.text} 1px;
+          border: solid var(--border) 1px;
           border-radius: 4px;
           text-decoration: none;
           font-weight: bold;
@@ -163,7 +168,7 @@ export const Login = ({ username, onLogin }) => {
         .login .social a.github {
           color: white;
           background-color: black;
-          border-color: white;
+          border-color: black;
         }
         .login .social a.github .logo {
           width: 18px;

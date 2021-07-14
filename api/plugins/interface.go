@@ -1,7 +1,7 @@
 package "synosPlugins"
 
 import (
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/synos/musicdb"
 )
 

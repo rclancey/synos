@@ -21,6 +21,7 @@ import (
 
 type Track struct {
 	PersistentID     PersistentID `json:"persistent_id" db:"id"`
+	OwnerID          PersistentID `json:"owner_id,omitempty" db:"owner_id"`
 	JookiID          *string      `json:"jooki_id,omitempty" db:"jooki_id"`
 	Album            *string      `json:"album,omitempty" db:"album"`
 	AlbumArtist      *string      `json:"album_artist,omitempty" db:"album_artist"`
@@ -73,6 +74,7 @@ type Track struct {
 	SpotifyAlbumID       *string      `json:"spotify_album_id" db:"spotify_album_id"`
 	SpotifyArtistID      *string      `json:"spotify_artist_id" db:"spotify_artist_id"`
 	SpotifyTrackID       *string      `json:"spotify_track_id" db:"spotify_track_id"`
+	Homedir              *string      `json:"-" db:"homedir" dbignore:"insert update"`
 	db *DB
 }
 
@@ -140,7 +142,7 @@ func (t *Track) Path() string {
 	}
 	finder := GetGlobalFinder()
 	if finder != nil {
-		fn, err := finder.FindFile(*t.Location)
+		fn, err := finder.FindFile(*t.Location, t.Homedir)
 		if err == nil {
 			return fn
 		}

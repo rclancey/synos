@@ -22,6 +22,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 
+	"github.com/rclancey/httpserver/v2/auth"
 	"github.com/rclancey/itunes/loader"
 )
 
@@ -29,6 +30,7 @@ var CircularPlaylistFolder = builtinErrors.New("playlist can't be a descendant o
 var NoSuchPlaylistFolder = builtinErrors.New("playlist folder does not exist")
 var ParentNotAFolder = builtinErrors.New("parent playlist is not a folder")
 var PlaylistFolderNotEmpty = builtinErrors.New("Playlist folder not empty")
+var ErrUnknownSocialDriver = builtinErrors.New("unknown social login provider")
 
 func serializeGob(obj interface{}) []byte {
 	var buf bytes.Buffer
@@ -45,6 +47,7 @@ func deserializeGob(data []byte, obj interface{}) error {
 
 type DB struct {
 	conn *sqlx.DB
+	userChan chan *User
 }
 
 func Open(connstr string) (*DB, error) {
@@ -264,7 +267,7 @@ func (db *DB) TracksSince(mk MediaKind, t Time, page, count int, args map[string
 }
 
 func (db *DB) Tracks(page, count int, order []string) ([]*Track, error) {
-	qs := `SELECT * FROM track ORDER BY`
+	qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id ORDER BY`
 	if len(order) == 0 {
 		qs += " date_modified"
 	} else {
@@ -296,7 +299,7 @@ func (db *DB) Tracks(page, count int, order []string) ([]*Track, error) {
 }
 
 func (db *DB) GetTrack(pid PersistentID) (*Track, error) {
-	qs := `SELECT * FROM track WHERE id = ?`
+	qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE track.id = ?`
 	row := db.QueryRow(qs, pid)
 	var track Track
 	err := row.StructScan(&track)
@@ -309,9 +312,17 @@ func (db *DB) GetTrack(pid PersistentID) (*Track, error) {
 	return &track, nil
 }
 
-func (db *DB) GetPlaylist(pid PersistentID) (*Playlist, error) {
+func (db *DB) GetPlaylist(pid PersistentID, user *User) (*Playlist, error) {
 	qs := `SELECT * FROM playlist WHERE id = ?`
-	row := db.QueryRow(qs, pid)
+	args := []interface{}{pid}
+	if user == nil {
+		qs += ` AND shared = 't'`
+	} else {
+		qs += ` AND (owner_id = ? OR shared = 't')`
+		args = append(args, user.PersistentID)
+	}
+	log.Println("GetPlaylist:", qs, args)
+	row := db.QueryRow(qs, args...)
 	var pl Playlist
 	err := row.StructScan(&pl)
 	if err != nil {
@@ -323,9 +334,20 @@ func (db *DB) GetPlaylist(pid PersistentID) (*Playlist, error) {
 	return &pl, nil
 }
 
-func (db *DB) GetPlaylistTree(root *PersistentID) ([]*Playlist, error) {
-	qs := `SELECT * FROM playlist ORDER BY kind, name`
-	rows, err := db.Query(qs)
+func (db *DB) GetPlaylistTree(root *PersistentID, user *User) ([]*Playlist, error) {
+	qs := `SELECT * FROM playlist`
+	args := []interface{}{}
+	var me PersistentID
+	if user == nil {
+		qs += ` WHERE shared = 't'`
+		me = PersistentID(0)
+	} else {
+		qs += ` WHERE owner_id = ? OR shared = 't'`
+		args = append(args, user.PersistentID)
+		me = user.PersistentID
+	}
+	qs += ` ORDER BY kind, name`
+	rows, err := db.Query(qs, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -342,9 +364,19 @@ func (db *DB) GetPlaylistTree(root *PersistentID) ([]*Playlist, error) {
 		pls = append(pls, &pl)
 	}
 	top := []*Playlist{}
+	shared := map[PersistentID][]*Playlist{}
 	for _, pl := range pls {
 		if pl.ParentPersistentID == nil {
-			top = append(top, pl)
+			if pl.OwnerID == me {
+				top = append(top, pl)
+			} else {
+				shr, ok := shared[pl.OwnerID]
+				if ok {
+					shared[pl.OwnerID] = append(shr, pl)
+				} else {
+					shared[pl.OwnerID] = []*Playlist{pl}
+				}
+			}
 		} else {
 			parent, ok := plm[*pl.ParentPersistentID]
 			if ok {
@@ -353,16 +385,37 @@ func (db *DB) GetPlaylistTree(root *PersistentID) ([]*Playlist, error) {
 				}
 				parent.Children = append(parent.Children, pl)
 			} else {
-				top = append(top, pl)
+				if pl.OwnerID == me {
+					top = append(top, pl)
+				} else {
+					shr, ok := shared[pl.OwnerID]
+					if ok {
+						shared[pl.OwnerID] = append(shr, pl)
+					} else {
+						shared[pl.OwnerID] = []*Playlist{pl}
+					}
+				}
 			}
 		}
 	}
+
 	/*
 	for _, pl := range pls {
 		pl.SortFolder()
 	}
 	*/
 	if root == nil {
+		users, err := db.ListUsers()
+		if err == nil {
+			for _, user := range users {
+				shr, ok := shared[user.PersistentID]
+				if ok {
+					f := user.SharedFolder()
+					f.Children = shr
+					top = append(top, f)
+				}
+			}
+		}
 		/*
 		log.Println("---------------------------------------------")
 		log.Println("orig sort order:")
@@ -380,6 +433,10 @@ func (db *DB) GetPlaylistTree(root *PersistentID) ([]*Playlist, error) {
 	parent, ok := plm[*root]
 	if ok {
 		return parent.Children, nil
+	}
+	shr, ok := shared[*root]
+	if ok {
+		return shr, nil
 	}
 	return nil, errors.WithStack(NoSuchPlaylistFolder)
 }
@@ -764,7 +821,7 @@ func (db *DB) GenreAlbums(genre *Genre) ([]*Album, error) {
 }
 
 func (db *DB) AlbumTracks(album *Album) ([]*Track, error) {
-	qs := `SELECT * FROM track WHERE sort_album = ?`
+	qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE sort_album = ?`
 	args := []interface{}{album.SortName}
 	if album.Artist != nil {
 		qs += ` AND ((sort_album_artist IS NULL AND sort_artist = ?) OR sort_album_artist = ?)`
@@ -789,7 +846,7 @@ func (db *DB) AlbumTracks(album *Album) ([]*Track, error) {
 }
 
 func (db *DB) ArtistTracks(artist *Artist) ([]*Track, error) {
-	qs := `SELECT * FROM track WHERE sort_artist = ? OR sort_album_artist = ? OR sort_composer = ? ORDER BY sort_album_artist, sort_album, disc_number, track_number, sort_name`
+	qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE sort_artist = ? OR sort_album_artist = ? OR sort_composer = ? ORDER BY sort_album_artist, sort_album, disc_number, track_number, sort_name`
 	rows, err := db.Query(qs, artist.SortName, artist.SortName, artist.SortName)
 	if err != nil {
 		return nil, err
@@ -809,7 +866,7 @@ func (db *DB) ArtistTracks(artist *Artist) ([]*Track, error) {
 }
 
 func (db *DB) GenreTracks(genre *Genre) ([]*Track, error) {
-	qs := `SELECT * FROM track WHERE sort_genre = ? ORDER BY sort_album_artist, sort_album, disc_number, track_number, sort_name`
+	qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE sort_genre = ? ORDER BY sort_album_artist, sort_album, disc_number, track_number, sort_name`
 	rows, err := db.Query(qs, genre.SortName)
 	if err != nil {
 		return nil, err
@@ -857,7 +914,7 @@ func (db *DB) Playlists(parent *Playlist) ([]*Playlist, error) {
 }
 
 func (db *DB) PlaylistTracks(pl *Playlist) ([]*Track, error) {
-	qs := `SELECT track.* FROM playlist_track, track WHERE playlist_track.playlist_id = ? AND playlist_track.track_id = track.id ORDER BY playlist_track.position`
+	qs := `SELECT track.*, xuser.homedir FROM playlist_track, track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE playlist_track.playlist_id = ? AND playlist_track.track_id = track.id ORDER BY playlist_track.position`
 	rows, err := db.Query(qs, pl.PersistentID)
 	if err != nil {
 		return nil, err
@@ -896,8 +953,9 @@ func (db *DB) PlaylistTrackIDs(pl *Playlist) ([]PersistentID, error) {
 }
 
 func (db *DB) FolderTracks(folder *Playlist) ([]*Track, error) {
+	owner := &User{PersistentID: folder.OwnerID}
 	items := map[PersistentID]*Track{}
-	children, err := db.GetPlaylistTree(&folder.PersistentID)
+	children, err := db.GetPlaylistTree(&folder.PersistentID, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -1061,7 +1119,7 @@ func (db *DB) SmartTracks(spl *Smart) ([]*Track, error) {
 	var qs string
 	xargs := []interface{}{}
 	if db.hasPlaylistRule(spl.RuleSet) {
-		qs = `SELECT DISTINCT track.* FROM track`
+		qs = `SELECT DISTINCT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id`
 		for i, rule := range db.playlistRules(spl.RuleSet) {
 			key := queryKey(i)
 			rule.playlistKey = key
@@ -1072,7 +1130,7 @@ func (db *DB) SmartTracks(spl *Smart) ([]*Track, error) {
 			}
 		}
 	} else {
-		qs = `SELECT * FROM track`
+		qs = `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id`
 	}
 	where, args := spl.RuleSet.Where()
 	qs += ` WHERE track.location IS NOT NULL AND (` + where + ")"
@@ -1140,7 +1198,11 @@ func (db *DB) insertStruct(tx *Tx, obj IDable) error {
 		if f.PkgPath != "" {
 			continue
 		}
-		tag := strings.Split(f.Tag.Get("db"), ",")[0]
+		tag := f.Tag.Get("dbignore")
+		if strings.Contains(tag, "insert") {
+			continue
+		}
+		tag = strings.Split(f.Tag.Get("db"), ",")[0]
 		if tag == "" {
 			tag = strings.ToLower(f.Name)
 		}
@@ -1170,7 +1232,11 @@ func (db *DB) updateStruct(tx *Tx, obj IDable) error {
 		if f.PkgPath != "" {
 			continue
 		}
-		tag := strings.Split(f.Tag.Get("db"), ",")[0]
+		tag := f.Tag.Get("dbignore")
+		if strings.Contains(tag, "update") {
+			continue
+		}
+		tag = strings.Split(f.Tag.Get("db"), ",")[0]
 		if tag == "" {
 			tag = strings.ToLower(f.Name)
 		}
@@ -1306,13 +1372,14 @@ func (db *DB) SavePlaylist(playlist *Playlist) error {
 		tx.Rollback()
 		return err
 	}
+	owner := &User{PersistentID: playlist.OwnerID}
 	parent := playlist
 	for parent.ParentPersistentID != nil {
 		if *parent.ParentPersistentID == playlist.PersistentID {
 			tx.Rollback()
 			return CircularPlaylistFolder
 		}
-		parent, err = db.GetPlaylist(*parent.ParentPersistentID)
+		parent, err = db.GetPlaylist(*parent.ParentPersistentID, owner)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1502,20 +1569,21 @@ func (db *DB) deletePlaylistId(tx *Tx, id PersistentID) error {
 	return nil
 }
 
-func (db *DB) UpdateITunesTrack(tr *loader.Track) (bool, error) {
+func (db *DB) UpdateITunesTrack(tr *loader.Track, user *User) (bool, error) {
 	if tr.PersistentID == nil {
 		return false, errors.New("track has no persistent id")
 	}
 	xtr := tr.Clone()
 	xtr.TrackID = nil
 	id := PersistentID(*tr.PersistentID).String()
-	qs := `SELECT data FROM itunes_track WHERE id = ?`
-	row := db.QueryRow(qs, id)
+	qs := `SELECT data FROM itunes_track WHERE id = ? AND owner_id = ?`
+	row := db.QueryRow(qs, id, user.PersistentID)
 	var data []byte
 	err := row.Scan(&data)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			track := TrackFromITunes(tr)
+			track.OwnerID = user.PersistentID
 			track.Validate()
 			tx, err := db.Begin()
 			if err != nil {
@@ -1527,8 +1595,8 @@ func (db *DB) UpdateITunesTrack(tr *loader.Track) (bool, error) {
 				tx.Rollback()
 				return true, err
 			}
-			qs = `INSERT INTO itunes_track (id, data, mod_date) VALUES(?, ?, ?)`
-			_, err = tx.Exec(qs, id, serializeGob(tr), time.Now().In(time.UTC))
+			qs = `INSERT INTO itunes_track (id, data, mod_date, owner_id) VALUES(?, ?, ?, ?)`
+			_, err = tx.Exec(qs, id, serializeGob(tr), time.Now().In(time.UTC), user.PersistentID)
 			if err != nil {
 				tx.Rollback()
 				log.Println("erorr %s in %s", err.Error(), qs)
@@ -1542,8 +1610,8 @@ func (db *DB) UpdateITunesTrack(tr *loader.Track) (bool, error) {
 	if bytes.Equal(data, mydata) {
 		return false, nil
 	}
-	qs = `SELECT * FROM track WHERE id = ?`
-	row = db.QueryRow(qs, PersistentID(*tr.PersistentID))
+	qs = `SELECT * FROM track WHERE id = ? AND owner_id = ?`
+	row = db.QueryRow(qs, PersistentID(*tr.PersistentID), user.PersistentID)
 	track := &Track{}
 	err = row.StructScan(track)
 	if err != nil {
@@ -1570,8 +1638,8 @@ func (db *DB) UpdateITunesTrack(tr *loader.Track) (bool, error) {
 		tx.Rollback()
 		return true, err
 	}
-	qs = `UPDATE itunes_track SET data = ?, mod_date = ? WHERE id = ?`
-	_, err = tx.Exec(qs, mydata, time.Now().In(time.UTC), id)
+	qs = `UPDATE itunes_track SET data = ?, mod_date = ? WHERE id = ? AND owner_id = ?`
+	_, err = tx.Exec(qs, mydata, time.Now().In(time.UTC), id, user.PersistentID)
 	if err != nil {
 		tx.Rollback()
 		return true, err
@@ -1579,18 +1647,22 @@ func (db *DB) UpdateITunesTrack(tr *loader.Track) (bool, error) {
 	return true, tx.Commit()
 }
 
-func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) (bool, error) {
+func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist, user *User) (bool, error) {
 	if pl.PersistentID == nil {
 		return false, errors.New("playlist has no persistent id")
 	}
 	id := PersistentID(*pl.PersistentID).String()
-	qs := `SELECT data FROM itunes_playlist WHERE id = ?`
-	row := db.QueryRow(qs, id)
+	qs := `SELECT data FROM itunes_playlist WHERE id = ? AND owner_id = ?`
+	row := db.QueryRow(qs, id, user.PersistentID)
 	var data []byte
 	err := row.Scan(&data)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			playlist := PlaylistFromITunes(pl)
+			if playlist.Kind == MasterPlaylist {
+				return false, nil
+			}
+			playlist.OwnerID = user.PersistentID
 			tx, err := db.Begin()
 			if err != nil {
 				return true, err
@@ -1606,8 +1678,8 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) (bool, error) {
 				tx.Rollback()
 				return true, err
 			}
-			qs = `INSERT INTO itunes_playlist (id, data, mod_date) VALUES(?, ?, ?)`
-			_, err = tx.Exec(qs, id, serializeGob(pl), time.Now().In(time.UTC))
+			qs = `INSERT INTO itunes_playlist (id, data, mod_date, owner_id) VALUES(?, ?, ?, ?)`
+			_, err = tx.Exec(qs, id, serializeGob(pl), time.Now().In(time.UTC), user.PersistentID)
 			if err != nil {
 				tx.Rollback()
 				return true, err
@@ -1620,8 +1692,8 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) (bool, error) {
 	if bytes.Equal(data, mydata) {
 		return false, nil
 	}
-	qs = `SELECT * FROM playlist WHERE id = ?`
-	row = db.QueryRow(qs, PersistentID(*pl.PersistentID))
+	qs = `SELECT * FROM playlist WHERE id = ? AND owner_id = ?`
+	row = db.QueryRow(qs, PersistentID(*pl.PersistentID), user.PersistentID)
 	playlist := &Playlist{}
 	err = row.StructScan(playlist)
 	if err != nil {
@@ -1659,8 +1731,8 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) (bool, error) {
 		tx.Rollback()
 		return true, err
 	}
-	qs = `UPDATE itunes_playlist SET data = ?, mod_date = ? WHERE id = ?`
-	_, err = tx.Exec(qs, mydata, time.Now().In(time.UTC), id)
+	qs = `UPDATE itunes_playlist SET data = ?, mod_date = ? WHERE id = ? AND owner_id = ?`
+	_, err = tx.Exec(qs, mydata, time.Now().In(time.UTC), id, user.PersistentID)
 	if err != nil {
 		tx.Rollback()
 		return true, err
@@ -1668,9 +1740,9 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist) (bool, error) {
 	return true, tx.Commit()
 }
 
-func (db *DB) LoadITunesTrackIDs() (map[string]bool, error) {
-	qs := `SELECT id FROM itunes_track`
-	rows, err := db.Query(qs)
+func (db *DB) LoadITunesTrackIDs(user *User) (map[string]bool, error) {
+	qs := `SELECT id FROM itunes_track WHERE owner_id = ?`
+	rows, err := db.Query(qs, user.PersistentID)
 	if err != nil {
 		return nil, err
 	}
@@ -1684,9 +1756,9 @@ func (db *DB) LoadITunesTrackIDs() (map[string]bool, error) {
 	return ids, nil
 }
 
-func (db *DB) LoadITunesPlaylistIDs() (map[string]bool, error) {
-	qs := `SELECT id FROM itunes_playlist`
-	rows, err := db.Query(qs)
+func (db *DB) LoadITunesPlaylistIDs(user *User) (map[string]bool, error) {
+	qs := `SELECT id FROM itunes_playlist WHERE owner_id = ?`
+	rows, err := db.Query(qs, user.PersistentID)
 	if err != nil {
 		return nil, err
 	}
@@ -1700,12 +1772,12 @@ func (db *DB) LoadITunesPlaylistIDs() (map[string]bool, error) {
 	return ids, nil
 }
 
-func (db *DB) DeleteITunesTracks(ids map[string]bool) error {
+func (db *DB) DeleteITunesTracks(ids map[string]bool, user *User) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
-	qs := `DELETE FROM itunes_track WHERE id = ?`
+	qs := `DELETE FROM itunes_track WHERE id = ? AND owner_id = ?`
 	var xpid PersistentID
 	pid := &xpid
 	for id := range ids {
@@ -1714,7 +1786,7 @@ func (db *DB) DeleteITunesTracks(ids map[string]bool) error {
 			continue
 		}
 		log.Println("deleting itunes track", id)
-		_, err = tx.Exec(qs, id)
+		_, err = tx.Exec(qs, id, user.PersistentID)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1728,12 +1800,12 @@ func (db *DB) DeleteITunesTracks(ids map[string]bool) error {
 	return tx.Commit()
 }
 
-func (db *DB) DeleteITunesPlaylists(ids map[string]bool) error {
+func (db *DB) DeleteITunesPlaylists(ids map[string]bool, user *User) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
-	qs := `DELETE FROM itunes_playlist WHERE id = ?`
+	qs := `DELETE FROM itunes_playlist WHERE id = ? AND owner_id = ?`
 	var xpid PersistentID
 	pid := &xpid
 	for id := range ids {
@@ -1742,7 +1814,7 @@ func (db *DB) DeleteITunesPlaylists(ids map[string]bool) error {
 			continue
 		}
 		log.Println("deleting itunes playlist", id)
-		_, err = tx.Exec(qs, id)
+		_, err = tx.Exec(qs, id, user.PersistentID)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1765,7 +1837,7 @@ func (db *DB) FindTrack(tr *Track) {
 		}
 	}
 	if tr.JookiID != nil {
-		qs := `SELECT * FROM track WHERE jooki_id = ?`
+		qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE jooki_id = ?`
 		row := db.QueryRow(qs, tr.JookiID)
 		var xtr Track
 		err := row.StructScan(&xtr)
@@ -1796,7 +1868,7 @@ func (db *DB) FindTrack(tr *Track) {
 		where = append(where, "total_time >= ? AND total_time <= ?")
 		args = append(args, *tr.TotalTime - 1000, *tr.TotalTime + 1000)
 	}
-	qs := fmt.Sprintf(`SELECT * FROM track WHERE %s ORDER BY rating DESC, play_count DESC LIMIT 1`, strings.Join(where, " AND "))
+	qs := fmt.Sprintf(`SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE %s ORDER BY rating DESC, play_count DESC LIMIT 1`, strings.Join(where, " AND "))
 	row := db.QueryRow(qs, args...)
 	var xtr Track
 	err := row.StructScan(&xtr)
@@ -1870,4 +1942,125 @@ func (db *DB) saveTrackArtwork(tx *Tx, tr *Track, ext string, data []byte) (stri
 		}
 	}
 	return root + ext, ioutil.WriteFile(root+ext, data, os.FileMode(0664))
+}
+
+func (db *DB) GetUser(username string) (auth.AuthUser, error) {
+	query := `SELECT * FROM xuser WHERE username = ?`
+	row := db.QueryRow(query, username)
+	user := &User{}
+	err := row.StructScan(user)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.WithStack(auth.ErrUnknownUser)
+		}
+		return nil, errors.WithStack(err)
+	}
+	user.db = db
+	return user, nil
+}
+
+func (db *DB) GetUserByID(id int64) (auth.AuthUser, error) {
+	query := `SELECT * FROM xuser WHERE id = ?`
+	row := db.QueryRow(query, id)
+	user := &User{}
+	err := row.StructScan(user)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.WithStack(auth.ErrUnknownUser)
+		}
+		return nil, errors.WithStack(err)
+	}
+	user.db = db
+	return user, nil
+}
+
+func (db *DB) GetUserByEmail(email string) (auth.AuthUser, error) {
+	query := `SELECT * FROM xuser WHERE email = ?`
+	row := db.QueryRow(query, email)
+	user := &User{}
+	err := row.StructScan(user)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.WithStack(auth.ErrUnknownUser)
+		}
+		return nil, errors.WithStack(err)
+	}
+	user.db = db
+	return user, nil
+}
+
+func (db *DB) getColumnNameForDriver(driver string) (string, error) {
+	switch driver {
+	case "apple":
+		return "apple_id", nil
+	case "github":
+		return "github_id", nil
+	case "google":
+		return "google_id", nil
+	case "amazon":
+		return "amazon_id", nil
+	case "facebook":
+		return "facebook_id", nil
+	case "twitter":
+		return "twitter_id", nil
+	case "linkedin":
+		return "linkedin_id", nil
+	case "slack":
+		return "slack_id", nil
+	case "bitbucket":
+		return "bitbucket_id", nil
+	}
+	return "", errors.WithStack(ErrUnknownSocialDriver)
+}
+
+func (db *DB) GetSocialUser(driver, id, username string) (auth.AuthUser, error) {
+	key, err := db.getColumnNameForDriver(driver)
+	if err != nil {
+		return nil, err
+	}
+	query := fmt.Sprintf(`SELECT * FROM xuser WHERE %s = ?`, key)
+	user := &User{}
+	row := db.QueryRow(query, id)
+	err = row.StructScan(user)
+	if err == nil {
+		user.db = db
+		return user, nil
+	}
+	row = db.QueryRow(query, username)
+	err = row.StructScan(user)
+	if err == nil {
+		user.db = db
+		return user, nil
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.WithStack(auth.ErrUnknownUser)
+	}
+	return nil, errors.WithStack(err)
+}
+
+func (db *DB) ListUsers() ([]*User, error) {
+	query := `SELECT id, username, first_name, last_name, avatar, homedir FROM xuser WHERE active = 't' ORDER BY last_name, first_name`
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	defer rows.Close()
+	users := []*User{}
+	for rows.Next() {
+		user := &User{}
+		err = rows.StructScan(user)
+		if err != nil {
+			return users, errors.WithStack(err)
+		}
+		user.db = db
+		users = append(users, user)
+	}
+	return users, nil
+}
+
+func (db *DB) UserUpdateChannel() chan *User {
+	if db.userChan == nil {
+		db.userChan = make(chan *User, 10)
+	}
+	return db.userChan
 }

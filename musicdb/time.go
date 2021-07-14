@@ -9,6 +9,17 @@ import (
 
 type Time int64
 
+func Now() Time {
+	return FromTime(time.Now())
+}
+
+func FromTime(tm time.Time) Time {
+	var t Time
+	xt := &t
+	xt.Set(tm)
+	return t
+}
+
 func (t Time) Time() time.Time {
 	s := int64(t) / 1000
 	ns := (int64(t) % 1000) * 1e6

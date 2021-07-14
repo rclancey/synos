@@ -100,19 +100,20 @@ func pathAfter(fn, dn string) string {
 	return ""
 }
 
-func NewFileFinder(mediaFolder string, sourcePath, targetPath []string) *FileFinder {
+func NewFileFinder(mediaFolder, sourcePath, targetPath []string) *FileFinder {
 	ff := &FileFinder{
 		MediaFolder: []string{},
 		SourcePath: sourcePath,
 		TargetPath: []string{},
 	}
-	f := mediaFolder
-	if f == "" || f == "." {
-		ff.MediaFolder = []string{"."}
-	} else {
-		for f != "." {
-			ff.MediaFolder = append(ff.MediaFolder, f)
-			f = filepath.Dir(f)
+	for _, f := range mediaFolder {
+		if f == "" || f == "." {
+			ff.MediaFolder = []string{"."}
+		} else {
+			for f != "." {
+				ff.MediaFolder = append(ff.MediaFolder, f)
+				f = filepath.Dir(f)
+			}
 		}
 	}
 	for _, d := range targetPath {
@@ -147,7 +148,7 @@ func (ff *FileFinder) Clean(fn string) string {
 	return fn
 }
 
-func (ff *FileFinder) FindFile(fn string) (string, error) {
+func (ff *FileFinder) FindFile(fn string, homedir *string) (string, error) {
 	var xfn string
 	var ex bool
 	if filepath.IsAbs(fn) {
@@ -157,7 +158,12 @@ func (ff *FileFinder) FindFile(fn string) (string, error) {
 		}
 		return fn, errors.Errorf("absolute path %s doesn't exist", fn)
 	}
-	for _, mp := range ff.SourcePath {
+	roots := []string{}
+	if homedir != nil && *homedir != "" {
+		roots = append(roots, *homedir)
+	}
+	roots = append(roots, ff.SourcePath...)
+	for _, mp := range roots {
 		for _, f := range ff.MediaFolder {
 			xfn = filepath.Join(mp, f, fn)
 			xfn, ex = fileExists(xfn)

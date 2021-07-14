@@ -12,6 +12,8 @@ import { MixCover } from '../MixCover';
 import { Sources } from './Sources';
 import { SongRow } from './SongRow';
 import { Home } from './Home';
+import ShareIcon from '../icons/Share';
+import UnshareIcon from '../icons/Unshare';
 
 const plural = (n, s) => {
   if (n === 1) {
@@ -39,6 +41,24 @@ const useDuration = (tracks) => {
   return dur;
 };
 
+const Share = ({ shared, onToggle }) => (
+  <div className="share" onClick={onToggle}>
+    { shared ? <ShareIcon /> : <UnshareIcon /> }
+    <style jsx>{`
+      .share {
+        width: 24px;
+        height: 24px;
+        margin-left: 20px;
+        color: var(--highlight);
+      }
+      .share :global(svg) {
+        width: 24px;
+        height: 24px;
+      }
+    `}</style>
+  </div>
+);
+
 export const PlaylistTitle = ({
   playlist,
   tracks,
@@ -47,9 +67,19 @@ export const PlaylistTitle = ({
   onPlaylistMenu,
   onEditPlaylist,
 }) => {
+  const api = useAPI(API);
   const colors = useTheme();
   const menu = useMenuContext();
   const dur = useDuration(tracks);
+  const [shared, setShared] = useState(playlist.shared);
+  useEffect(() => setShared(playlist.shared), [playlist]);
+  const onToggleShare = useCallback(() => {
+    if (shared) {
+      api.unsharePlaylist(playlist.persistent_id).then(() => setShared(false));
+    } else {
+      api.sharePlaylist(playlist.persistent_id).then(() => setShared(true));
+    }
+  }, [api, playlist, shared]);
   return (
     <div className="title">
       <div className="album">{playlist.name}</div>
@@ -63,6 +93,7 @@ export const PlaylistTitle = ({
             track={tracks}
             onOpen={tracks => menu.onPlaylistMenu(playlist.name, tracks)}
           />
+          <Share shared={shared} onToggle={onToggleShare} />
           <div className="spacer" />
           <div className="edit" onClick={() => onEditPlaylist(!editing)}>{editing ? "Done" : "Edit"}</div>
         </div>

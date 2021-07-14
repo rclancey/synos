@@ -4,18 +4,18 @@ import (
 	"log"
 	"net/http"
 
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/synos/musicdb"
 )
 
-func IndexAPI(router H.Router, authmw Middleware) {
-	router.GET("/index/genres", H.HandlerFunc(authmw(ListGenres)))
-	router.GET("/index/artists", H.HandlerFunc(authmw(ListArtists)))
-	router.GET("/index/albums", H.HandlerFunc(authmw(ListAlbums)))
-	router.GET("/index/album-artist", H.HandlerFunc(authmw(ListAlbumsByArtist)))
-	router.GET("/index/songs", H.HandlerFunc(authmw(ListSongs)))
-	router.GET("/search/albums", H.HandlerFunc(authmw(SearchAlbums)))
-	router.GET("/search/artists", H.HandlerFunc(authmw(SearchArtists)))
+func IndexAPI(router H.Router, authmw H.Middleware) {
+	router.GET("/index/genres", authmw(H.HandlerFunc(ListGenres)))
+	router.GET("/index/artists", authmw(H.HandlerFunc(ListArtists)))
+	router.GET("/index/albums", authmw(H.HandlerFunc(ListAlbums)))
+	router.GET("/index/album-artist", authmw(H.HandlerFunc(ListAlbumsByArtist)))
+	router.GET("/index/songs", authmw(H.HandlerFunc(ListSongs)))
+	router.GET("/search/albums", authmw(H.HandlerFunc(SearchAlbums)))
+	router.GET("/search/artists", authmw(H.HandlerFunc(SearchArtists)))
 }
 
 func SearchAlbums(w http.ResponseWriter, req *http.Request) (interface{}, error) {
