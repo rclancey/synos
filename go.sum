@@ -182,6 +182,8 @@ github.com/rclancey/file-monitor v0.0.0-20200904003835-d85ec7e2ec01 h1:jl42nUQGB
 github.com/rclancey/file-monitor v0.0.0-20200904003835-d85ec7e2ec01/go.mod h1:bORmAxdb4iYIFFKwfnONs49HJY/Hwm07rX2i5dnLm1E=
 github.com/rclancey/file-monitor v0.1.0-a h1:f512F4yLEOH9BCJUP9IOBYMOvkztNHtBwwIB2xOpQ6I=
 github.com/rclancey/file-monitor v0.1.0-a/go.mod h1:2yM3fRQnpiesccb13lUQlvFIS4z45wl0a6VYQ7bc0/o=
+github.com/rclancey/file-monitor v0.1.1 h1:ZNrebHXR/F2RTL6z7boaJ0CR3Tol0Z6e+FjDIhJ3wsk=
+github.com/rclancey/file-monitor v0.1.1/go.mod h1:2yM3fRQnpiesccb13lUQlvFIS4z45wl0a6VYQ7bc0/o=
 github.com/rclancey/fsutil v0.0.0-20200904003901-a5ae5b676fef/go.mod h1:i3/JHQfhiZP0qnRWk6WKUQ9nS49e4CW2lKnRAMObefg=
 github.com/rclancey/fsutil v0.0.1/go.mod h1:Ra6sHK0R5mm3DbsFwJkxJ4s9m4JASkvb6LrPh7xVfPI=
 github.com/rclancey/fsutil v0.0.3 h1:V8/8O+wMLfa6D6OakR6prBAzAKH5ewA1XkLYbyO8vZo=
@@ -194,6 +196,8 @@ github.com/rclancey/httpserver/v2 v2.0.1-c h1:EPBhvO+EQX+ggq51D0qkAqcBOCqMewj1zC
 github.com/rclancey/httpserver/v2 v2.0.1-c/go.mod h1:rigQg7+bY/hhRku9ZNCoMCQZXtdf/1fitrNXe+/3ZZM=
 github.com/rclancey/httpserver/v2 v2.0.1-d h1:2WNUAvn020SGds3erZV7LI0Dpz1VAA6W1D9L8OVVyOM=
 github.com/rclancey/httpserver/v2 v2.0.1-d/go.mod h1:rigQg7+bY/hhRku9ZNCoMCQZXtdf/1fitrNXe+/3ZZM=
+github.com/rclancey/httpserver/v2 v2.0.2 h1:m3s1KjkIQup/EczuIySC6BFgiRc6Yqu/y9r00esGQSs=
+github.com/rclancey/httpserver/v2 v2.0.2/go.mod h1:rigQg7+bY/hhRku9ZNCoMCQZXtdf/1fitrNXe+/3ZZM=
 github.com/rclancey/itunes v0.0.1 h1:++2MGTevWJel8TYtSYC7GjZPk88Pb+UD7h6YPi7ZQWw=
 github.com/rclancey/itunes v0.0.1/go.mod h1:3IRWFX/w06lSjfVQe5GaT6/wZqoTUy8VK4Z9WgqlryU=
 github.com/rclancey/jooki v0.1.0 h1:zhfGv5OZCmWN3kkQ/6FXZTtjYr5PisFQ15QZ8Q8A/JQ=

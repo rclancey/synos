@@ -14,10 +14,10 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rclancey/argparse v1.0.1
 	github.com/rclancey/cache v0.0.6 // indirect
-	github.com/rclancey/file-monitor v0.1.0-a
+	github.com/rclancey/file-monitor v0.1.1
 	github.com/rclancey/fsutil v0.0.3 // indirect
 	github.com/rclancey/go-sonos v0.0.1
-	github.com/rclancey/httpserver/v2 v2.0.1-d
+	github.com/rclancey/httpserver/v2 v2.0.2
 	github.com/rclancey/itunes v0.0.1
 	github.com/rclancey/jooki v0.1.0
 	github.com/rclancey/lastfm v0.0.0-20210510164243-0116f005e8c8
