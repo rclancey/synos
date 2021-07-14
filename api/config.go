@@ -13,9 +13,11 @@ import (
 	"time"
 
 	"github.com/rclancey/argparse"
-	"github.com/rclancey/httpserver"
+	"github.com/rclancey/httpserver/v2"
+	"github.com/rclancey/httpserver/v2/auth"
 	"github.com/rclancey/itunes/loader"
 	"github.com/rclancey/lastfm"
+	"github.com/rclancey/sendmail"
 	"github.com/rclancey/spotify"
 	"github.com/rclancey/synos/musicdb"
 )
@@ -81,9 +83,28 @@ func (cfg *DatabaseConfig) DB() (*musicdb.DB, error) {
 	return cfg.db, nil
 }
 
+type SMTPConfig struct {
+	Username *string `json:"username" arg:"username"`
+	Password *string `json:"password" arg:"password"`
+	Host     string  `json:"host"     arg:"host"`
+	Port     int     `json:"port"     arg:"port"`
+	client   *sendmail.SMTPClient
+}
+
+func (cfg *SMTPConfig) Client() (*sendmail.SMTPClient, error) {
+	if cfg.client == nil {
+		client := sendmail.NewSMTPClient(cfg.Host, cfg.Port)
+		if cfg.Username != nil && cfg.Password != nil {
+			client.SetAuth(*cfg.Username, *cfg.Password)
+		}
+		cfg.client = client
+	}
+	return cfg.client, nil
+}
+
 type FinderConfig struct {
 	MediaPath   []string `json:"media_path"`//   arg:"--media-path"`
-	MediaFolder string   `json:"media_folder"`// arg:"--media-folder"`
+	MediaFolder []string `json:"media_folder"`// arg:"--media-folder"`
 	CoverArt    []string `json:"cover_art"`//    arg:"--cover-art"`
 	finder *musicdb.FileFinder
 }
@@ -95,8 +116,9 @@ func (cfg *FinderConfig) Init(top *SynosConfig) error {
 		if err != nil {
 			return err
 		}
-		xdn := filepath.Join(dn, cfg.MediaFolder)
-		st, err := os.Stat(xdn)
+		//xdn := filepath.Join(dn, cfg.MediaFolder)
+		//st, err := os.Stat(xdn)
+		st, err := os.Stat(dn)
 		if err != nil {
 			if !os.IsNotExist(err) {
 				return err
@@ -196,7 +218,7 @@ func (cfg *JookiConfig) SaveCron(cron *CronConfig) error {
 }
 
 type ITunesConfig struct {
-	Library string `json:"library"`// arg:"--itunes-library"`
+	Library []string `json:"library"`// arg:"--itunes-library"`
 	loader *loader.Loader
 }
 
@@ -271,14 +293,16 @@ func (cfg *SpotifyConfig) Client() *spotify.SpotifyClient {
 
 type SynosConfig struct {
 	*httpserver.ServerConfig
-	Database DatabaseConfig `json:"database" arg:"db"`
-	Finder   FinderConfig   `json:"finder"   arg:"finder"`
-	Airplay  AirplayConfig  `json:"airplay"  arg:"airplay"`
-	Sonos    SonosConfig `   json:"sonos"    arg:"sonos"`
-	Jooki    JookiConfig    `json:"jooki"    arg:"jooki"`
-	ITunes   ITunesConfig   `json:"itunes"   arg:"itunes"`
-	LastFM   LastFMConfig   `json:"lastfm"   arg:"lastfm"`
-	Spotify  SpotifyConfig  `json:"spotify"  arg:"spotify"`
+	Auth     auth.AuthConfig `json:"auth"     arg=:"auth"`
+	Database DatabaseConfig  `json:"database" arg:"db"`
+	SMTP     SMTPConfig      `json:"smtp"     arg:"smtp"`
+	Finder   FinderConfig    `json:"finder"   arg:"finder"`
+	Airplay  AirplayConfig   `json:"airplay"  arg:"airplay"`
+	Sonos    SonosConfig `    json:"sonos"    arg:"sonos"`
+	Jooki    JookiConfig     `json:"jooki"    arg:"jooki"`
+	ITunes   ITunesConfig    `json:"itunes"   arg:"itunes"`
+	LastFM   LastFMConfig    `json:"lastfm"   arg:"lastfm"`
+	Spotify  SpotifyConfig   `json:"spotify"  arg:"spotify"`
 }
 
 func (cfg *SynosConfig) Init() error {
@@ -339,13 +363,25 @@ func (cfg *SynosConfig) LoadFromFile(fn string) error {
 func DefaultSynosConfig() *SynosConfig {
 	return &SynosConfig{
 		ServerConfig: httpserver.DefaultServerConfig(),
+		Auth: auth.AuthConfig{
+			AuthKey: "",
+			TTL: int(time.Duration(30 * 24 * time.Hour).Seconds()),
+			Issuer: "Synos",
+			Cookie: "auth",
+			Header: "Authorization",
+			ResetTTL: int(time.Duration(30 * time.Minute).Seconds()),
+			SocialLogin: map[string]*auth.SocialLoginConfig{},
+		},
 		Database: DatabaseConfig{
 			Name: "synos",
 			SSL: false,
 		},
 		Finder: FinderConfig{
-			MediaFolder: "Music/iTunes/iTunes Music",
-			MediaPath: []string{"$HOME"},
+			MediaFolder: []string{
+				"Music/iTunes/iTunes Music",
+				"Music/Music/Media.localized",
+			},
+			MediaPath: []string{},
 			CoverArt: []string{
 				"cover.jpg",
 				"cover.png",
@@ -356,7 +392,10 @@ func DefaultSynosConfig() *SynosConfig {
 		Sonos: SonosConfig{},
 		Jooki: JookiConfig{},
 		ITunes: ITunesConfig{
-			Library: "iTunes Music Library.xml",
+			Library: []string{
+				"../iTunes Music Library.xml",
+				"../Library.xml",
+			},
 		},
 		LastFM: LastFMConfig{
 			CacheDirectory: "var/cache/lastfm",

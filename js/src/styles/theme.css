@@ -26,7 +26,8 @@
   --gradient-compress: 90%;
   --highlight: hsl(calc(var(--hue) - 10), var(--sat), var(--lightness-contrast));
   --highlight-muted: hsl(calc(var(--hue) - 10), calc(var(--sat) * 0.8), var(--lightness-muted));
-  --gradient: linear-gradient(var(--gradient-dir), hsl(var(--hue), var(--sat), var(--lightness)) var(--gradient-stretch), var(--gradient-end) var(--gradient-compress));
+  --gradient-start: hsl(var(--hue), var(--sat), var(--lightness));
+  --gradient: linear-gradient(var(--gradient-dir), var(--gradient-start) var(--gradient-stretch), var(--gradient-end) var(--gradient-compress));
 
   color: var(--text);
 }

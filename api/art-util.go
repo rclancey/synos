@@ -146,18 +146,19 @@ func GetArtistImageFilename(name string) (string, error) {
 func GetAlbumArtFilename(tr *musicdb.Track) (string, error) {
 	finder := cfg.Finder.FileFinder()
 	dn := filepath.Dir(tr.Path())
-	root := filepath.Join(dn, "cover_" + tr.PersistentID.String())
-	for _, x := range []string{".jpg", ".png", ".gif"} {
-		fn, err := finder.FindFile(root + x)
-		if err == nil {
-			return fn, nil
-		}
+	basefn := strings.TrimSuffix(filepath.Base(tr.Path()), filepath.Ext(tr.Path()))
+	roots := []string{
+		"cover_" + tr.PersistentID.String(),
+		"cover_" + basefn,
+		basefn,
+		"cover",
 	}
-	for _, x := range []string{"cover.jpg", "cover.png", "cover.gif"} {
-		fn := filepath.Join(dn, x)
-		fn, err := finder.FindFile(fn)
-		if err == nil {
-			return fn, nil
+	for _, root := range roots {
+		for _, x := range []string{".jpg", ".png", ".gif"} {
+			fn, err := finder.FindFile(filepath.Join(dn, root + x), tr.Homedir)
+			if err == nil {
+				return fn, nil
+			}
 		}
 	}
 	var art, alb string

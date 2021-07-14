@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/synos/musicdb"
 )
 
@@ -27,19 +27,19 @@ var mimeTypes = map[string]string{
 }
 */
 
-func TrackAPI(router H.Router, authmw Middleware) {
+func TrackAPI(router H.Router, authmw H.Middleware) {
 	router.GET("/track/:id/info", H.HandlerFunc(GetTrackInfo))
 	router.GET("/track/:id/cover", H.HandlerFunc(GetTrackCover))
 	router.GET("/track/:id/hascover", H.HandlerFunc(TrackHasCover))
 	router.GET("/track/:id", H.HandlerFunc(GetTrack))
-	router.PUT("/track/:id", H.HandlerFunc(authmw(UpdateTrack)))
-	router.POST("/track", H.HandlerFunc(authmw(AddTrack)))
-	router.PUT("/track/:id/skip", H.HandlerFunc(authmw(SkipTrack)))
-	router.PUT("/track/:id/rate", H.HandlerFunc(authmw(RateTrack)))
-	router.GET("/tracks/count", H.HandlerFunc(authmw(TrackCount)))
-	router.GET("/tracks/search", H.HandlerFunc(authmw(SearchTracks)))
-	router.GET("/tracks", H.HandlerFunc(authmw(ListTracks)))
-	router.PUT("/tracks", H.HandlerFunc(authmw(UpdateTracks)))
+	router.PUT("/track/:id", authmw(H.HandlerFunc(UpdateTrack)))
+	router.POST("/track", authmw(H.HandlerFunc(AddTrack)))
+	router.PUT("/track/:id/skip", authmw(H.HandlerFunc(SkipTrack)))
+	router.PUT("/track/:id/rate", authmw(H.HandlerFunc(RateTrack)))
+	router.GET("/tracks/count", authmw(H.HandlerFunc(TrackCount)))
+	router.GET("/tracks/search", authmw(H.HandlerFunc(SearchTracks)))
+	router.GET("/tracks", authmw(H.HandlerFunc(ListTracks)))
+	router.PUT("/tracks", authmw(H.HandlerFunc(UpdateTracks)))
 }
 
 func TrackHandler(w http.ResponseWriter, req *http.Request) (interface{}, error) {

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/synos/musicdb"
 	"github.com/rclancey/synos/sonos"
 )

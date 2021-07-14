@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/jooki"
 	"github.com/rclancey/synos/musicdb"
 )

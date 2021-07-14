@@ -135,10 +135,20 @@ func (db *DB) QueryRow(qs string, args ...interface{}) *Row {
 	}
 }
 
-func (db *DB) Exec(qs string, args...interface{}) (sql.Result, error) {
+func (db *DB) Exec(qs string, args ...interface{}) (sql.Result, error) {
 	qs = queryfix(qs)
 	res, err := db.conn.Exec(qs, args...)
 	return res, errors.Wrap(err, "can't exec db query " + qs)
 }
 
+func (db *DB) NamedExec(qs string, arg interface{}) (sql.Result, error) {
+	qs = queryfix(qs)
+	res, err := db.conn.NamedExec(qs, arg)
+	return res, errors.Wrap(err, "can't exec db query " + qs)
+}
 
+func (db *DB) NamedQuery(qs string, arg interface{}) (*sqlx.Rows, error) {
+	qs = queryfix(qs)
+	rows, err := db.conn.NamedQuery(qs, arg)
+	return rows, errors.Wrap(err, "can't named query " + qs)
+}

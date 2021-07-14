@@ -118,7 +118,7 @@ export const Main = () => {
   return (
     <ThemeContext.Provider value={themeCtx}>
       <div id="main" className={clsName}>
-        <CheckLogin>
+        <CheckLogin theme={state.theme} dark={state.dark}>
           {/*
           <Player
             player={player}

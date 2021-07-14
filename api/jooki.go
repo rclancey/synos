@@ -12,34 +12,34 @@ import (
 	"strconv"
 	"time"
 
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/jooki"
 	"github.com/rclancey/synos/musicdb"
 )
 
-func JookiAPI(router H.Router, authmw Middleware) {
-	router.GET("/state", H.HandlerFunc(authmw(JookiGetState)))
-	router.GET("/tokens", H.HandlerFunc(authmw(JookiListTokens)))
-	router.GET("/art/:id", H.HandlerFunc(authmw(JookiArt)))
-	router.GET("/playlists", H.HandlerFunc(authmw(JookiListPlaylists)))
-	router.GET("/playlist/:id", H.HandlerFunc(authmw(JookiGetPlaylist)))
-	router.POST("/playlist", H.HandlerFunc(authmw(JookiCreatePlaylist)))
-	router.PUT("/playlist/:id", H.HandlerFunc(authmw(JookiEditPlaylist)))
-	router.PATCH("/playlist/:id", H.HandlerFunc(authmw(JookiAppendPlaylistTracks)))
-	router.DELETE("/playlist/:id", H.HandlerFunc(authmw(JookiDeletePlaylist)))
-	router.POST("/play", H.HandlerFunc(authmw(JookiPlay)))
-	router.POST("/play/:id", H.HandlerFunc(authmw(JookiPlay)))
-	router.POST("/play/:id/:index", H.HandlerFunc(authmw(JookiPlay)))
-	router.POST("/pause", H.HandlerFunc(authmw(JookiPause)))
-	router.POST("/skip", H.HandlerFunc(authmw(JookiSkipTo)))
-	router.PUT("/skip", H.HandlerFunc(authmw(JookiSkipBy)))
-	router.POST("/seek", H.HandlerFunc(authmw(JookiSeekTo)))
-	router.PUT("/seek", H.HandlerFunc(authmw(JookiSeekBy)))
-	router.GET("/volume", H.HandlerFunc(authmw(JookiGetVolume)))
-	router.POST("/volume", H.HandlerFunc(authmw(JookiSetVolumeTo)))
-	router.PUT("/volume", H.HandlerFunc(authmw(JookiChangeVolumeBy)))
-	router.GET("/playmode", H.HandlerFunc(authmw(JookiGetPlayMode)))
-	router.POST("/playmode", H.HandlerFunc(authmw(JookiSetPlayMode)))
+func JookiAPI(router H.Router, authmw H.Middleware) {
+	router.GET("/state", authmw(H.HandlerFunc(JookiGetState)))
+	router.GET("/tokens", authmw(H.HandlerFunc(JookiListTokens)))
+	router.GET("/art/:id", authmw(H.HandlerFunc(JookiArt)))
+	router.GET("/playlists", authmw(H.HandlerFunc(JookiListPlaylists)))
+	router.GET("/playlist/:id", authmw(H.HandlerFunc(JookiGetPlaylist)))
+	router.POST("/playlist", authmw(H.HandlerFunc(JookiCreatePlaylist)))
+	router.PUT("/playlist/:id", authmw(H.HandlerFunc(JookiEditPlaylist)))
+	router.PATCH("/playlist/:id", authmw(H.HandlerFunc(JookiAppendPlaylistTracks)))
+	router.DELETE("/playlist/:id", authmw(H.HandlerFunc(JookiDeletePlaylist)))
+	router.POST("/play", authmw(H.HandlerFunc(JookiPlay)))
+	router.POST("/play/:id", authmw(H.HandlerFunc(JookiPlay)))
+	router.POST("/play/:id/:index", authmw(H.HandlerFunc(JookiPlay)))
+	router.POST("/pause", authmw(H.HandlerFunc(JookiPause)))
+	router.POST("/skip", authmw(H.HandlerFunc(JookiSkipTo)))
+	router.PUT("/skip", authmw(H.HandlerFunc(JookiSkipBy)))
+	router.POST("/seek", authmw(H.HandlerFunc(JookiSeekTo)))
+	router.PUT("/seek", authmw(H.HandlerFunc(JookiSeekBy)))
+	router.GET("/volume", authmw(H.HandlerFunc(JookiGetVolume)))
+	router.POST("/volume", authmw(H.HandlerFunc(JookiSetVolumeTo)))
+	router.PUT("/volume", authmw(H.HandlerFunc(JookiChangeVolumeBy)))
+	router.GET("/playmode", authmw(H.HandlerFunc(JookiGetPlayMode)))
+	router.POST("/playmode", authmw(H.HandlerFunc(JookiSetPlayMode)))
 }
 
 func JookiGetState(w http.ResponseWriter, req *http.Request) (interface{}, error) {

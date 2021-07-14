@@ -5,18 +5,19 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/rclancey/htpasswd"
-	"github.com/rclancey/httpserver"
+	"github.com/rclancey/httpserver/v2"
+	"github.com/rclancey/httpserver/v2/auth"
 	"github.com/rclancey/logging"
 	"github.com/rclancey/lastfm"
+	"github.com/rclancey/sendmail"
 	"github.com/rclancey/synos/musicdb"
 	"github.com/rclancey/spotify"
 )
 
 type hf func(http.ResponseWriter, *http.Request) (interface{}, error)
-type Middleware func(hf) hf
 
 var db *musicdb.DB
+var smtp *sendmail.SMTPClient
 var cfg *SynosConfig
 var lastFm *lastfm.LastFM
 var spot *spotify.SpotifyClient
@@ -35,6 +36,10 @@ func APIMain() {
 	db, err = cfg.Database.DB()
 	if err != nil {
 		log.Fatal("error connecting to music database:", err)
+	}
+	smtp, err = cfg.SMTP.Client()
+	if err != nil {
+		log.Fatal("error configuring smtp client:", err)
 	}
 
 	errlog, err := cfg.Logging.ErrorLogger()
@@ -75,11 +80,16 @@ func APIMain() {
 		errlog.Error(err)
 	}
 
-	htp := htpasswd.NewHTPasswd(cfg.Auth.PasswordFile)
-	authmw := AuthenticationMiddleware(&cfg.Auth)
+	authen, err := auth.NewAuthenticator(cfg.Auth, cfg.ServerRoot)
+	if err != nil {
+		errlog.Fatalln("error configuring authenticator:", err)
+	}
+	authen.UserSource = db
+	authen.EmailClient = smtp
+	authen.SMSClient = nil // TODO
+	authmw := authen.MakeMiddleware()
 	api := srv.Prefix("/api")
-	LoginAPI(api, authmw)
-	srv.SocialLogin("/api/login", htp)
+	authen.LoginAPI(api)
 	TrackAPI(api, authmw)
 	PlaylistAPI(api, authmw)
 	IndexAPI(api, authmw)
@@ -97,6 +107,7 @@ func APIMain() {
 		JookiAPI(api.Prefix("/jooki"), authmw)
 	}
 	*/
+	DebugAPI(api, authmw)
 	errlog.Infoln("Synos server ready")
 	srv.ListenAndServe()
 	errlog.Infoln("Synos server exiting")

@@ -2,11 +2,11 @@ package api
 
 import (
 	"net/http"
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 )
 
-func WebSocketAPI(router H.Router, authmw Middleware) {
-	router.GET("/ws", H.HandlerFunc(authmw(ServeWS)))
+func WebSocketAPI(router H.Router, authmw H.Middleware) {
+	router.GET("/ws", authmw(H.HandlerFunc(ServeWS)))
 }
 
 var websocketHub H.Hub

@@ -8,37 +8,37 @@ import (
 	"strconv"
 	"time"
 
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/synos/musicdb"
 	"github.com/rclancey/synos/sonos"
 )
 
-func SonosAPI(router H.Router, authmw Middleware) {
-	router.GET("/available", H.HandlerFunc(authmw(HasSonos)))
-	router.GET("/queue", H.HandlerFunc(authmw(SonosGetQueue)))
-	router.POST("/queue", H.HandlerFunc(authmw(SonosReplaceQueue)))
-	router.PUT("/queue", H.HandlerFunc(authmw(SonosAppendQueue)))
-	router.PATCH("/queue", H.HandlerFunc(authmw(SonosInsertQueue)))
-	router.DELETE("/queue", H.HandlerFunc(authmw(SonosClearQueue)))
-	router.POST("/play", H.HandlerFunc(authmw(SonosPlay)))
-	router.POST("/pause", H.HandlerFunc(authmw(SonosPause)))
-	router.POST("/skip", H.HandlerFunc(authmw(SonosSkipTo)))
-	router.PUT("/skip", H.HandlerFunc(authmw(SonosSkipBy)))
-	router.POST("/seek", H.HandlerFunc(authmw(SonosSeekTo)))
-	router.PUT("/seek", H.HandlerFunc(authmw(SonosSeekBy)))
-	router.GET("/volume", H.HandlerFunc(authmw(SonosGetVolume)))
-	router.POST("/volume", H.HandlerFunc(authmw(SonosSetVolumeTo)))
-	router.PUT("/volume", H.HandlerFunc(authmw(SonosChangeVolumeBy)))
-	router.GET("/playmode", H.HandlerFunc(authmw(SonosGetPlayMode)))
-	router.POST("/playmode", H.HandlerFunc(authmw(SonosSetPlayMode)))
-	router.POST("/next", H.HandlerFunc(authmw(SonosNext)))
-	router.POST("/set", H.HandlerFunc(authmw(SonosSetTrack)))
-	router.GET("/actions", H.HandlerFunc(authmw(SonosActions)))
-	router.GET("/queues", H.HandlerFunc(authmw(SonosListQueues)))
-	router.POST("/useQueue", H.HandlerFunc(authmw(SonosUseQueue)))
-	router.GET("/children", H.HandlerFunc(authmw(SonosChildren)))
-	router.GET("/children/:id", H.HandlerFunc(authmw(SonosChildren)))
-	router.GET("/media", H.HandlerFunc(authmw(SonosMedia)))
+func SonosAPI(router H.Router, authmw H.Middleware) {
+	router.GET("/available", authmw(H.HandlerFunc(HasSonos)))
+	router.GET("/queue", authmw(H.HandlerFunc(SonosGetQueue)))
+	router.POST("/queue", authmw(H.HandlerFunc(SonosReplaceQueue)))
+	router.PUT("/queue", authmw(H.HandlerFunc(SonosAppendQueue)))
+	router.PATCH("/queue", authmw(H.HandlerFunc(SonosInsertQueue)))
+	router.DELETE("/queue", authmw(H.HandlerFunc(SonosClearQueue)))
+	router.POST("/play", authmw(H.HandlerFunc(SonosPlay)))
+	router.POST("/pause", authmw(H.HandlerFunc(SonosPause)))
+	router.POST("/skip", authmw(H.HandlerFunc(SonosSkipTo)))
+	router.PUT("/skip", authmw(H.HandlerFunc(SonosSkipBy)))
+	router.POST("/seek", authmw(H.HandlerFunc(SonosSeekTo)))
+	router.PUT("/seek", authmw(H.HandlerFunc(SonosSeekBy)))
+	router.GET("/volume", authmw(H.HandlerFunc(SonosGetVolume)))
+	router.POST("/volume", authmw(H.HandlerFunc(SonosSetVolumeTo)))
+	router.PUT("/volume", authmw(H.HandlerFunc(SonosChangeVolumeBy)))
+	router.GET("/playmode", authmw(H.HandlerFunc(SonosGetPlayMode)))
+	router.POST("/playmode", authmw(H.HandlerFunc(SonosSetPlayMode)))
+	router.POST("/next", authmw(H.HandlerFunc(SonosNext)))
+	router.POST("/set", authmw(H.HandlerFunc(SonosSetTrack)))
+	router.GET("/actions", authmw(H.HandlerFunc(SonosActions)))
+	router.GET("/queues", authmw(H.HandlerFunc(SonosListQueues)))
+	router.POST("/useQueue", authmw(H.HandlerFunc(SonosUseQueue)))
+	router.GET("/children", authmw(H.HandlerFunc(SonosChildren)))
+	router.GET("/children/:id", authmw(H.HandlerFunc(SonosChildren)))
+	router.GET("/media", authmw(H.HandlerFunc(SonosMedia)))
 }
 
 var sonosDevice *sonos.Sonos
@@ -183,12 +183,13 @@ func SonosReplaceQueue(w http.ResponseWriter, req *http.Request) (interface{}, e
 	if dev == nil {
 		return nil, SonosUnavailableError
 	}
+	user := getUser(req)
 	var err error
 	plid := new(musicdb.PersistentID)
 	err = plid.Decode(req.URL.Query().Get("playlist"))
 	if err == nil && *plid != 0 {
 		var pl *musicdb.Playlist
-		pl, err = db.GetPlaylist(*plid)
+		pl, err = db.GetPlaylist(*plid, user)
 		if err != nil {
 			log.Println("database error:", err)
 			return nil, DatabaseError.Wrap(err, "")
@@ -231,12 +232,13 @@ func SonosAppendQueue(w http.ResponseWriter, req *http.Request) (interface{}, er
 	if dev == nil {
 		return nil, SonosUnavailableError
 	}
+	user := getUser(req)
 	var err error
 	plid := new(musicdb.PersistentID)
 	err = plid.Decode(req.URL.Query().Get("playlist"))
 	if err == nil && *plid != 0 {
 		var pl *musicdb.Playlist
-		pl, err = db.GetPlaylist(*plid)
+		pl, err = db.GetPlaylist(*plid, user)
 		if err != nil {
 			return nil, DatabaseError.Wrap(err, "")
 		}
@@ -267,11 +269,12 @@ func SonosInsertQueue(w http.ResponseWriter, req *http.Request) (interface{}, er
 	if err != nil {
 		return nil, SonosError.Wrap(err, "")
 	}
+	user := getUser(req)
 	plid := new(musicdb.PersistentID)
 	err = plid.Decode(req.URL.Query().Get("playlist"))
 	if err == nil && *plid != 0 {
 		var pl *musicdb.Playlist
-		pl, err = db.GetPlaylist(*plid)
+		pl, err = db.GetPlaylist(*plid, user)
 		if err != nil {
 			return nil, DatabaseError.Wrap(err, "")
 		}

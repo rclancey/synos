@@ -31,7 +31,7 @@ func NewPlaylistStation(db *musicdb.DB, playlistId musicdb.PersistentID, shuffle
 }
 
 func (s *PlaylistStation) Name() string {
-	pl, err := s.db.GetPlaylist(s.playlistId)
+	pl, err := s.db.GetPlaylist(s.playlistId, nil)
 	if err != nil {
 		return s.playlistId.String()
 	}
@@ -48,7 +48,7 @@ func (s *PlaylistStation) Description() string {
 func (s *PlaylistStation) loadTracks(pl *musicdb.Playlist) []*musicdb.Track {
 	var err error
 	if pl == nil {
-		pl, err = s.db.GetPlaylist(s.playlistId)
+		pl, err = s.db.GetPlaylist(s.playlistId, nil)
 		if err != nil {
 			return []*musicdb.Track{}
 		}
@@ -58,7 +58,7 @@ func (s *PlaylistStation) loadTracks(pl *musicdb.Playlist) []*musicdb.Track {
 		seen := map[musicdb.PersistentID]bool{}
 		if pl.Children == nil || len(pl.Children) == 0 {
 			root := pl.PersistentID
-			pl.Children, err = s.db.GetPlaylistTree(&root)
+			pl.Children, err = s.db.GetPlaylistTree(&root, nil)
 		}
 		for _, cpl := range pl.Children {
 			for _, tr := range s.loadTracks(cpl) {

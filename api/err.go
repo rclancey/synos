@@ -1,7 +1,7 @@
 package api
 
 import (
-	H "github.com/rclancey/httpserver"
+	H "github.com/rclancey/httpserver/v2"
 )
 
 var DatabaseError = H.InternalServerError.New("Database Error")

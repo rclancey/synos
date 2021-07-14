@@ -1,5 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
+import { useAPI } from '../../../lib/useAPI';
+import { API } from '../../../lib/api';
 import { useTheme } from '../../../lib/theme';
 import { MixCover } from '../../MixCover';
 import { EditPlaylist } from './EditPlaylist';
@@ -7,6 +9,8 @@ import Random from '../../../assets/icons/random.svg';
 import Play from '../../../assets/icons/play.svg';
 import Insert from '../../../assets/icons/insert.svg';
 import Append from '../../../assets/icons/append.svg';
+import ShareIcon from '../../icons/Share';
+import UnshareIcon from '../../icons/Unshare';
 
 const plural = (n, singular, plural) => {
   return `${n} ${n === 1 ? singular : (plural || singular+'s')}`;
@@ -83,6 +87,7 @@ export const QueueButton = ({ title, icon, onClick }) => {
           padding: 0;
           margin-bottom: 3px;
           display: flex;
+          cursor: pointer;
         }
         .item .icon {
           width: 18px;
@@ -177,17 +182,58 @@ export const PlayLater = ({ tracks, controlAPI }) => {
   );
 };
 
+export const Share = ({ persistent_id, shared, onToggle }) => (
+  <div className="item" onClick={onToggle}>
+    <div className="icon">
+      { shared ? <UnshareIcon /> : <ShareIcon /> }
+    </div>
+    <div className="title">{shared ? 'Unshare' : 'Share'}</div>
+    <style jsx>{`
+      .item {
+        padding: 0;
+        margin-bottom: 3px;
+        display: flex;
+        color: var(--highlight);
+        cursor: pointer;
+      }
+      .item .icon {
+        width: 18px;
+        height: 18px;
+      }
+      .item .icon :global(svg) {
+        width: 18px;
+        height: 18px;
+      }
+      .title {
+        margin: 0;
+        padding: 0;
+        margin-left: 0.5em;
+      }
+    `}</style>
+  </div>
+);
+
 export const PlaylistHeader = ({
   playlist,
   controlAPI,
 }) => {
+  const api = useAPI(API);
   const colors = useTheme();
+  const [shared, setShared] = useState(playlist.shared);
   const [editing, setEditing] = useState(false);
+  useEffect(() => setShared(playlist.shared), [playlist]);
   const onEdit = useCallback(() => setEditing(true), []);
   const onSavePlaylist = useCallback((pl) => {
     console.debug('onSavePlaylist(%o)', pl);
     setEditing(false);
   }, []);
+  const onToggleShare = useCallback(() => {
+    if (shared) {
+      api.unsharePlaylist(playlist.persistent_id).then(() => setShared(false));
+    } else {
+      api.sharePlaylist(playlist.persistent_id).then(() => setShared(true));
+    }
+  }, [api, playlist, shared]);
   return (
     <div className="playlistHeader">
       { editing && <EditPlaylist playlist={playlist} onSavePlaylist={onSavePlaylist} onCancel={() => setEditing(false)} /> }
@@ -198,6 +244,7 @@ export const PlaylistHeader = ({
         <Shuffle persistent_id={playlist.persistent_id} tracks={playlist.items || playlist.tracks} controlAPI={controlAPI} />
         <PlayNext tracks={playlist.items || playlist.tracks} controlAPI={controlAPI} />
         <PlayLater tracks={playlist.items || playlist.tracks} controlAPI={controlAPI} />
+        <Share persistent_id={playlist.persistent_id} shared={shared} onToggle={onToggleShare} />
       </div>
       <style jsx>{`
         .playlistHeader {

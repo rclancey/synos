@@ -5,6 +5,8 @@ import (
 	//"log"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/rclancey/file-monitor"
 	"github.com/rclancey/itunes/loader"
 	"github.com/rclancey/logging"
@@ -16,35 +18,99 @@ func WatchITunes() (chan bool, error) {
 	if err != nil {
 		return nil, err
 	}
-	finder := musicdb.GetGlobalFinder()
-	fn, err := finder.FindFile(cfg.ITunes.Library)
+	errlog.Debugln("looking for itunes library files", cfg.ITunes.Library)
+	users, err := db.ListUsers()
 	if err != nil {
-		errlog.Warn("can't find itunes library")
+		errlog.Errorln("error loading users:", err)
 		return nil, err
 	}
+	finder := musicdb.GetGlobalFinder()
+	fns := []string{}
+	userByLibrary := map[string]*musicdb.User{}
+	for _, user := range users {
+		found := false
+		if user.HomeDirectory != nil {
+			for _, libname := range cfg.ITunes.Library {
+				fn, err := finder.FindFile(libname, user.HomeDirectory)
+				if err == nil {
+					fns = append(fns, fn)
+					userByLibrary[fn] = user
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			errlog.Debugln("no library file found for", user.Username)
+		}
+	}
+	if len(fns) == 0 {
+		errlog.Warn("can't find itunes libraries")
+		return nil, errors.New("no itunes libraries")
+	} else {
+		errlog.Debugln("watching itunes library files", fns)
+	}
 	quit := make(chan bool)
+	uchan := db.UserUpdateChannel()
 	go func() {
-		errlog.Info("monitoring itunes library", fn)
-		mon := monitor.NewFileMonitor(fn, 10 * time.Second, 5 * time.Second)
+		mon := monitor.NewFileMonitor(10 * time.Second, 5 * time.Second, fns...)
 		for {
 			select {
 			case <-quit:
 				mon.Stop()
 				break
-			case <-mon.C:
-				errlog.Info("itunes library update")
-				err := updateItunes(fn, errlog)
+			case user := <-uchan:
+				fns := []string{}
+				var dfn string
+				for xfn, xuser := range userByLibrary {
+					if xuser.PersistentID == user.PersistentID {
+						for _, zfn := range mon.FileNames {
+							if zfn != xfn {
+								fns = append(fns, zfn)
+							} else {
+								dfn = zfn
+							}
+						}
+					}
+				}
+				if dfn != "" {
+					delete(userByLibrary, dfn)
+				}
+				if user.HomeDirectory != nil {
+					var fn string
+					var err error
+					for _, libname := range cfg.ITunes.Library {
+						fn, err = finder.FindFile(libname, user.HomeDirectory)
+						if err == nil {
+							break
+						}
+					}
+					if fn == "" {
+						continue
+					}
+					fns = append(fns, fn)
+					userByLibrary[fn] = user
+				}
+				mon.FileNames = fns
+			case change := <-mon.C:
+				fn := change.FileName
+				user, ok := userByLibrary[fn]
+				if !ok {
+					continue
+				}
+				errlog.Infoln("itunes library update", user.Username, fn)
+				err := updateItunes(user, fn, errlog)
 				if err != nil {
 					errlog.Error(err)
 				} else {
-					errlog.Info("itunes library update complete")
+					errlog.Infoln("itunes library update complete", user.Username)
 				}
-				errlog.Info("update folder tracks")
+				errlog.Infoln("update folder tracks", user.Username)
 				err = db.UpdateFolderTracks()
 				if err != nil {
 					errlog.Error(err)
 				}
-				errlog.Info("update smart tracks")
+				errlog.Infoln("update smart tracks", user.Username)
 				err = db.UpdateSmartTracks()
 				if err != nil {
 					errlog.Error(err)
@@ -63,16 +129,17 @@ func WatchITunes() (chan bool, error) {
 
 type LibraryEvent struct {
 	Type string `json:"type"`
+	User *musicdb.User `json:"user"`
 	Playlists []*musicdb.Playlist `json:"playlists,omitempty"`
 	Tracks []*musicdb.Track `json:"tracks,omitempty"`
 }
 
-func updateItunes(fn string, errlog *logging.Logger) error {
-	deletedTracks, err := db.LoadITunesTrackIDs()
+func updateItunes(user *musicdb.User, fn string, errlog *logging.Logger) error {
+	deletedTracks, err := db.LoadITunesTrackIDs(user)
 	if err != nil {
 		return err
 	}
-	deletedPlaylists, err := db.LoadITunesPlaylistIDs()
+	deletedPlaylists, err := db.LoadITunesPlaylistIDs(user)
 	if err != nil {
 		return err
 	}
@@ -84,6 +151,7 @@ func updateItunes(fn string, errlog *logging.Logger) error {
 	errlog.Info("begin itunes library update")
 	evt := &LibraryEvent{
 		Type: "library",
+		User: user.Clean(),
 		Playlists: []*musicdb.Playlist{},
 		Tracks: []*musicdb.Track{},
 	}
@@ -91,11 +159,11 @@ func updateItunes(fn string, errlog *logging.Logger) error {
 		update, ok := <-l.C
 		if !ok {
 			//errlog.("loader channel closed")
-			err = db.DeleteITunesTracks(deletedTracks)
+			err = db.DeleteITunesTracks(deletedTracks, user)
 			if err != nil {
 				return err
 			}
-			err = db.DeleteITunesPlaylists(deletedPlaylists)
+			err = db.DeleteITunesPlaylists(deletedPlaylists, user)
 			if err != nil {
 				return err
 			}
@@ -118,11 +186,11 @@ func updateItunes(fn string, errlog *logging.Logger) error {
 			//errlog.Debug("library update")
 			if tracks == -1 && tupdate.Tracks != nil && *tupdate.Tracks > 0 {
 				tracks = *tupdate.Tracks
-				errlog.Infof("%d itunes tracks updated", tracks)
+				errlog.Infof("%d / %d itunes tracks updated", len(evt.Tracks), tracks)
 			}
 			if playlists == -1 && tupdate.Playlists != nil && *tupdate.Playlists > 0 {
 				playlists = *tupdate.Playlists
-				errlog.Infof("%d itunes playlists updated", playlists)
+				errlog.Infof("%d / %d itunes playlists updated", len(evt.Playlists), playlists)
 			}
 		case *loader.Track:
 			if tupdate.PersistentID != nil {
@@ -134,7 +202,7 @@ func updateItunes(fn string, errlog *logging.Logger) error {
 			} else if tupdate.Location == nil {
 				// noop
 			} else {
-				updated, err := db.UpdateITunesTrack(tupdate)
+				updated, err := db.UpdateITunesTrack(tupdate, user)
 				if err != nil {
 					errlog.Error("error updating track:", err)
 					l.Abort()
@@ -152,14 +220,14 @@ func updateItunes(fn string, errlog *logging.Logger) error {
 				pid := musicdb.PersistentID(*tupdate.PersistentID).String()
 				delete(deletedPlaylists, pid)
 			}
-			updated, err := db.UpdateITunesPlaylist(tupdate)
+			updated, err := db.UpdateITunesPlaylist(tupdate, user)
 			if err != nil {
 				errlog.Error("error updating playlist:", err)
 				l.Abort()
 				return err
 			}
 			if updated && tupdate.PersistentID != nil {
-				pl, err := db.GetPlaylist(musicdb.PersistentID(*tupdate.PersistentID))
+				pl, err := db.GetPlaylist(musicdb.PersistentID(*tupdate.PersistentID), user)
 				if err == nil {
 					evt.Playlists = append(evt.Playlists, pl)
 				}

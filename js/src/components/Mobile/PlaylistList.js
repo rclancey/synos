@@ -179,6 +179,9 @@ export const PlaylistFolder = ({ persistent_id }) => {
           font-size: 18px;
           line-height: 36px;
           padding-left: 0.5em;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
       `}</style>
     </div>
