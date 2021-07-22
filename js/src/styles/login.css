@@ -3,7 +3,7 @@
   border-style: solid;
   border-width: 1px;
   border-radius: 8px;
-  padding: 2em;
+  padding: 1em;
   display: grid;
   grid-template-columns: min-content min-content;
   grid-column-gap: 10px;
@@ -14,6 +14,12 @@
   background: var(--gradient);
   white-space: nowrap;
   align-items: baseline;
+}
+.login .colspan2 {
+  grid-column: span 2;
+}
+.login .center {
+  text-align: center;
 }
 .login .header {
   grid-column: span 2;

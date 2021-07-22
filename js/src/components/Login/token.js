@@ -79,13 +79,8 @@ export class Token extends Emitter {
     return api.post('/api/password/reset', body);
   }
 
-  changePassword(username, code, password) {
+  changePassword(body) {
     const api = new API();
-    const body = {
-      username,
-      reset_code: code,
-      new_password: password,
-    };
     return api.post('/api/password', body)
       .then((resp) => {
         this.logout();
@@ -148,7 +143,7 @@ export class Token extends Emitter {
     }
     try {
       const parts = cookie.value.split('.');
-      const claims = JSON.parse(base64.decode(parts[1]));
+      const claims = JSON.parse(base64.decode(parts[1].replace(/_/g, '/')));
       this.#setClaims(claims);
     } catch (err) {
       this.#setClaims({});

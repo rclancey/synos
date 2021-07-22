@@ -19,7 +19,24 @@ export const ResetPasswordForm = ({ token, onChange }) => {
   }, [password]);
   const onReset = useCallback(() => {
     console.debug('onReset');
-    token.changePassword(username, code, password)
+    if (username === '' || code === '') {
+      setError('Missing reset code');
+      return;
+    }
+    if (password === '') {
+      setError('Missing new password');
+      return;
+    }
+    if (strength.score < 3) {
+      setError('New password is too weak');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("New passwords don't match");
+      return;
+    }
+    setError(null);
+    token.changePassword({ username, reset_code: code, new_password: password })
       .then((resp) => {
         console.debug('change password response: %o', resp);
         onChange(resp);
@@ -46,8 +63,7 @@ export const ResetPasswordForm = ({ token, onChange }) => {
       <div>{username}</div>
       { codeFromUrl ? null : (
         <>
-          <div />
-          <div>
+          <div className="colspan2">
             <p>Check your email for a code to enter below:</p>
           </div>
           <div>Reset Code:</div>
@@ -55,6 +71,7 @@ export const ResetPasswordForm = ({ token, onChange }) => {
             <input
               type="text"
               name="reset_code"
+              size="15"
               autocomplete="new-password"
               value={code}
               onInput={evt => setCode(evt.target.value)}
@@ -65,12 +82,14 @@ export const ResetPasswordForm = ({ token, onChange }) => {
           </div>
         </>
       ) }
+
       <div>New Password:</div>
       <div className="newPassword">
         <div className="wrap">
           <input
             type="password"
             name="new_password"
+            size="15"
             autocomplete="new-password"
             value={password}
             onInput={evt => setPassword(evt.target.value)}
@@ -88,6 +107,7 @@ export const ResetPasswordForm = ({ token, onChange }) => {
         <input
           type="password"
           name="confirm_password"
+          size="15"
           autocomplete="new-password"
           value={confirmPassword}
           onInput={evt => setConfirmPassword(evt.target.value)}
@@ -100,14 +120,15 @@ export const ResetPasswordForm = ({ token, onChange }) => {
       { error !== null ? (
         <><div /><div className="error">{error}</div></>
       ) : null }
-      <div />
-      <div>
+      <div className="colspan2 center">
         <input
           type="button"
           value="Reset Password"
+          disabled={!code || password === '' || strength.score < 3 || password !== confirmPassword}
           onClick={onReset}
         />
       </div>
+
     </>
   );
 };

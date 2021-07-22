@@ -20,6 +20,7 @@ import { AppleDevicePlaylist } from './Device/Apple/DevicePlaylist';
 import { AndroidDevicePlaylist } from './Device/Android/DevicePlaylist';
 import { PlexDevicePlaylist } from './Device/Plex/DevicePlaylist';
 import { Search } from './Search';
+import { Settings } from './Settings';
 
 import CassetteIcon from '../icons/Cassette';
 import GuitarPlayerIcon from '../icons/GuitarPlayer';
@@ -30,6 +31,7 @@ import AudiobookIcon from '../icons/Audiobook';
 import TimerIcon from '../icons/Timer';
 import ShoppingCartIcon from '../icons/ShoppingCart';
 import SearchIcon from '../icons/Search';
+import GearIcon from '../icons/Gear';
 
 export const Home = React.memo(({ children, onOpen, ...props }) => {
   const stack = useStack();
@@ -99,6 +101,9 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
         */}
         <HomeItem name="Search" icon={SearchIcon} onOpen={stack.onPush}>
           <Search prev="Library" {...props} />
+        </HomeItem>
+        <HomeItem name="Settings" icon={GearIcon} onOpen={stack.onPush}>
+          <Settings prev="Library" {...props} />
         </HomeItem>
       </div>
       <style jsx>{`

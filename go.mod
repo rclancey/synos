@@ -17,7 +17,7 @@ require (
 	github.com/rclancey/file-monitor v0.1.1
 	github.com/rclancey/fsutil v0.0.3 // indirect
 	github.com/rclancey/go-sonos v0.0.1
-	github.com/rclancey/httpserver/v2 v2.0.4-0.20210721224323-cdaba13d7fda
+	github.com/rclancey/httpserver/v2 v2.0.5-0.20210722203131-e07c0ddad6dd
 	github.com/rclancey/itunes v0.0.1
 	github.com/rclancey/jooki v0.1.0
 	github.com/rclancey/lastfm v0.0.0-20210510164243-0116f005e8c8

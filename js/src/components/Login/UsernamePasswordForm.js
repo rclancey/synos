@@ -38,10 +38,19 @@ export const UsernamePasswordForm = ({ username = '', token }) => {
       });
   }, [token, tmpUsername]);
   useEffect(() => {
-    const u = new URL(document.location);
-    if (u.searchParams.get('reset') !== null) {
-      setForgot(true);
-    }
+    const h = () => {
+      const u = new URL(document.location);
+      if (u.searchParams.get('reset') !== null) {
+        setForgot(true);
+      } else {
+        setForgot(false);
+      }
+    };
+    window.addEventListener('popstate', h);
+    h();
+    return () => {
+      window.removeEventListener('popstate', h);
+    };
   }, []);
   if (forgot) {
     return (

@@ -16,11 +16,14 @@ export const TwoFactor = ({ token }) => {
       <div>Code:</div>
       <div>
         <input
+          className="twoFactorCode"
           type="text"
           name="2facode"
           autofill="new-password"
           size={6}
+          maxlength={6}
           value={code}
+          inputmode="numeric"
           onInput={evt => setCode(evt.target.value)}
         />
       </div>
