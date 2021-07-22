@@ -67,7 +67,10 @@ func NewSonos(iface string, rootUrl *url.URL, db *musicdb.DB) (*Sonos, error) {
 			ev := <-c
 			evt, err := s.prettyEvent(ev)
 			if err == nil {
+				log.Println("sending event to listeners")
 				s.Events <- evt
+			} else {
+				log.Println("error prettying event:", ev, err)
 			}
 		}
 	}()

@@ -96,6 +96,7 @@ func APIMain() {
 	ArtAPI(api, authmw)
 	CronAPI(api, authmw)
 	RadioAPI(api, authmw)
+	AdminAPI(api.Prefix("/admin"), authmw)
 	WebSocketAPI(api, authmw)
 	SonosAPI(api.Prefix("/sonos"), authmw)
 	JookiAPI(api.Prefix("/jooki"), authmw)

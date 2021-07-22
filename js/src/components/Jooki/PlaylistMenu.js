@@ -1,9 +1,7 @@
 import React from 'react';
 import _JSXStyle from "styled-jsx/style";
-import { useTheme } from '../../lib/theme';
 
 export const PlaylistMenu = ({ playlists, selected, onChange }) => {
-  const colors = useTheme();
   return (
     <select
       value={selected}
@@ -15,9 +13,6 @@ export const PlaylistMenu = ({ playlists, selected, onChange }) => {
       <style jsx>{`
         select {
           margin: .5em;
-          background-color: ${colors.background};
-          border-color: ${colors.highlightText};
-          color: ${colors.highlightText};
           font-size: 100%;
         }
       `}</style>

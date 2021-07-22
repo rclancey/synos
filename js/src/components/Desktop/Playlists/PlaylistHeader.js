@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import { useAPI } from '../../../lib/useAPI';
 import { API } from '../../../lib/api';
-import { useTheme } from '../../../lib/theme';
 import { MixCover } from '../../MixCover';
 import { EditPlaylist } from './EditPlaylist';
 import Random from '../../../assets/icons/random.svg';
@@ -17,7 +16,6 @@ const plural = (n, singular, plural) => {
 };
 
 export const PlaylistInfo = ({ name, tracks, smart, onEdit }) => {
-  const colors = useTheme();
   const durm = tracks.reduce((acc, tr) => acc + tr.total_time, 0) / 60000;
   const sizem = tracks.reduce((acc, tr) => acc + tr.size, 0) / (1024 * 1024);
   let dur = '';
@@ -77,7 +75,6 @@ export const PlaylistInfo = ({ name, tracks, smart, onEdit }) => {
 };
 
 export const QueueButton = ({ title, icon, onClick }) => {
-  const colors = useTheme();
   return (
     <div className="item" onClick={onClick}>
       <div className="icon" />
@@ -218,7 +215,6 @@ export const PlaylistHeader = ({
   controlAPI,
 }) => {
   const api = useAPI(API);
-  const colors = useTheme();
   const [shared, setShared] = useState(playlist.shared);
   const [editing, setEditing] = useState(false);
   useEffect(() => setShared(playlist.shared), [playlist]);
@@ -250,10 +246,7 @@ export const PlaylistHeader = ({
         .playlistHeader {
           display: flex;
           padding: 2em;
-          /*
-          background-color: ${colors.sectionBackground};
-          */
-          border-bottom: solid ${colors.trackList.separator} 1px;
+          border-bottom: solid var(--border) 1px;
         }
       `}</style>
     </div>

@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../../../lib/theme';
 import { isoDate, fromIsoDate, formatTime } from './util';
 
 export const TextInput = ({
@@ -63,7 +62,6 @@ export const StarInput = ({
   field,
   onChange,
 }) => {
-  const colors = useTheme();
   const filled = Math.min(5, Math.round((track[field] || 0) / 20));
   const stars = new Array(5);
   stars.fill(1, 0, filled);
@@ -75,7 +73,7 @@ export const StarInput = ({
       )) }
       <style jsx>{`
         .stars {
-          color: ${colors.highlightText};
+          color: var(--highlight);
           display: inline-block;
         }
         .stars span {
@@ -163,7 +161,6 @@ export const RangeInput = ({
   value = 0,
   onChange,
 }) => {
-  const colors = useTheme();
   return (
     <div className="range">
       <input
@@ -221,7 +218,7 @@ export const RangeInput = ({
           width: 1px;
           height: 5px;
           margin-right: -1px;
-          background-color: ${colors.text};
+          background-color: var(--text);
         }
         .range .labels {
           width: 100%;

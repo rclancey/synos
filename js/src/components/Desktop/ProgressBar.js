@@ -41,6 +41,7 @@ export const ProgressBar = React.memo(({ total, complete }) => {
           height: 100vh;
           z-index: 10000;
           background-color: rgba(0, 0, 0, 0.3);
+          backdrop-filter: blur(1px);
         } 
         #loading .progress {
           position: absolute;

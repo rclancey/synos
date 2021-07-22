@@ -198,6 +198,12 @@ github.com/rclancey/httpserver/v2 v2.0.1-d h1:2WNUAvn020SGds3erZV7LI0Dpz1VAA6W1D
 github.com/rclancey/httpserver/v2 v2.0.1-d/go.mod h1:rigQg7+bY/hhRku9ZNCoMCQZXtdf/1fitrNXe+/3ZZM=
 github.com/rclancey/httpserver/v2 v2.0.2 h1:m3s1KjkIQup/EczuIySC6BFgiRc6Yqu/y9r00esGQSs=
 github.com/rclancey/httpserver/v2 v2.0.2/go.mod h1:rigQg7+bY/hhRku9ZNCoMCQZXtdf/1fitrNXe+/3ZZM=
+github.com/rclancey/httpserver/v2 v2.0.3 h1:I8HJmtORTDvB9c7CqsILpA6boHu1FSyJIbVnQTyaga4=
+github.com/rclancey/httpserver/v2 v2.0.3/go.mod h1:rigQg7+bY/hhRku9ZNCoMCQZXtdf/1fitrNXe+/3ZZM=
+github.com/rclancey/httpserver/v2 v2.0.4-0.20210721224134-6a70ac046dcd h1:FG3p63HkUK0Vtojh6jEZNSrB70I7yeb8tzhvMVAxpPs=
+github.com/rclancey/httpserver/v2 v2.0.4-0.20210721224134-6a70ac046dcd/go.mod h1:rigQg7+bY/hhRku9ZNCoMCQZXtdf/1fitrNXe+/3ZZM=
+github.com/rclancey/httpserver/v2 v2.0.4-0.20210721224323-cdaba13d7fda h1:x90AhYXmVzb97mGV2pVz8bmFlJBTBFfvFVKYrfGAuq8=
+github.com/rclancey/httpserver/v2 v2.0.4-0.20210721224323-cdaba13d7fda/go.mod h1:rigQg7+bY/hhRku9ZNCoMCQZXtdf/1fitrNXe+/3ZZM=
 github.com/rclancey/itunes v0.0.1 h1:++2MGTevWJel8TYtSYC7GjZPk88Pb+UD7h6YPi7ZQWw=
 github.com/rclancey/itunes v0.0.1/go.mod h1:3IRWFX/w06lSjfVQe5GaT6/wZqoTUy8VK4Z9WgqlryU=
 github.com/rclancey/jooki v0.1.0 h1:zhfGv5OZCmWN3kkQ/6FXZTtjYr5PisFQ15QZ8Q8A/JQ=

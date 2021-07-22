@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import _JSXStyle from 'styled-jsx/style';
 import { API } from '../../../lib/api';
 import { useAPI } from '../../../lib/useAPI';
-import { useTheme } from '../../../lib/theme';
 
 const newRule = () => {
   return {
@@ -83,7 +82,6 @@ export const SmartPlaylistRuleSet = ({
   onAddRule,
   onDeleteRule,
 }) => {
-  const colors = useTheme();
   return (
     <>
       <div className="ruleset">
@@ -103,7 +101,7 @@ export const SmartPlaylistRuleSet = ({
             display: flex;
             flex-direction: row;
             margin-left: ${depth}em;
-            border-bottom: solid ${colors.text3} 1px;
+            border-bottom: solid var(--border) 1px;
             padding-bottom: 4px;
             margin-top: 4px;
             font-size: 12px;
@@ -135,7 +133,6 @@ export const PlusMinus = ({
   onAdd,
   onDelete,
 }) => {
-  const colors = useTheme();
   return (
     <div className="plusminus">
       <div className="padding" />
@@ -163,13 +160,13 @@ export const PlusMinus = ({
           flex: 1;
           display: flex;
           white-space: nowrap;
-          color: ${colors.button};
+          color: var(--text);
         }
         .plusminus .content span {
           margin-left: 2px;
           line-height: 14px;
           display: block;
-          border: solid ${colors.text} 1px;
+          border: solid var(--border) 1px;
           border-radius: 6px;
           width: 16px;
           height: 16px;
@@ -586,7 +583,6 @@ export const SmartPlaylistRule = ({
   onAddRule,
   onDeleteRule,
 }) => {
-  const colors = useTheme();
   if (rule.type === 'ruleset') {
     return (<SmartPlaylistRuleSet ruleset={rule.ruleset} depth={depth} onChange={rs => onChange(Object.assign({}, rule, { ruleset: rs}))} onAddRule={onAddRule} onDeleteRule={onDeleteRule} />);
   }
@@ -626,7 +622,7 @@ export const SmartPlaylistRule = ({
           display: flex;
           flex-direction: row;
           margin-left: ${depth}em;
-          border-bottom: solid ${colors.text3} 1px;
+          border-bottom: solid var(--border) 1px;
           padding-bottom: 4px;
           margin-top: 4px;
           font-size: 12px;
@@ -857,8 +853,6 @@ export const SmartPlaylistEditor = ({
   limit,
   onChange,
 }) => {
-  const colors = useTheme();
-        //onAddSub={() => onAddRule({ rules: rules.concat({ type: 'ruleset', ruleset: { conjunction: 'AND', rules: [{}] } }) })}
   return (
     <div className="smartEditor">
       <div className="rules">
@@ -891,11 +885,11 @@ export const SmartPlaylistEditor = ({
         }
         .smartEditor :global(input[disabled]),
         .smartEditor :global(select[disabled]) {
-          background-color: ${colors.disabledBackground};
-          color: ${colors.text2};
+          background-color: var(--highlight-blur) !important;
+          color: var(--border) !important;
         }
         .smartEditor :global(span.disabled) {
-          color: ${colors.text2};
+          color: var(--border) !important;
         }
         .smartEditor .limit {
           margin-top: 4px;

@@ -1,7 +1,7 @@
-import React, { Suspense, useMemo, useState, useReducer, useEffect } from 'react';
+import React, { Suspense, useMemo, useRef, useState, useReducer, useEffect } from 'react';
 import { useDarkMode, useMobile } from '../lib/useMedia';
-import { ThemeContext } from '../lib/theme';
-import { CheckLogin } from './Login';
+import { setTheme, ThemeContext } from '../lib/theme';
+import WithLogin from './Login/WithLogin';
 import { PlayerControlContext, PlayerStateContext } from './Player/Context';
 
 const DesktopSkin = React.lazy(() => import('./Desktop/Skin'));
@@ -62,7 +62,7 @@ export const Main = () => {
   const mobile = useMobile();
   const dark = useDarkMode();
   const [installPrompt, setInstallPrompt] = useState(null);
-  const setTheme = useMemo(() => {
+  const setThemeLocal = useMemo(() => {
     return (value) => dispatch({ type: 'setTheme', value });
   }, [dispatch]);
   const setDarkMode = useMemo(() => {
@@ -110,15 +110,25 @@ export const Main = () => {
     dark: state.dark === null ? dark : state.dark,
     darkMode: state.dark,
     theme: state.theme,
-    setTheme,
+    setTheme: setThemeLocal,
     setDarkMode,
-  }), [dark, state, setTheme, setDarkMode]);
+  }), [dark, state, setThemeLocal, setDarkMode]);
+
+  const transitionId = useRef(null);
+  useEffect(() => {
+    if (transitionId.current === null) {
+      transitionId.current = Math.random();
+      setTheme(state.theme, state.dark, 0);
+      return;
+    }
+    setTheme(state.theme, state.dark, 5000);
+  }, [state]);
 
   const clsName = `App ${themeCtx.dark ? 'dark' : 'light'} ${themeCtx.theme}`;
   return (
     <ThemeContext.Provider value={themeCtx}>
       <div id="main" className={clsName}>
-        <CheckLogin theme={state.theme} dark={state.dark}>
+        <WithLogin>
           {/*
           <Player
             player={player}
@@ -153,7 +163,7 @@ export const Main = () => {
               </Suspense>
             </PlayerStateContext.Provider>
           </PlayerControlContext.Provider>
-        </CheckLogin>
+        </WithLogin>
       </div>
     </ThemeContext.Provider>
   );

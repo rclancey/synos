@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import { useMeasure } from '../../../lib/useMeasure';
-import { useTheme } from '../../../lib/theme';
 import {
   TrackSelectionList,
   GENRE_FILTER,
@@ -15,29 +14,6 @@ import { ColumnBrowser } from './ColumnBrowser';
 
 const tsl = new TrackSelectionList([], {});
 window.tsl = tsl;
-
-const playlistColors = [
-  'purple',
-  'darkred',
-  'darkblue',
-  'darkgreen',
-  '#930',
-  'fuchsia',
-  'deeppink',
-  'darkorchid',
-  'darkslateblue',
-  '#356',
-  '#365',
-  'indigo',
-  'maroon',
-  'midnightblue',
-  'teal',
-  'sienna',
-  'olive',
-  '#444',
-  'darkmagenta',
-  'crimson',
-];
 
 const defaultColumns = [
   Object.assign({}, COLUMNS.PLAYLIST_POSITION, { width: 100 /*1*/ }),
@@ -101,7 +77,6 @@ export const TrackBrowser = ({
   onShowInfo,
   onShowMultiInfo,
 }) => {
-  const colors = useTheme();
   const prevTracks = useRef(null);
   const [displayTracks, setDisplayTracks] = useState(tsl.tracks);
   const [selected, setSelected] = useState([]);
@@ -263,13 +238,6 @@ export const TrackBrowser = ({
       },
     }));
   }, [update, genres, artists, albums]);
-  const bgstyle = useMemo(() => {
-    const color = (playlist ? playlist.color : null) || playlistColors[Math.floor(Math.random() * playlistColors.length)];
-    const dir = Math.random() < 0.5 ? -20 : -200;
-    return {
-      background: `linear-gradient(${dir}deg, ${color} 0%, black)`,
-    };
-  }, [playlist]);
 
   return (
     <div className="trackBrowser">

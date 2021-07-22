@@ -1,9 +1,7 @@
 import React from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../lib/theme';
 
 export const Back = ({ onClose, children }) => {
-  const colors = useTheme();
   return (
     <div className="back" onClick={onClose}>
       <span className="fas fa-chevron-left" />
@@ -33,7 +31,6 @@ export const Back = ({ onClose, children }) => {
 };
 
 export const ScreenHeader = ({ name, prev, onClose }) => {
-  const colors = useTheme();
   return (
     <div>
       <div className="header">

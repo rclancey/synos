@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
-import { useTheme } from '../../../lib/theme';
 import { useFocus } from '../../../lib/useFocus';
 import { AutoSizeList } from '../../AutoSizeList';
 
@@ -43,7 +42,6 @@ export const ColumnBrowser = ({
   onClick,
   onKeyPress,
 }) => {
-  const colors = useTheme();
   const { node, onFocus, onBlur } = useFocus(onKeyPress);
   const lastScrollIndex = useRef(lastIndex);
   const listRef = useRef(null);
@@ -90,9 +88,6 @@ export const ColumnBrowser = ({
           border-right-style: solid;
           border-right-width: 1px;
           overflow: hidden;
-          /*
-          background-color: ${colors.trackList.background};
-          */
           background-color: var(--contrast3);
           border-right-color: var(--border);
           color: var(--text);
@@ -103,9 +98,6 @@ export const ColumnBrowser = ({
           outline: none;
         }
         .columnBrowser .header {
-          /*
-          background-color: ${colors.trackList.background};
-          */
           background-color: var(--contrast3);
           color: var(--text);
           border-bottom: solid var(--border) 1px;
@@ -118,9 +110,6 @@ export const ColumnBrowser = ({
           height: 18px;
         }
         .columnBrowser :global(.row.selected) {
-          /*
-          background-color: ${colors.blurHighlight};
-          */
           background-color: var(--highlight-blur);
         }
         .columnBrowser:focus-within :global(.row.selected) {

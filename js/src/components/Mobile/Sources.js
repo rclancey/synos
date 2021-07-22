@@ -1,6 +1,5 @@
 import React from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../lib/theme';
 import { HomeItem } from './HomeItem';
 import { PlaylistFolder } from './PlaylistList';
 import { ArtistList } from './ArtistList';
@@ -13,7 +12,6 @@ import { RecentAdditions } from './RecentAdditions';
 import { ScreenHeader } from './ScreenHeader';
 
 export const Sources = React.memo(({ prev, children, onOpen, onFinish, ...props }) => {
-  const colors = useTheme();
   if (children) {
     return children;
   }
@@ -54,7 +52,7 @@ export const Sources = React.memo(({ prev, children, onOpen, onFinish, ...props 
         .header {
           padding: 0.5em;
           padding-top: 54px;
-          background-color: ${colors.sectionBackground};
+          background-color: var(--contrast5);
         }
         .header .title {
           font-size: 24pt;

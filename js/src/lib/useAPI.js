@@ -1,5 +1,5 @@
 import { useMemo, useContext } from 'react';
-import { LoginContext } from './login';
+import LoginContext from '../context/LoginContext';
 
 export const useAPI = (cls) => {
   const { onLoginRequired } = useContext(LoginContext);

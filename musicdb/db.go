@@ -1170,9 +1170,11 @@ func (db *DB) SmartTracks(spl *Smart) ([]*Track, error) {
 		}
 		track.db = db
 		tracks = append(tracks, &track)
+		/*
 		if i % 100 == 0 {
 			log.Printf("%d tracks...", i)
 		}
+		*/
 	}
 	log.Printf("%d tracks", len(tracks))
 	return tracks, nil

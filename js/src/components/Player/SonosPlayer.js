@@ -1,5 +1,5 @@
 import React, { useReducer, useMemo, useRef, useEffect, useContext } from 'react';
-import { LoginContext } from '../../lib/login';
+import LoginContext from '../../context/LoginContext';
 import { WS } from '../../lib/ws';
 import { SHUFFLE, REPEAT } from '../../lib/api';
 import { SonosAPI } from '../../lib/sonos';

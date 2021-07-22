@@ -4,7 +4,6 @@ import { usePlaybackInfo } from '../Player/Context';
 import { Controls } from './Controls';
 import { Library } from './Library';
 import { ProgressBar } from './ProgressBar';
-import { useTheme } from '../../lib/theme';
 import { WS } from '../../lib/ws';
 import { trackDB } from '../../lib/trackdb';
 import { EditSingleTrackInfo } from './Tracks/Edit/EditSingleTrack';
@@ -20,7 +19,6 @@ export const DesktopSkin = ({
   setPlaybackInfo,
   setControlAPI,
 }) => {
-  const colors = useTheme();
   const [search, setSearch] = useState({});
   const [playlist, setPlaylist] = useState(null);
   const [progress, setProgress] = useState(null);
@@ -112,7 +110,7 @@ export const DesktopSkin = ({
   const playbackInfo = usePlaybackInfo();
 
   return (
-    <div id="app" className={`desktop ${theme} ${dark ? 'dark' : 'light'}`}>
+    <div id="app" className="desktop">
       <Controls
         player={player}
         search={search[playlist]}
@@ -146,9 +144,6 @@ export const DesktopSkin = ({
           height: 100vh;
           display: flex;
           flex-direction: column;
-          /*
-          background-color: ${colors.background};
-          */
           background: var(--gradient);
           color: var(--text);
         }

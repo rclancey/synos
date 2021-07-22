@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Password Reset</title>
+  </head>
+  <body>
+    <p>Follow this link to reset your password:</p>
+    <p>
+      <a href="{{.Scheme}}://{{.Hostname}}/?reset=true&username={{.Username}}&code={{.Code}}">{{.Scheme}}://{{.Hostname}}/?reset=true&username={{.Username}}&code={{.Code}}</a>
+    </p>
+    <p>This link will expire in 30 minutes.</p>
+  </body>
+</html>

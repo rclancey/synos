@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../lib/theme';
 import { useStack } from './Router/StackContext';
 import { useAPI } from '../../lib/useAPI';
 import { JookiAPI } from '../../lib/jooki';
@@ -34,7 +33,6 @@ import SearchIcon from '../icons/Search';
 
 export const Home = React.memo(({ children, onOpen, ...props }) => {
   const stack = useStack();
-  const colors = useTheme();
   const [jooki, setJooki] = useState(null);
   const api = useAPI(JookiAPI);
   useEffect(() => {

@@ -57,7 +57,8 @@
     "react-virtualized-auto-sizer": "^1.0.5",
     "react-window": "^1.8.6",
     "resize-observer-polyfill": "^1.5.1",
-    "styled-jsx": "^3.4.4"
+    "styled-jsx": "^3.4.4",
+    "zxcvbn": "^4.4.2"
   },
   "jest": {
     "preset": "jest-preset-preact",

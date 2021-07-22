@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
-import { useTheme } from '../../../lib/theme';
 import { useFocus } from '../../../lib/useFocus';
 import { PLAYLIST_ORDER } from '../../../lib/distinguished_kinds';
 import { Folder } from './Folder';
@@ -22,7 +21,6 @@ export const PlaylistBrowser = ({
   controlAPI,
   setPlayer,
 }) => {
-  const colors = useTheme();
   const { focused, node, focus, onFocus, onBlur } = useFocus();
 
   useEffect(() => {
@@ -158,9 +156,6 @@ export const PlaylistBrowser = ({
           font-size: 13px;
           height: 100%;
           overflow: auto;
-          /*
-          background-color: ${colors.panelBackground};
-          */
           background-color: var(--dark);
           color: var(--text);
           border-right: solid var(--border) 1px;
@@ -180,9 +175,6 @@ export const PlaylistBrowser = ({
           margin-left: 1em;
         }
         .playlistBrowser :global(.selected) {
-          /*
-          background-color: ${colors.blurHighlight};
-          */
           background-color: var(--dark);
         }
         .playlistBrowser:focus-within :global(.selected) {
@@ -190,12 +182,12 @@ export const PlaylistBrowser = ({
           color: var(--inverse);
         }
         .playlistBrowser :global(.folder>.label.dropTarget) {
-          background-color: ${colors.dropTarget.folderBackground};
-          color: ${colors.dropTarget.folderText};
+          background-color: yellow;
+          color: black;
         }
         .playlistBrowser :global(.playlist>.label.dropTarget) {
-          background-color: ${colors.dropTarget.playlistBackground} !important;
-          color: ${colors.dropTarget.playlistText} !important;
+          background-color: orange;
+          color: black;
         }
         .playlistBrowser .split {
           display: flex;

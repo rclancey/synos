@@ -1,5 +1,5 @@
 import React, { useReducer, useMemo, useRef, useEffect, useContext } from 'react';
-import { LoginContext } from '../../lib/login';
+import LoginContext from '../../context/LoginContext';
 import { API, REPEAT, SHUFFLE } from '../../lib/api';
 
 const getTrackUrl = (track) => {

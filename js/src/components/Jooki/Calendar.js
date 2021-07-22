@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import { PlaylistMenu } from './PlaylistMenu';
-import { useTheme } from '../../lib/theme';
 
 const zeroPad = (v, n) => {
   let s = '' + v;
@@ -161,7 +160,6 @@ const CalendarDay = ({
   playlists,
   updateCal,
 }) => {
-  const colors = useTheme();
   const setWakeTime = useMemo(() => {
     return t => updateCal(dow, 'wake', { time: t });
   }, [dow, updateCal]);
@@ -216,8 +214,8 @@ const CalendarDay = ({
           box-sizing: border-box;
         }
         .day .dayname {
-          background: ${colors.highlightText};
-          color: ${colors.background};
+          background: var(--highlight);
+          color: var(--inverse);
           font-size: 20px;
           font-weight: 700;
           padding: 3px 8px;
@@ -276,11 +274,11 @@ export const Calendar = ({ wide = true }) => {
           wide={wide}
           playlists={playlists}
           dow={day.dow}
-          wakeTime={day.wake.time}
-          wakeOverride={day.wake.override}
-          wakePlaylist={day.wake.playlist}
-          sleepTime={day.sleep.time}
-          sleepOverride={day.sleep.override}
+          wakeTime={day.wake ? day.wake.time : null}
+          wakeOverride={day.wake ? day.wake.override : null}
+          wakePlaylist={day.wake ? day.wake.playlist : null}
+          sleepTime={day.sleep ? day.sleep.time : null}
+          sleepOverride={day.sleep ? day.sleep.override : null}
           updateCal={updateCal}
         />
       ) : null) }

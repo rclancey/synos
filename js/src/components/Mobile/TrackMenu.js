@@ -5,7 +5,6 @@ import { QueueInfo } from '../Queue';
 import { MixCover } from '../MixCover';
 import { AlbumList } from './AlbumList';
 import { Album } from './SongList';
-import { useTheme } from '../../lib/theme';
 
 export const MenuContext = React.createContext({
   onTrackMenu: (track) => null,
@@ -161,7 +160,6 @@ const Header = ({ tracks, name }) => (
 );
 
 const QueueActions = ({ tracks, controlAPI, onClose }) => {
-  const colors = useTheme();
   return (
     <div>
       <div className="items">
@@ -181,7 +179,6 @@ const QueueActions = ({ tracks, controlAPI, onClose }) => {
 };
 
 const CloseButton = ({ onClose }) => {
-  const colors = useTheme();
   return (
     <div className="cancel" onClick={onClose}>
       Cancel
@@ -203,7 +200,6 @@ export const PlaylistMenu = ({
   onClose,
   controlAPI,
 }) => {
-  const colors = useTheme();
   return (
     <div className="disabler">
       <div className="playlistMenu">
@@ -243,7 +239,6 @@ export const TrackMenu = ({
   onClose,
   controlAPI,
 }) => {
-  const colors = useTheme();
   return (
     <div className="disabler">
       <div className="trackMenu">
@@ -269,7 +264,8 @@ export const TrackMenu = ({
           top: 0;
           width: 100vw;
           height: 100vh;
-          background-color: ${colors.disabler};
+          background-color: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(1px);
         }
         .trackMenu {
           position: fixed;
@@ -280,7 +276,7 @@ export const TrackMenu = ({
           border: solid transparent 1px;
           border-radius: 20px;
           max-height: 70vh;
-          background-color: ${colors.background};
+          background: var(--gradient);
         }
         .items {
           height: auto;
@@ -292,7 +288,6 @@ export const TrackMenu = ({
 };
 
 export const DotsMenu = ({ track, onOpen }) => {
-  const colors = useTheme();
   return (
     <div
       className={`dotsmenu ${Array.isArray(track) ? 'list' : ''}`}

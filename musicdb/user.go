@@ -1,7 +1,8 @@
 package musicdb
 
 import (
-	"encoding/json"
+	"database/sql"
+	//"encoding/json"
 	"fmt"
 	"log"
 	"os/user"
@@ -33,15 +34,22 @@ type User struct {
 	BitBucketID   *string      `json:"bitbucket_id,omitempty" db:"bitbucket_id"`
 	DateAdded     *Time        `json:"date_added,omitempty" db:"date_added"`
 	DateModified  *Time        `json:"date_modified,omitempty" db:"date_modified"`
-	Active        bool         `json:"active" db:"active"`
-	Auth          *twofactor.Auth `json:"-" db:"auth"`
+	Active        bool         `json:"active,omitempty" db:"active"`
+	Auth          *twofactor.Auth `json:"auth,omitempty" db:"auth"`
+	IsAdmin       bool         `json:"admin,omitempty" db:"admin"`
 	db *DB
 }
 
-func NewUser(username string) *User {
+func NewUser(db *DB, username string) *User {
+	now := Now()
 	u := &User{
 		PersistentID: NewPersistentID(),
 		Username: username,
+		DateAdded: &now,
+		DateModified: &now,
+		Active: true,
+		Auth: &twofactor.Auth{},
+		db: db,
 	}
 	ou, err := user.Lookup(username)
 	if err == nil {
@@ -55,6 +63,38 @@ func NewUser(username string) *User {
 		}
 	}
 	return u
+}
+
+func (u *User) Create() error {
+	if u.db == nil {
+		return errors.New("no db handle")
+	}
+	tx, err := u.db.Begin()
+	if err != nil {
+		return err
+	}
+	err = u.db.insertStruct(tx, u)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
+}
+
+func (u *User) Update() error {
+	if u.db == nil {
+		return errors.New("no db handle")
+	}
+	tx, err := u.db.Begin()
+	if err != nil {
+		return err
+	}
+	err = u.db.updateStruct(tx, u)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
 }
 
 func (u *User) SharedFolder() *Playlist {
@@ -173,11 +213,13 @@ func (u *User) Clean() *User {
 	return &clone
 }
 
+/*
 func (u *User) MarshalJSON() ([]byte, error) {
 	clone := *u
 	clone.Auth = nil
 	return json.Marshal(clone)
 }
+*/
 
 func (u *User) ID() PersistentID {
 	return u.PersistentID
@@ -207,5 +249,8 @@ func (u *User) Reload(db *DB) error {
 	}
 	row := stmt.QueryRow(u)
 	err = row.StructScan(u)
+	if errors.Is(err, sql.ErrNoRows) {
+		return errors.WithStack(auth.ErrUnknownUser)
+	}
 	return errors.WithStack(err)
 }

@@ -1,12 +1,10 @@
 import React from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../../../lib/theme';
 import { CoverArt } from '../../../CoverArt';
 
 export const Header = ({
   track,
 }) => {
-  const colors = useTheme();
   return (
     <div className="header">
       <CoverArt track={track} size={100} radius={5} />
@@ -37,11 +35,11 @@ export const Header = ({
         }
         .header .info .name {
           font-size: 24px;
-          color: ${colors.panelText};
+          color: var(--text);
         }
         .header .info .artist, .header .info .album {
           font-size: 12px;
-          color: #${colors.text};
+          color: var(--text);
         }
       `}</style>
     </div>

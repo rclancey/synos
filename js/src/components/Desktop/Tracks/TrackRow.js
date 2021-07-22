@@ -1,7 +1,6 @@
 import React, { useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import { useDrag, useDrop } from 'react-dnd';
-import { useTheme } from '../../../lib/theme';
 
 export const TrackRow = ({
   device,
@@ -18,7 +17,6 @@ export const TrackRow = ({
   onClick,
   onPlay,
 }) => {
-  const colors = useTheme();
 
   const [, connectDragSource] = useDrag({
     type: 'TrackList',
@@ -81,7 +79,7 @@ export const TrackRow = ({
         <span className="fas fa-play current" />
       ) : null }
       { columns.map(col => (
-        <Cell key={col.key} col={col} rowData={rowData} colors={colors} selected={selected} />
+        <Cell key={col.key} col={col} rowData={rowData} selected={selected} />
       )) }
       <style jsx>{`
         div {
@@ -101,14 +99,8 @@ export const TrackRow = ({
         }
         .even {
           background-color: var(--contrast2);
-          /*
-          background-color: ${colors.trackList.evenBg};
-          */
         }
         .selected, .even.selected {
-          /*
-          background-color: ${colors.blurHighlight};
-          */
           background-color: var(--highlight-blur);
         }
         .dropTarget {
@@ -121,7 +113,7 @@ export const TrackRow = ({
   ));
 };
 
-const Cell = React.memo(({ rowData, col, colors, selected }) => (
+const Cell = React.memo(({ rowData, col, selected }) => (
   <div className={col.className}>
     {col.formatter ? col.formatter({ rowData, dataKey: col.key }) : rowData[col.key]}
     <style jsx>{`
@@ -144,11 +136,13 @@ const Cell = React.memo(({ rowData, col, colors, selected }) => (
         font-family: sans-serif;
         white-space: pre;
       }
+      /*
       .stars {
         font-family: monospace;
         color: var(${selected ? '--inverse' : '--highlight'});
         font-size: 20px;
       }
+      */
       .empty {
         padding: 0px;
       }

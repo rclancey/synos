@@ -2,7 +2,6 @@ import React, { useState, useRef, useMemo, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
 import css from 'styled-jsx/css';
 import { Cover } from '../Cover';
-import { useTheme } from '../../lib/theme';
 
 export const Alert = ({ title, style, children, onDismiss }) => {
   return (
@@ -26,7 +25,6 @@ export const Dialog = ({
   children,
   onDismiss,
 }) => {
-  const colors = useTheme();
   const [pos, setPos] = useState(null);
   const xstyle = useMemo(() => {
     if (pos === null) {
@@ -52,8 +50,8 @@ export const Dialog = ({
             height: auto;
             max-height: 73vh;
             overflow: hidden;
-            background: ${colors.sectionBackground};
-            border: solid ${colors.panelBorder} 1px;
+            background: var(--gradient);
+            border: solid var(--border) 1px;
             border-radius: 8px;
             box-sizing: border-box;
             display: flex;
@@ -75,12 +73,11 @@ export const DialogHeader = ({
   setPos,
   children,
 }) => {
-  const colors = useTheme();
   let css;
   if (typeof children === 'string') { // || (Array.isArray(children) && children.every(c => typeof c === 'string'))) {
-    css = titleHeaderCss(colors);
+    css = titleHeaderCss();
   } else {
-    css = complexHeaderCss(colors);
+    css = complexHeaderCss();
   }
   const ref = useRef(null);
 
@@ -133,7 +130,7 @@ export const DialogHeader = ({
   );
 };
 
-const titleHeaderCss = (colors) => {
+const titleHeaderCss = () => {
   return css`
   .header {
     flex: 0;
@@ -144,18 +141,20 @@ const titleHeaderCss = (colors) => {
     height: 18px;
     text-align: center;
     font-weight: bold;
-    background-color: ${colors.infoBackground};
+    background-color: var(--contrast5);
     padding: 0.5em;
     cursor: move;
+    border-bottom: solid var(--gradient-start) 1px;
   }
   `;
 };
 
-const complexHeaderCss = (colors) => {
+const complexHeaderCss = () => {
   return css`
   .header {
     flex: 0;
-    background-color: ${colors.infoBackground};
+    background-color: var(--contrast5);
+    border-bottom: solid var(--gradient-start) 1px;
     padding: 1em;
     display: flex;
     cursor: move;
@@ -188,27 +187,12 @@ export const Button = ({
   style,
   onClick,
 }) => {
-  const colors = useTheme();
   return (
-    <button disabled={disabled} style={style} onClick={onClick}>
+    <button className={highlight ? 'default' : ''} disabled={disabled} style={style} onClick={onClick}>
       {label}
       <style jsx>{`
         button {
-          font-size: 14px;
-          line-height: 17px;
-          border: solid ${colors.text} 1px;
-          border-radius: 4px;
-          color: ${colors.input};
-          background: ${highlight ? colors.highlightText : colors.inputGradient};
-          margin-left: 0.5em;
           width: 100px;
-        }
-        button:focus {
-          outline: none;
-        }
-        button[disabled] {
-          color: #999;
-          background: ${colors.disabledBackground} !important;
         }
       `}</style>
     </button>
