@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/gob"
+	//"encoding/json"
 	builtinErrors "errors"
 	"fmt"
 	"io/ioutil"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/rclancey/httpserver/v2/auth"
 	"github.com/rclancey/itunes/loader"
+	"github.com/rclancey/itunes/persistentId"
 )
 
 var CircularPlaylistFolder = builtinErrors.New("playlist can't be a descendant of itself")
@@ -221,6 +223,60 @@ func (db *DB) SearchAlbums(s Search) ([]*Album, error) {
 	return db.searchAlbums(filters, vals)
 }
 
+func (db *DB) RecentTracks(user *User, since Time) ([]*Track, error) {
+	qs := `SELECT * FROM track WHERE date_added >= ? `
+	args := []interface{}{since}
+	if user != nil {
+		qs += `AND owner_id = ? `
+		args = append(args, user.PersistentID)
+	}
+	qs += `ORDER BY date_added DESC`
+	rows, err := db.Query(qs, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	tracks := []*Track{}
+	for rows.Next() {
+		var t Track
+		err = rows.StructScan(&t)
+		if err != nil {
+			return nil, errors.Wrap(err, "can't scan row into track")
+		}
+		t.db = db
+		tracks = append(tracks, &t)
+	}
+	return tracks, nil
+}
+
+func (db *DB) RecentPlaylists(user *User, since Time) ([]*Playlist, error) {
+	qs := `SELECT * FROM playlist WHERE (folder IS NULL OR folder = ?) AND date_added >= ? `
+	args := []interface{}{false, since}
+	if user == nil {
+		qs += ` AND shared = 't'`
+	} else {
+		qs += ` AND (shared = 't' OR owner_id = ?)`
+		args = append(args, user.PersistentID)
+	}
+	qs += `ORDER BY date_added DESC`
+	rows, err := db.Query(qs, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	playlists := []*Playlist{}
+	for rows.Next() {
+		var pl Playlist
+		err = rows.StructScan(&pl)
+		if err != nil {
+			return nil, errors.Wrap(err, "can't scan row into playlist")
+		}
+		pl.db = db
+		playlists = append(playlists, &pl)
+	}
+	return playlists, nil
+}
+
 func (db *DB) TracksSinceCount(mk MediaKind, t Time) (int, error) {
 	qs := `SELECT COUNT(*) FROM track WHERE media_kind = ? AND date_modified >= ?`
 	row := db.QueryRow(qs, mk, t)
@@ -298,30 +354,30 @@ func (db *DB) Tracks(page, count int, order []string) ([]*Track, error) {
 	return tracks, nil
 }
 
-func (db *DB) GetTrack(pid PersistentID) (*Track, error) {
+func (db *DB) GetTrack(p pid.PersistentID) (*Track, error) {
 	qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE track.id = ?`
-	row := db.QueryRow(qs, pid)
+	row := db.QueryRow(qs, p)
 	var track Track
 	err := row.StructScan(&track)
 	if err != nil {
 		if errors.Cause(err) == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, errors.Wrap(err, "can't query track " + pid.String())
+		return nil, errors.Wrap(err, "can't query track " + p.String())
 	}
 	return &track, nil
 }
 
-func (db *DB) GetPlaylist(pid PersistentID, user *User) (*Playlist, error) {
+func (db *DB) GetPlaylist(p pid.PersistentID, user *User) (*Playlist, error) {
 	qs := `SELECT * FROM playlist WHERE id = ?`
-	args := []interface{}{pid}
+	args := []interface{}{p}
 	if user == nil {
 		qs += ` AND shared = 't'`
 	} else {
 		qs += ` AND (owner_id = ? OR shared = 't')`
 		args = append(args, user.PersistentID)
 	}
-	log.Println("GetPlaylist:", qs, args)
+	//log.Println("GetPlaylist:", qs, args)
 	row := db.QueryRow(qs, args...)
 	var pl Playlist
 	err := row.StructScan(&pl)
@@ -329,18 +385,18 @@ func (db *DB) GetPlaylist(pid PersistentID, user *User) (*Playlist, error) {
 		if errors.Cause(err) == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, errors.Wrap(err, "can't query playlist " + pid.String())
+		return nil, errors.Wrap(err, "can't query playlist " + p.String())
 	}
 	return &pl, nil
 }
 
-func (db *DB) GetPlaylistTree(root *PersistentID, user *User) ([]*Playlist, error) {
+func (db *DB) GetPlaylistTree(root *pid.PersistentID, user *User) ([]*Playlist, error) {
 	qs := `SELECT * FROM playlist`
 	args := []interface{}{}
-	var me PersistentID
+	var me pid.PersistentID
 	if user == nil {
 		qs += ` WHERE shared = 't'`
-		me = PersistentID(0)
+		me = pid.PersistentID(0)
 	} else {
 		qs += ` WHERE owner_id = ? OR shared = 't'`
 		args = append(args, user.PersistentID)
@@ -352,7 +408,7 @@ func (db *DB) GetPlaylistTree(root *PersistentID, user *User) ([]*Playlist, erro
 		return nil, err
 	}
 	defer rows.Close()
-	plm := map[PersistentID]*Playlist{}
+	plm := map[pid.PersistentID]*Playlist{}
 	pls := []*Playlist{}
 	for rows.Next() {
 		var pl Playlist
@@ -364,7 +420,7 @@ func (db *DB) GetPlaylistTree(root *PersistentID, user *User) ([]*Playlist, erro
 		pls = append(pls, &pl)
 	}
 	top := []*Playlist{}
-	shared := map[PersistentID][]*Playlist{}
+	shared := map[pid.PersistentID][]*Playlist{}
 	for _, pl := range pls {
 		if pl.ParentPersistentID == nil {
 			if pl.OwnerID == me {
@@ -933,28 +989,28 @@ func (db *DB) PlaylistTracks(pl *Playlist) ([]*Track, error) {
 	return tracks, nil
 }
 
-func (db *DB) PlaylistTrackIDs(pl *Playlist) ([]PersistentID, error) {
+func (db *DB) PlaylistTrackIDs(pl *Playlist) ([]pid.PersistentID, error) {
 	qs := `SELECT track_id AS id FROM playlist_track WHERE playlist_id = ? ORDER BY playlist_track.position`
 	rows, err := db.Query(qs, pl.PersistentID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	ids := []PersistentID{}
+	ids := []pid.PersistentID{}
 	for rows.Next() {
-		var pid PersistentID
-		err = rows.Scan(&pid)
+		var p pid.PersistentID
+		err = rows.Scan(&p)
 		if err != nil {
 			return nil, err
 		}
-		ids = append(ids, pid)
+		ids = append(ids, p)
 	}
 	return ids, nil
 }
 
 func (db *DB) FolderTracks(folder *Playlist) ([]*Track, error) {
 	owner := &User{PersistentID: folder.OwnerID}
-	items := map[PersistentID]*Track{}
+	items := map[pid.PersistentID]*Track{}
 	children, err := db.GetPlaylistTree(&folder.PersistentID, owner)
 	if err != nil {
 		return nil, err
@@ -1025,7 +1081,7 @@ func (db *DB) UpdateFolderTracks() error {
 			return err
 		}
 		sort.Sort(sortableTracksByName(tracks))
-		trackIds := make([]PersistentID, len(tracks))
+		trackIds := make([]pid.PersistentID, len(tracks))
 		for i, track := range tracks {
 			trackIds[i] = track.PersistentID
 		}
@@ -1062,7 +1118,7 @@ func (db *DB) UpdateSmartTracks() error {
 		if err != nil {
 			return err
 		}
-		trackIds := make([]PersistentID, len(tracks))
+		trackIds := make([]pid.PersistentID, len(tracks))
 		for i, track := range tracks {
 			trackIds[i] = track.PersistentID
 		}
@@ -1181,8 +1237,8 @@ func (db *DB) SmartTracks(spl *Smart) ([]*Track, error) {
 }
 
 type IDable interface {
-	ID() PersistentID
-	SetID(PersistentID)
+	ID() pid.PersistentID
+	SetID(pid.PersistentID)
 }
 
 func (db *DB) insertStruct(tx *Tx, obj IDable) error {
@@ -1253,16 +1309,17 @@ func (db *DB) updateStruct(tx *Tx, obj IDable) error {
 	}
 	qs := fmt.Sprintf(`UPDATE %s SET %s WHERE id = ?`, pq.QuoteIdentifier(strings.ToLower(rv.Type().Name())), strings.Join(cols, ", "))
 	vals = append(vals, obj.ID())
+	//log.Println(qs, vals)
 	_, err := tx.Exec(qs, vals...)
 	return err
 }
 
 func (db *DB) saveStruct(tx *Tx, obj IDable) error {
-	if obj.ID() == PersistentID(0) {
-		obj.SetID(NewPersistentID())
+	if obj.ID() == pid.PersistentID(0) {
+		obj.SetID(pid.NewPersistentID())
 		err := db.insertStruct(tx, obj)
 		if err != nil {
-			obj.SetID(PersistentID(0))
+			obj.SetID(pid.PersistentID(0))
 			return err
 		}
 		return nil
@@ -1365,6 +1422,13 @@ func (db *DB) SavePlaylist(playlist *Playlist) error {
 	if err != nil {
 		return err
 	}
+	now := Now()
+	if playlist.DateAdded == nil {
+		playlist.DateAdded = &now
+	}
+	if playlist.DateModified == nil {
+		playlist.DateModified = &now
+	}
 	tx, err := db.Begin()
 	if err != nil {
 		return err
@@ -1441,21 +1505,21 @@ func (db *DB) SavePlaylistTracks(playlist *Playlist) error {
 	return tx.Commit()
 }
 
-func (db *DB) DeleteTrackFromPlaylist(playlist *Playlist, trid PersistentID) error {
-	return db.DeleteTracksFromPlaylist(playlist, []PersistentID{trid})
+func (db *DB) DeleteTrackFromPlaylist(playlist *Playlist, trid pid.PersistentID) error {
+	return db.DeleteTracksFromPlaylist(playlist, []pid.PersistentID{trid})
 }
 
-func (db *DB) DeleteTracksFromPlaylist(playlist *Playlist, trids []PersistentID) error {
+func (db *DB) DeleteTracksFromPlaylist(playlist *Playlist, trids []pid.PersistentID) error {
 	trackIds, err := db.PlaylistTrackIDs(playlist)
 	if err != nil {
 		return err
 	}
-	delIds := map[PersistentID]bool{}
+	delIds := map[pid.PersistentID]bool{}
 	for _, id := range trids {
 		delIds[id] = true
 	}
 	dirty := false
-	saveIds := make([]PersistentID, 0, len(trackIds))
+	saveIds := make([]pid.PersistentID, 0, len(trackIds))
 	for _, id := range trackIds {
 		if _, ok := delIds[id]; !ok {
 			saveIds = append(saveIds, id)
@@ -1471,11 +1535,11 @@ func (db *DB) DeleteTracksFromPlaylist(playlist *Playlist, trids []PersistentID)
 }
 
 type PlaylistTrackRef struct {
-	TrackID PersistentID
+	TrackID pid.PersistentID
 	Position int
 }
 
-func (db *DB) DeleteTrackFromPlaylistAt(playlist *Playlist, trid PersistentID, pos int) error {
+func (db *DB) DeleteTrackFromPlaylistAt(playlist *Playlist, trid pid.PersistentID, pos int) error {
 	refs := []PlaylistTrackRef{
 		PlaylistTrackRef{TrackID: trid, Position: pos},
 	}
@@ -1487,7 +1551,7 @@ func (db *DB) DeleteTracksFromPlaylistAt(playlist *Playlist, refs []PlaylistTrac
 	if err != nil {
 		return err
 	}
-	delIds := make([]*PersistentID, len(trackIds))
+	delIds := make([]*pid.PersistentID, len(trackIds))
 	for _, ref := range refs {
 		if ref.Position >= len(delIds) {
 			continue
@@ -1495,7 +1559,7 @@ func (db *DB) DeleteTracksFromPlaylistAt(playlist *Playlist, refs []PlaylistTrac
 		delIds[ref.Position] = &ref.TrackID
 	}
 	dirty := false
-	saveIds := make([]PersistentID, 0, len(trackIds))
+	saveIds := make([]pid.PersistentID, 0, len(trackIds))
 	for i, id := range trackIds {
 		if delIds[i] == nil || *delIds[i] != id {
 			saveIds = append(saveIds, id)
@@ -1523,7 +1587,7 @@ func (db *DB) DeleteTrack(tr *Track) error {
 	return tx.Commit()
 }
 
-func (db *DB) deleteTrackId(tx *Tx, id PersistentID) error {
+func (db *DB) deleteTrackId(tx *Tx, id pid.PersistentID) error {
 	qs := `DELETE FROM playlist_track WHERE track_id = ?`
 	_, err := tx.Exec(qs, id)
 	if err != nil {
@@ -1547,7 +1611,7 @@ func (db *DB) DeletePlaylist(pl *Playlist) error {
 	return tx.Commit()
 }
 
-func (db *DB) deletePlaylistId(tx *Tx, id PersistentID) error {
+func (db *DB) deletePlaylistId(tx *Tx, id pid.PersistentID) error {
 	qs := `DELETE FROM playlist_track WHERE playlist_id = ?`
 	_, err := tx.Exec(qs, id)
 	if err != nil {
@@ -1577,7 +1641,7 @@ func (db *DB) UpdateITunesTrack(tr *loader.Track, user *User) (bool, error) {
 	}
 	xtr := tr.Clone()
 	xtr.TrackID = nil
-	id := PersistentID(*tr.PersistentID).String()
+	id := tr.PersistentID.String()
 	qs := `SELECT data FROM itunes_track WHERE id = ? AND owner_id = ?`
 	row := db.QueryRow(qs, id, user.PersistentID)
 	var data []byte
@@ -1613,7 +1677,7 @@ func (db *DB) UpdateITunesTrack(tr *loader.Track, user *User) (bool, error) {
 		return false, nil
 	}
 	qs = `SELECT * FROM track WHERE id = ? AND owner_id = ?`
-	row = db.QueryRow(qs, PersistentID(*tr.PersistentID), user.PersistentID)
+	row = db.QueryRow(qs, *tr.PersistentID, user.PersistentID)
 	track := &Track{}
 	err = row.StructScan(track)
 	if err != nil {
@@ -1628,6 +1692,11 @@ func (db *DB) UpdateITunesTrack(tr *loader.Track, user *User) (bool, error) {
 	if err != nil {
 		return true, err
 	}
+	/*
+	origjs, _ := json.Marshal(orig)
+	trjs, _ := json.Marshal(tr)
+	log.Println("tracks differ:", string(origjs), "vs", string(trjs))
+	*/
 	track.Update(TrackFromITunes(orig), TrackFromITunes(tr))
 	track.Validate()
 	tx, err := db.Begin()
@@ -1653,13 +1722,15 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist, user *User) (bool, error
 	if pl.PersistentID == nil {
 		return false, errors.New("playlist has no persistent id")
 	}
-	id := PersistentID(*pl.PersistentID).String()
+	id := pl.PersistentID.String()
+	// get the last itunes version we loaded
 	qs := `SELECT data FROM itunes_playlist WHERE id = ? AND owner_id = ?`
 	row := db.QueryRow(qs, id, user.PersistentID)
 	var data []byte
 	err := row.Scan(&data)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			// new playlist
 			playlist := PlaylistFromITunes(pl)
 			if playlist.Kind == MasterPlaylist {
 				return false, nil
@@ -1688,19 +1759,25 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist, user *User) (bool, error
 			}
 			return true, tx.Commit()
 		}
+		// some other error
 		return false, err
 	}
+	// existing playlist
 	mydata := serializeGob(pl)
+	/*
 	if bytes.Equal(data, mydata) {
+		// playlist hasn't changed
 		return false, nil
 	}
+	*/
+	// get the musicdb version of the playlist
 	qs = `SELECT * FROM playlist WHERE id = ? AND owner_id = ?`
-	row = db.QueryRow(qs, PersistentID(*pl.PersistentID), user.PersistentID)
+	row = db.QueryRow(qs, *pl.PersistentID, user.PersistentID)
 	playlist := &Playlist{}
 	err = row.StructScan(playlist)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			// playlist was deleted
+			// playlist was deleted from musicdb, so ignore it
 			return false, nil
 		}
 		return true, err
@@ -1780,7 +1857,7 @@ func (db *DB) DeleteITunesTracks(ids map[string]bool, user *User) error {
 		return err
 	}
 	qs := `DELETE FROM itunes_track WHERE id = ? AND owner_id = ?`
-	var xpid PersistentID
+	var xpid pid.PersistentID
 	pid := &xpid
 	for id := range ids {
 		err = pid.Decode(id)
@@ -1808,7 +1885,7 @@ func (db *DB) DeleteITunesPlaylists(ids map[string]bool, user *User) error {
 		return err
 	}
 	qs := `DELETE FROM itunes_playlist WHERE id = ? AND owner_id = ?`
-	var xpid PersistentID
+	var xpid pid.PersistentID
 	pid := &xpid
 	for id := range ids {
 		err = pid.Decode(id)
@@ -1929,7 +2006,8 @@ func (db *DB) saveTrackArtwork(tx *Tx, tr *Track, ext string, data []byte) (stri
 	if n == 0 {
 		root = filepath.Join(xdn, "cover")
 	} else {
-		root = filepath.Join(xdn, "cover_" + tr.PersistentID.String())
+		base := strings.TrimSuffix(filepath.Base(*tr.Location), filepath.Ext(*tr.Location))
+		root = filepath.Join(xdn, "cover_" + base) //tr.PersistentID.String())
 	}
 	for _, ex := range []string{".jpg", ".png", ".gif"} {
 		fn := root + ex

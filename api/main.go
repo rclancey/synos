@@ -92,6 +92,7 @@ func APIMain() {
 	authen.LoginAPI(api)
 	TrackAPI(api, authmw)
 	PlaylistAPI(api, authmw)
+	RecentsAPI(api, authmw)
 	IndexAPI(api, authmw)
 	ArtAPI(api, authmw)
 	CronAPI(api, authmw)

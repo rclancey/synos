@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/rclancey/itunes/persistentId"
 	"github.com/rclancey/synos/musicdb"
 )
 
@@ -15,13 +16,13 @@ type Station interface{
 
 type PlaylistStation struct {
 	db *musicdb.DB
-	playlistId musicdb.PersistentID
+	playlistId pid.PersistentID
 	tracks []*musicdb.Track
 	index int
 	shuffle bool
 }
 
-func NewPlaylistStation(db *musicdb.DB, playlistId musicdb.PersistentID, shuffle bool) (*PlaylistStation, error) {
+func NewPlaylistStation(db *musicdb.DB, playlistId pid.PersistentID, shuffle bool) (*PlaylistStation, error) {
 	return &PlaylistStation{
 		db: db,
 		playlistId: playlistId,
@@ -55,7 +56,7 @@ func (s *PlaylistStation) loadTracks(pl *musicdb.Playlist) []*musicdb.Track {
 	}
 	var trs []*musicdb.Track
 	if pl.Folder {
-		seen := map[musicdb.PersistentID]bool{}
+		seen := map[pid.PersistentID]bool{}
 		if pl.Children == nil || len(pl.Children) == 0 {
 			root := pl.PersistentID
 			pl.Children, err = s.db.GetPlaylistTree(&root, nil)

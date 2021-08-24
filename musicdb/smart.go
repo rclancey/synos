@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/rclancey/itunes"
+	"github.com/rclancey/itunes/persistentId"
 )
 
 type Smart struct {
@@ -35,7 +36,7 @@ type Rule struct {
 	TimeValues     []Time        `json:"times,omitempty"`
 	BoolValue      *bool         `json:"bool"`
 	MediaKindValue *MediaKind    `json:"media_kind,omitempty"`
-	PlaylistValue  *PersistentID `json:"playlist,omitempty"`
+	PlaylistValue  *pid.PersistentID `json:"playlist,omitempty"`
 	playlistKey    string
 }
 
@@ -453,12 +454,12 @@ func ruleFromITunes(irule itunes.SmartRule) *Rule {
 		}
 		return r
 	case *itunes.SmartPlaylistPlaylistRule:
-		pid := PersistentID(ir.Value)
+		p := pid.PersistentID(ir.Value)
 		return &Rule{
 			RuleType: PlaylistRule,
 			LogicSign: LogicSign(ir.Sign),
 			Operator: Operator(ir.Operator),
-			PlaylistValue: &pid,
+			PlaylistValue: &p,
 		}
 	case *itunes.SmartPlaylistLoveRule:
 		var bvp *bool

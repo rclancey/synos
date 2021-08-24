@@ -3,18 +3,19 @@ package musicdb
 import (
 	"strings"
 
+	"github.com/rclancey/itunes/persistentId"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
-func pidsToText(pids []PersistentID) string {
+func pidsToText(pids []pid.PersistentID) string {
 	lines := make([]string, len(pids))
-	for i, pid := range pids {
-		lines[i] = pid.String()
+	for i, p := range pids {
+		lines[i] = p.String()
 	}
 	return strings.Join(lines, "\n")
 }
 
-func ThreeWayMerge(base, delta_one, delta_two []PersistentID) ([]PersistentID, bool) {
+func ThreeWayMerge(base, delta_one, delta_two []pid.PersistentID) ([]pid.PersistentID, bool) {
 	base_s := pidsToText(base)
 	delta_one_s := pidsToText(delta_one)
 	delta_two_s := pidsToText(delta_two)
@@ -27,11 +28,11 @@ func ThreeWayMerge(base, delta_one, delta_two []PersistentID) ([]PersistentID, b
 		}
 	}
 	lines := strings.Split(res, "\n")
-	pids := make([]PersistentID, len(lines))
+	pids := make([]pid.PersistentID, len(lines))
 	for i, line := range lines {
-		var pid PersistentID
-		if (&pid).Decode(line) == nil {
-			pids[i] = pid
+		var p pid.PersistentID
+		if (&p).Decode(line) == nil {
+			pids[i] = p
 		}
 	}
 	return pids, true

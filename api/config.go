@@ -393,8 +393,12 @@ func DefaultSynosConfig() *SynosConfig {
 		Jooki: JookiConfig{},
 		ITunes: ITunesConfig{
 			Library: []string{
-				"../iTunes Music Library.xml",
+				"../../Music/Music Library.musiclibrary/Library.musicdb",
+				"../../Music/Library.xml",
+				"../iTunes Library.itl",
+				"../iTunes Library",
 				"../Library.xml",
+				"../iTunes Music Library.xml",
 			},
 		},
 		LastFM: LastFMConfig{

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	H "github.com/rclancey/httpserver/v2"
-	"github.com/rclancey/synos/musicdb"
+	"github.com/rclancey/itunes/persistentId"
 	"github.com/rclancey/synos/radio"
 )
 
@@ -31,7 +31,7 @@ func ListStations(w http.ResponseWriter, req *http.Request) (interface{}, error)
 
 type CreateStationMessage struct {
 	StationType string `json:"type"`
-	PlaylistID *musicdb.PersistentID `json:"playlist_id"`
+	PlaylistID *pid.PersistentID `json:"playlist_id"`
 	Shuffle bool `json:"shuffle"`
 }
 
