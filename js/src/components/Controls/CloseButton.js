@@ -7,6 +7,7 @@ export const CloseButton = ({ onClose, style }) => {
       <style jsx>{`
         .close {
           color: var(--highlight);
+          cursor: pointer;
         }
       `}</style>
     </div>

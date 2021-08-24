@@ -48,6 +48,7 @@ export const GridValue = ({ children }) => {
           margin-right: 3em;
           line-height: 23px;
         }
+        /*
         .value :global(input) {
           border: solid var(--border) 1px;
           color: var(--text);
@@ -58,10 +59,12 @@ export const GridValue = ({ children }) => {
         }
         .value :global(select) {
           background: var(--gradient-end);
-          color: Var(--text);
+          color: var(--text);
         }
+        */
         .value :global(input[type="text"]) {
           width: calc(100% - 24px);
+          box-sizing: border-box;
         }
       `}</style>
     </div>

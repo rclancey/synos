@@ -84,6 +84,27 @@ export const PlaylistBrowser = ({
           folder={false}
           onSelect={() => wrappedOnSelect(null)}
         />
+        <Label
+          icon="recent"
+          name="Recently Added"
+          selected={selected === 'recent'}
+          folder={false}
+          onSelect={() => wrappedOnSelect({ persistent_id: 'recent' })}
+        />
+        <Label
+          icon="artists"
+          name="Artists"
+          selected={selected === 'artists'}
+          folder={false}
+          onSelect={() => wrappedOnSelect({ persistent_id: 'artists' })}
+        />
+        <Label
+          icon="albums"
+          name="Albums"
+          selected={selected === 'albums'}
+          folder={false}
+          onSelect={() => wrappedOnSelect({ persistent_id: 'albums' })}
+        />
         { playlists.filter(pl => {
             const o = PLAYLIST_ORDER[pl.kind];
             if (o === null || o === undefined || o < 0 || o >= 100) {
@@ -113,10 +134,10 @@ export const PlaylistBrowser = ({
       </div>
       { playlists.filter(pl => {
           const o = PLAYLIST_ORDER[pl.kind];
-          if (o === null || o === undefined || o >= 100) {
-            return true;
+          if (o === null || o === undefined || o < 100) {
+            return false;
           }
-          return false;
+          return true;
         }).map(pl => pl.folder ? (
           <Folder
             key={pl.persistent_id}

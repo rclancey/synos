@@ -429,7 +429,11 @@ export const Album = ({
   const [tracks, setTracks] = useState(null);
   const api = useAPI(API);
   useEffect(() => {
-    api.songIndex(album).then(setTracks);
+    if (album.tracks) {
+      setTracks(album.tracks);
+    } else {
+      api.songIndex(album).then(setTracks);
+    }
   }, [api, album]);
 
   if (tracks === null) {

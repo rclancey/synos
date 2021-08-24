@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { Dialog, ButtonRow, Button, Padding } from '../Dialog';
+
+import { Dialog, ButtonRow, Padding } from '../Dialog';
+import Button from '../../Input/Button';
 import { SmartPlaylistEditor } from './SmartPlaylistEditor';
 
 export const EditPlaylist = ({
@@ -9,6 +11,7 @@ export const EditPlaylist = ({
   onCancel,
 }) => {
   const [smart, setSmart] = useState(playlist.smart);
+  const onSave = useCallback(() => onSavePlaylist({...playlist, smart }), [playlist, smart, onSavePlaylist]);
   useEffect(() => {
     setSmart(playlist.smart);
   }, [playlist]);
@@ -18,17 +21,8 @@ export const EditPlaylist = ({
         <SmartPlaylistEditor {...smart} onChange={setSmart} />
         <ButtonRow>
           <Padding />
-          <Button
-            label="Cancel"
-            onClick={onCancel}
-          />
-          <Button
-            label="Save"
-            highlight={true}
-            onClick={() => {
-              onSavePlaylist(Object.assign({}, playlist, { smart }));
-            }}
-          />
+          <Button type="secondary" onClick={onCancel}>Cancel</Button>
+          <Button onClick={onSave}>Save</Button>
         </ButtonRow>
         <style jsx>{`
           .content>.kind, .content>.name, .content :global(.smartEditor) {

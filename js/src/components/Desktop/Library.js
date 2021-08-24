@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import { trackDB } from '../../lib/trackdb';
+import { TH } from '../../lib/trackList';
 import { WS } from '../../lib/ws';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
@@ -91,6 +92,8 @@ export const Library = ({
       .then(() => { setLoadingComplete(true); loading.current = false; });
   }, [api, libraryUpdate]);
 
+  useEffect(() => TH.update(tracks), [tracks]);
+
   useEffect(() => {
     const openHandler = () => {
       console.debug('websocket reopened, refreshing library');
@@ -172,6 +175,7 @@ export const Library = ({
   */
 
   const onSelectPlaylist = useCallback((pl, dev) => {
+    const special = { recent: true, albums: true, artists: true };
     //console.error('onSelectPlaylist(%o, %o)', pl, dev);
     if (!dev) {
       if (!pl) {
@@ -181,6 +185,10 @@ export const Library = ({
         return;
       }
       if (pl.folder) {
+        return;
+      }
+      if (special[pl.persistent_id]) {
+        setPlaylist(pl);
         return;
       }
       api.loadPlaylist(pl.persistent_id)

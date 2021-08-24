@@ -1,6 +1,20 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+
+import MenuInput from '../../../Input/MenuInput';
 import { Grid, GridRow, GridSpacer } from './Layout';
 import { TimeInput, RangeInput, Updated } from './Inputs';
+
+const mediaKindOptions = [
+  { value: 'music', label: 'Music' },
+  { value: 'movie', label: 'Movie' },
+  { value: 'podcast', label: 'Podcast' },
+  { value: 'audiobook', label: 'Audiobook' },
+  { value: 'music_video', label: 'Music Video' },
+  { value: 'tv_show', label: 'TV Show' },
+  { value: 'home_video', label: 'Home Video' },
+  { value: 'voice_memo', label: 'Voice Memo' },
+  { value: 'book', label: 'Book' },
+];
 
 export const Options = ({
   track,
@@ -8,20 +22,11 @@ export const Options = ({
   onChange,
   onReset,
 }) => {
+  const myOnChange = useCallback((opt) => onChange({ media_kind: opt.value }), [onChange]);
   return (
     <Grid>
       <GridRow label="media kind">
-        <select value={track.media_kind || ''} onChange={evt => onChange({ media_kind: evt.target.value })}>
-          <option value="music">Music</option>
-          <option value="movie">Movie</option>
-          <option value="podcast">Podcast</option>
-          <option value="audiobook">Audiobook</option>
-          <option value="music_video">Music Video</option>
-          <option value="tv_show">TV Show</option>
-          <option value="home_video">Home Video</option>
-          <option value="voice_memo">Voice Memo</option>
-          <option value="book">Book</option>
-        </select>
+        <MenuInput value={track.media_kind || ''} options={mediaKindOptions} onChange={myOnChange} />
         <Updated updated={updated} field="media_kind" onReset={onReset} />
       </GridRow>
 

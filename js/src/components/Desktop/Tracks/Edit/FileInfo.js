@@ -8,6 +8,7 @@ export const FileInfo = ({
   return (
     <Grid>
       <GridRow label="id">{track.persistent_id}</GridRow>
+      <GridRow label="owner">{track.owner_id}</GridRow>
       <GridRow label="kind">{track.kind}</GridRow>
       <GridRow label="duration">{formatDuration(track.total_time)}</GridRow>
       <GridRow label="size">{formatSize(track.size)}</GridRow>

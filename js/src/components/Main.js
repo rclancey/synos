@@ -4,8 +4,12 @@ import { setTheme, ThemeContext } from '../lib/theme';
 import WithLogin from './Login/WithLogin';
 import { PlayerControlContext, PlayerStateContext } from './Player/Context';
 
+/*
 const DesktopSkin = React.lazy(() => import('./Desktop/Skin'));
 const MobileSkin = React.lazy(() => import('./Mobile/Skin'));
+*/
+import DesktopSkin from './Desktop/Skin';
+import MobileSkin from './Mobile/Skin';
 
 const InstallAppButton = ({ onInstall }) => (
   <div className="installApp" onClick={onInstall}>
@@ -61,6 +65,7 @@ export const Main = () => {
   const [controlAPI, setControlAPI] = useState({});
   const mobile = useMobile();
   const dark = useDarkMode();
+  console.debug('useDarkMode() = %o', dark);
   const [installPrompt, setInstallPrompt] = useState(null);
   const setThemeLocal = useMemo(() => {
     return (value) => dispatch({ type: 'setTheme', value });
@@ -114,15 +119,16 @@ export const Main = () => {
     setDarkMode,
   }), [dark, state, setThemeLocal, setDarkMode]);
 
+  console.debug('dark = %o; state.dark = %o, theme.dark = %o', dark, state.dark, themeCtx.dark);
   const transitionId = useRef(null);
   useEffect(() => {
     if (transitionId.current === null) {
       transitionId.current = Math.random();
-      setTheme(state.theme, state.dark, 0);
+      setTheme(state.theme, state.dark === null ? dark : state.dark, 0);
       return;
     }
-    setTheme(state.theme, state.dark, 5000);
-  }, [state]);
+    setTheme(state.theme, state.dark === null ? dark : state.dark, 5000);
+  }, [state, dark]);
 
   const clsName = `App ${themeCtx.dark ? 'dark' : 'light'} ${themeCtx.theme}`;
   return (
@@ -140,7 +146,9 @@ export const Main = () => {
           */}
           <PlayerControlContext.Provider value={controlAPI}>
             <PlayerStateContext.Provider value={playbackInfo}>
+              {/*
               <Suspense fallback={<div>loading...</div>}>
+              */}
                 { mobile ? (
                   <MobileSkin
                     dark={state.dark}
@@ -160,7 +168,9 @@ export const Main = () => {
                     setPlaybackInfo={setPlaybackInfo}
                   />
                 ) }
+              {/*
               </Suspense>
+              */}
             </PlayerStateContext.Provider>
           </PlayerControlContext.Provider>
         </WithLogin>

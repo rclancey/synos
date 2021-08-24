@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import { ShuffleButton, RepeatButton, CloseButton } from './Controls';
 import { CoverArt } from './CoverArt';

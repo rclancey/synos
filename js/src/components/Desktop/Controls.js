@@ -14,6 +14,7 @@ import { SVGIcon } from '../SVGIcon';
 import { Cover } from '../Cover';
 import { UserAdmin } from './Admin/UserAdmin';
 import { ThemeContext } from '../../lib/theme';
+import Settings from './Settings';
 
 import HeadphonesIcon from '../icons/Headphones';
 import HamburgerMenuIcon from '../icons/HamburgerMenu';
@@ -146,7 +147,7 @@ const ButtonMenu = ({
       <div className="button" onClick={onOpen}>
         <SVGIcon icn={icon} size={18} />
       </div>
-      { open ? (
+      { (open && children) ? (
         <>
           <Cover zIndex={9} onClear={() => setOpen(false)} />
           <div className="menu">
@@ -453,9 +454,11 @@ const PrefsMenu = () => {
   }, [onClose]);
   return (
     <>
-      <ButtonMenu icon={GearIcon} maxWidth={350} open={open} setOpen={setOpen}>
+      <ButtonMenu icon={GearIcon} maxWidth={350} open={open} setOpen={setOpen} />
+        {/*
         <PrefsContent onClose={onClose} onOpenUserAdmin={onOpenUserAdmin} />
-      </ButtonMenu>
+        */}
+      {open ?  <Settings onClose={onClose} /> : null}
       {userAdmin ? <UserAdmin onClose={onCloseUserAdmin} /> : null}
     </>
   );

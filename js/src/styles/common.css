@@ -124,11 +124,3 @@ button[disabled], input[type="button"][disabled] {
   border-radius: 3px;
   margin-right: 1em;
 }
-
-input.twoFactorCode {
-  padding: 5px;
-  font-size: 24px;
-  letter-spacing: 10px;
-  width: calc(6ch + 65px);
-  text-align: center;
-}

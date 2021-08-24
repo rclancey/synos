@@ -10,6 +10,10 @@ import PlaylistFolderIcon from '../../icons/PlaylistFolder';
 import BroadcastMicrophoneIcon from '../../icons/BroadcastMicrophone';
 import BoomboxIcon from '../../icons/Boombox';
 import EighthNoteIcon from '../../icons/EighthNote';
+import GuitarPlayerIcon from '../../icons/GuitarPlayer';
+import RecordIcon from '../../icons/Record';
+import TimerIcon from '../../icons/Timer';
+import ShoppingCartIcon from '../../icons/ShoppingCart';
 
 const XIcon = ({ name, size, ...props }) => {
   switch (name) {
@@ -27,6 +31,14 @@ const XIcon = ({ name, size, ...props }) => {
       return <SVGIcon icn={EighthNoteIcon} size={size} />;
     case 'songs':
       return <SVGIcon icn={BoomboxIcon} size={size} />;
+    case 'artists':
+      return <SVGIcon icn={GuitarPlayerIcon} size={size} />;
+    case 'albums':
+      return <SVGIcon icn={RecordIcon} size={size} />;
+    case 'recent':
+      return <SVGIcon icn={TimerIcon} size={size} />;
+    case 'purchased':
+      return <SVGIcon icn={ShoppingCartIcon} size={size} />;
     default:
       return <Icon name={name} size={size} {...props} />;
   }

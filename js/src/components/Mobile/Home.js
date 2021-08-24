@@ -20,7 +20,7 @@ import { AppleDevicePlaylist } from './Device/Apple/DevicePlaylist';
 import { AndroidDevicePlaylist } from './Device/Android/DevicePlaylist';
 import { PlexDevicePlaylist } from './Device/Plex/DevicePlaylist';
 import { Search } from './Search';
-import { Settings } from './Settings';
+import { Settings } from '../Settings';
 
 import CassetteIcon from '../icons/Cassette';
 import GuitarPlayerIcon from '../icons/GuitarPlayer';
@@ -124,6 +124,7 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
           height: calc(100vh - 185px);
           padding: 0 0.5em;
           box-sizing: border-box;
+          overflow: auto;
         }
       `}</style>
     </div>

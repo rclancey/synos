@@ -1,7 +1,9 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
 import css from 'styled-jsx/css';
+
 import { Cover } from '../Cover';
+import Button from '../Input/Button';
 
 export const Alert = ({ title, style, children, onDismiss }) => {
   return (
@@ -12,7 +14,7 @@ export const Alert = ({ title, style, children, onDismiss }) => {
       {children}
       <ButtonRow>
         <Padding />
-        <Button label="OK" onClick={onDismiss} />
+        <Button onClick={onDismiss}>OK</Button>
       </ButtonRow>
     </Dialog>
   );
@@ -179,23 +181,3 @@ export const ButtonRow = ({ children }) => {
 export const Padding = ({ flex = 10 }) => {
   return (<div style={{ flex }} />);
 };
-
-export const Button = ({
-  label,
-  disabled,
-  highlight,
-  style,
-  onClick,
-}) => {
-  return (
-    <button className={highlight ? 'default' : ''} disabled={disabled} style={style} onClick={onClick}>
-      {label}
-      <style jsx>{`
-        button {
-          width: 100px;
-        }
-      `}</style>
-    </button>
-  );
-};
-

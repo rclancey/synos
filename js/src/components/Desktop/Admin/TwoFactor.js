@@ -2,7 +2,8 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import _JSXStyle from 'styled-jsx/style';
 
 import { API } from '../../../lib/api';
-import { Dialog, Button } from '../Dialog';
+import { Dialog } from '../Dialog';
+import Button from '../../Input/Button';
 
 const RecoveryKeys = ({ keys, copied, setCopied }) => {
   const onCopy = useCallback(() => {

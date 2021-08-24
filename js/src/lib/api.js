@@ -162,6 +162,11 @@ export class API extends APIBase {
     return this.delete(url);
   }
 
+  loadRecent() {
+    const url = '/api/recents';
+    return this.get(url);
+  }
+
   loadGenres() {
     const url = '/api/index/genres';
     return this.get(url);

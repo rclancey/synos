@@ -1,5 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
+
+import XBoolInput from '../../../Input/BoolInput';
+import XTextInput from '../../../Input/TextInput';
+import XIntegerInput from '../../../Input/IntegerInput';
+import XDateInput from '../../../Input/DateInput';
 import { isoDate, fromIsoDate, formatTime } from './util';
 
 export const TextInput = ({
@@ -7,12 +12,15 @@ export const TextInput = ({
   field,
   onChange,
 }) => {
+  const myOnChange = useCallback((val) => onChange({ [field]: val || null }), [field, onChange]);
+  if (!track || !field) {
+    return null;
+  }
   return (
-    <input
-      type="text"
+    <XTextInput
       size={50}
       value={track[field] || ''}
-      onInput={evt => onChange({ [field]: evt.target.value || null })}
+      onInput={myOnChange}
     />
   );
 };
@@ -25,18 +33,17 @@ export const IntegerInput = ({
   step = 1,
   onChange,
 }) => {
+  const myOnChange = useCallback((val) => onChange({ [field]: Number.isNaN(val) ? null : val }), [field, onChange]);
+  if (!track || !field) {
+    return null;
+  }
   return (
-    <input
-      type="number"
+    <XIntegerInput
       min={min}
       max={max}
       step={step}
-      value={track[field] || ''}
-      onInput={evt => {
-        const v = parseInt(evt.target.value);
-        const n = Number.isNaN(v) ? null : v;
-        return onChange({ [field]: n });
-      }}
+      value={track[field]}
+      onInput={myOnChange}
     />
   );
 };
@@ -47,12 +54,16 @@ export const DateInput = ({
   field,
   onChange,
 }) => {
+  const myOnChange = useCallback((val) => onChange({ [field]: val }), [field, onChange]);
+  if (!track || !field) {
+    return null;
+  }
+  console.debug('track[%o] = %o', field, track[field]);
   return (
-    <input
-      type="date"
-      value={isoDate(track[field]) || ''}
+    <XDateInput
+      value={track[field]}
       style={{fontFamily: 'inherit'}}
-      onInput={evt => onChange({ [field]: fromIsoDate(evt.target.value) })}
+      onInput={myOnChange}
     />
   );
 };
@@ -62,6 +73,9 @@ export const StarInput = ({
   field,
   onChange,
 }) => {
+  if (!track || !field) {
+    return null;
+  }
   const filled = Math.min(5, Math.round((track[field] || 0) / 20));
   const stars = new Array(5);
   stars.fill(1, 0, filled);
@@ -85,6 +99,9 @@ export const StarInput = ({
 };
 
 export const BooleanInput = ({ track, field, children, onChange }) => {
+  if (!track || !field) {
+    return null;
+  }
   return (
     <>
       <input
@@ -101,13 +118,16 @@ export const BooleanInput = ({ track, field, children, onChange }) => {
 
 export const GenreInput = ({ track, genres, onChange }) => {
   const [listid,] = useState('genreList' + Math.random());
+  const myOnChange = useCallback((val) => onChange({ genre: val || null }), [onChange]);
+  if (!track) {
+    return null;
+  }
   return (
     <>
-      <input
-        type="text"
+      <XTextInput
         value={track.genre || ''}
         list={listid}
-        onInput={evt => onChange({ genre: evt.target.value || null })}
+        onInput={myOnChange}
       />
       <datalist id={listid}>
         {genres.map(genre => <option key={genre} value={genre} />)}

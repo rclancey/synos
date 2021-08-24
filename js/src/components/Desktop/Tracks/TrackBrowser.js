@@ -2,17 +2,20 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import _JSXStyle from "styled-jsx/style";
 import { useMeasure } from '../../../lib/useMeasure';
 import {
-  TrackSelectionList,
+  TSL,
   GENRE_FILTER,
   ARTIST_FILTER,
   ALBUM_FILTER
 } from '../../../lib/trackList';
 import { PlaylistHeader } from '../Playlists/PlaylistHeader';
 import * as COLUMNS from '../../../lib/columns';
+import { Recents } from '../Recents';
+import { ArtistList } from '../ArtistList';
+import { AlbumList } from '../AlbumList';
 import { TrackList } from './TrackList';
 import { ColumnBrowser } from './ColumnBrowser';
 
-const tsl = new TrackSelectionList([], {});
+const tsl = TSL;
 window.tsl = tsl;
 
 const defaultColumns = [
@@ -65,10 +68,11 @@ const setDefaultSortKey = (playlist, sortKey) => {
   window.localStorage.setItem('defaultSort', data);
 };
 
+const emptyTracks = [];
 export const TrackBrowser = ({
   columnBrowser = false,
   columns = defaultColumns,
-  tracks = [],
+  tracks = emptyTracks,
   playlist = null,
   search = null,
   onDelete,
@@ -120,8 +124,9 @@ export const TrackBrowser = ({
   }, [setDisplayTracks, setSelected]);
 
   useEffect(() => {
-    //console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
+    console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
     console.debug('tracks updated: %o', playlist);
+    console.debug('update = %o', update);
     prevTracks.current = tracks;
     tsl.setTracks(tracks);
     const sortKey = getDefaultSortKey(playlist);
@@ -239,6 +244,16 @@ export const TrackBrowser = ({
     }));
   }, [update, genres, artists, albums]);
 
+  if (playlist) {
+    switch (playlist.persistent_id) {
+      case 'recent':
+        return <Recents />;
+      case 'artists':
+        return <ArtistList />;
+      case 'albums':
+        return <AlbumList />;
+    }
+  }
   return (
     <div className="trackBrowser">
       { playlist && (<PlaylistHeader playlist={playlist} controlAPI={controlAPI} />) }

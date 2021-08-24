@@ -15,6 +15,12 @@
   --highlight: #09c;
   --highlight-inverse: #fff;
   */
+
+  --font-size-huge: 24px;
+  --font-size-large: 18px;
+  --font-size-normal: 14px;
+  --font-size-small: 12px;
+  --font-size-tiny: 10px;
 }
 
 body {
@@ -30,6 +36,7 @@ body {
   --gradient: linear-gradient(var(--gradient-dir), var(--gradient-start) var(--gradient-stretch), var(--gradient-end) var(--gradient-compress));
   background: var(--gradient);
   color: var(--text);
+  --shadow: rgba(0, 0, 0, 0.8);
 }
 
 body.dark {
@@ -40,12 +47,14 @@ body.dark {
   --highlight-blur: var(--lightish);
   --blur-background: var(--lighten);
   --text: var(--lightest);
+  --text-bright: white;
   --contrast1: var(--darkish);
   --contrast2: var(--darken);
   --contrast3: var(--darker);
   --contrast4: var(--darkest);
   --contrast5: var(--superdark);
   --border: var(--lighten);
+  --muted-text: var(--lighter);
 }
 
 body.light {
@@ -56,12 +65,14 @@ body.light {
   --highlight-blur: var(--darkish);
   --blur-background: var(--darkest);
   --text: var(--darkest);
+  --text-bright: black;
   --contrast1: var(--lightish);
   --contrast2: var(--lighten);
   --contrast3: var(--lighter);
   --contrast4: var(--lightest);
   --contrast5: var(--superlight);
   --border: var(--darken);
+  --muted-text: var(--darker);
 }
 
 body.grey {

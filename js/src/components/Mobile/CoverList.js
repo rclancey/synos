@@ -1,4 +1,6 @@
 import React, { useCallback, useRef } from 'react';
+import _JSXStyle from 'styled-jsx/style';
+
 import { useStack } from './Router/StackContext';
 import { AutoSizeList } from '../AutoSizeList';
 import { ScreenHeader } from './ScreenHeader';
@@ -6,6 +8,7 @@ import { ScreenHeader } from './ScreenHeader';
 export const CoverList = ({
   name,
   items,
+  height = 195,
   Indexer,
   indexerArgs,
   itemRenderer,
@@ -19,7 +22,7 @@ export const CoverList = ({
   const ref = useRef(null);
   const rowRenderer = useCallback(({ key, index, style }) => {
     return (
-      <div key={key} className="row" style={style}>
+      <div key={key} className="itemrow" style={style}>
         <div className="padding" />
         {itemRenderer({ index: index * 2 })}
         <div className="padding" />
@@ -32,13 +35,15 @@ export const CoverList = ({
   return (
     <div className="coverList">
       <ScreenHeader name={name} />
-      <Indexer {...indexerArgs} height={195} list={ref} />
+      { Indexer ? (
+        <Indexer {...indexerArgs} height={height} list={ref} />
+      ) : null }
       <div className="items">
         <AutoSizeList
           xref={ref}
           offset={0}
           itemCount={Math.ceil(items.length / 2)}
-          itemSize={195}
+          itemSize={height}
           initialScrollOffset={scrollTop}
           onScroll={stack.onScroll}
         >
@@ -56,12 +61,12 @@ export const CoverList = ({
         .coverList .items {
           height: calc(100vh - 185px);
         }
-        .coverList :global(.row) {
+        .coverList :global(.itemrow) {
           display: flex;
           flex-direction: row;
           padding-top: 1em;
         }
-        .coverList :global(.row>.padding) {
+        .coverList :global(.itemrow>.padding) {
           flex: 1;
           min-width: 5px;
         }
@@ -73,10 +78,13 @@ export const CoverList = ({
           overflow: hidden;
           white-space: nowrap;
         }
-        .coverList :global(.item .title) {
+        .coverList :global(.item .title),
+        .coverList :global(.item .artist) {
           overflow: hidden;
           text-overflow: ellipsis;
           font-size: 11pt;
+        }
+        .coverList :global(.item .title),
           padding-top: 5px;
         }
       `}</style>

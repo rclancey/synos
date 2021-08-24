@@ -47,24 +47,28 @@ export const WithLogin = ({ children }) => {
   switch (loginState) {
     case LOGIN_STATE.LOGGED_OUT:
     case LOGIN_STATE.EXPIRED:
+      console.debug('WithLogin rendering login form');
       return (
         <LoginForm>
           <UsernamePasswordForm username={username} token={token} />
         </LoginForm>
       );
     case LOGIN_STATE.NEEDS_2FA:
+      console.debug('WithLogin rendering 2fa form');
       return (
         <LoginForm>
           <TwoFactor token={token} />
         </LoginForm>
       );
     case LOGIN_STATE.LOGGED_IN:
+      console.debug('WithLogin rendering children');
       return (
         <LoginContext.Provider value={ctx}>
           {children}
         </LoginContext.Provider>
       );
     default:
+      console.debug('WithLogin rendering default (%o)', loginState);
       return (<LoginForm token={token} />);
   }
 };

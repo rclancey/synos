@@ -74,9 +74,11 @@ export const MobileSkin = ({
   }, [onOpen]);
   */
 
+  /*
   useEffect(() => {
     document.body.style.background = dark ? 'black' : 'white';
   }, [dark]);
+  */
 
   const onList = null;
   return (

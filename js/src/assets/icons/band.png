@@ -1,0 +1,1 @@
+Array.from(document.styleSheets).map(ss => Array.from(ss.rules)).flat().find(rule => rule.selectorText === '#main.purplex')

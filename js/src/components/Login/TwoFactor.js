@@ -1,5 +1,8 @@
 import React, { useCallback, useState, useMemo } from 'react';
 
+import { TwoFactorCode } from '../Password';
+import Button from '../Input/Button';
+
 export const TwoFactor = ({ token }) => {
   const [code, setCode] = useState('');
   const [error, setError] = useState(null);
@@ -9,32 +12,16 @@ export const TwoFactor = ({ token }) => {
   }, [token, code]);
   return (
     <>
-      <div />
-      <div>
+      <div colspan={2}>
         <p>Enter the 6-digit code from your authenticator app</p>
       </div>
       <div>Code:</div>
       <div>
-        <input
-          className="twoFactorCode"
-          type="text"
-          name="2facode"
-          autofill="new-password"
-          size={6}
-          maxlength={6}
-          value={code}
-          inputmode="numeric"
-          onInput={evt => setCode(evt.target.value)}
-        />
+        <TwoFactorCode value={code} onChange={setCode} />
       </div>
       <div />
       <div>
-        <input
-          type="button"
-          value="Login"
-          disabled={code.length != 6}
-          onClick={onAuth}
-        />
+        <Button disabled={code.length != 6} onClick={onAuth}>Login</Button>
       </div>
     </>
   );

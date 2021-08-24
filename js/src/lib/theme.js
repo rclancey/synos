@@ -50,7 +50,7 @@ export const setTheme = (theme, dark, time) => {
     document.body.className = `${theme} ${dark ? 'dark' : 'light'}`;
     return Promise.resolve({ theme, dark });
   }
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let style = getComputedStyle(document.body);
     const startValues = {};
     const targetValues = {};

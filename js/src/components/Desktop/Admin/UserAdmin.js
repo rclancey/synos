@@ -5,7 +5,8 @@ import zxcvbn from 'zxcvbn';
 import LoginContext from '../../../context/LoginContext';
 import { useAPI } from '../../../lib/useAPI';
 import { API } from '../../../lib/api';
-import { Dialog, Button } from '../Dialog';
+import { Dialog } from '../Dialog';
+import Button from '../../Input/Button';
 import { TwoFactor } from './TwoFactor';
 
 const PasswordStrength = ({ value, size = 100 }) => {
@@ -220,13 +221,7 @@ export const UserInfo = ({ admin = false, user, onClose }) => {
             <tr>
               <td className="key" />
               <td colSpan={3}>
-                <button
-                  type="button"
-                  className="default"
-                  onClick={onOpenTwoFactor}
-                >
-                  Setup Two Factor Authentication
-                </button>
+                <Button onClick={onOpenTwoFactor}>Setup Two Factor Authentication</Button>
               </td>
             </tr>
           ) : null }
@@ -280,8 +275,8 @@ export const UserInfo = ({ admin = false, user, onClose }) => {
           </tr>
           <tr>
             <td className="buttons" colSpan={4}>
-              <Button label={user.persistent_id ? 'Update' : 'Create'} highlight={true} onClick={onSave} />
-              <Button label="Cancel" onClick={onClose} />
+              <Button onClick={onSave}>{user.persistent_id ? 'Update' : 'Create'}</Button>
+              <Button type="secondary" onClick={onClose}>Cancel</Button>
             </td>
           </tr>
         </tbody>
@@ -380,7 +375,7 @@ export const UserAdmin = ({ onClose }) => {
           </tbody>
         </table>
         <p className="center">
-          <Button label="Cancel" onClick={onClose} />
+          <Button type="secondary" onClick={onClose}>Cancel</Button>
         </p>
       </div>
     </Dialog>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
+import { Username, Password } from '../Password';
+import Button from '../Input/Button';
 import ResetPasswordForm from './ResetPasswordForm';
 import SocialLoginForm from './SocialLoginForm';
 
@@ -12,8 +14,14 @@ export const UsernamePasswordForm = ({ username = '', token }) => {
     .then(() => setError(null))
     .catch((err) => setError(`${err}`)), [token, tmpUsername, password]);
   const onEnter = useCallback((evt) => {
-    console.debug(evt);
-  }, []);
+    if (tmpUsername && password) {
+      onLogin();
+    } else if (tmpUsername) {
+      evt.target.form.elements.password.focus();
+    } else {
+      evt.target.form.elements.username.focus();
+    }
+  }, [tmpUsername, password, onLogin]);
   const onChange = useCallback(() => {
     const u = new URL(document.location);
     const state = {};
@@ -62,25 +70,11 @@ export const UsernamePasswordForm = ({ username = '', token }) => {
       <div className="header">Synos: Login Required</div>
       <div>Username:</div>
       <div>
-        <input
-          type="text"
-          value={tmpUsername}
-          onInput={evt => setUsername(evt.target.value)}
-          onKeyDown={onEnter}
-          onKeyUp={onEnter}
-          onKeyPress={onEnter}
-        />
+        <Username value={tmpUsername} onChange={setUsername} onEnter={onEnter} />
       </div>
       <div>Password:</div>
       <div>
-        <input
-          type="password"
-          value={password}
-          onInput={evt => setPassword(evt.target.value)}
-          onKeyDown={onEnter}
-          onKeyUp={onEnter}
-          onKeyPress={onEnter}
-        />
+        <Password value={password} onChange={setPassword} onEnter={onEnter} />
       </div>
       { error !== null ? (<>
         <div />
@@ -88,17 +82,11 @@ export const UsernamePasswordForm = ({ username = '', token }) => {
       </>) : null }
       <div />
       <div>
-        <input
-          type="button"
-          value="Login"
-          onClick={() => onLogin(tmpUsername, password).catch(err => setError(err.message))}
-        />
+        <Button onClick={onLogin}>Login</Button>
       </div>
       <div />
       <div>
-        <p className="forgot" onClick={onForgot}>
-          I forgot my password
-        </p>
+        <Button type="text" disabled={tmpUsername === ''} onClick={onForgot}>I forgot my password</Button>
       </div>
       <SocialLoginForm />
     </>

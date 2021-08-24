@@ -4,6 +4,9 @@ import Emitter from '../../lib/emitter';
 import { API } from '../../lib/api';
 
 const getCookie = (name) => {
+  if (typeof document === 'undefined') {
+    return null;
+  }
   return document.cookie.split(/;\s*/)
     .map(cookie => {
       const parts = cookie.split(/=/);
@@ -41,6 +44,7 @@ export class Token extends Emitter {
   }
 
   login(username, password) {
+    console.debug('login(%o, %o)', username, password);
     const api = new API();
     return api.post('/api/login', { username, password })
       .then((resp) => {

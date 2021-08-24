@@ -49,6 +49,7 @@
 .login .social {
   grid-column: span 2;
 }
+/*
 .login .social a {
   display: block;
   width: calc(100% - 2em);
@@ -115,12 +116,12 @@
   background-color: black;
   border-color: white;
 }
+*/
 .login .newPassword svg, .login .confirmPassword svg {
   width: 12px;
   height: 12px;
   margin-left: 5px;
 }
-
 .login .newPassword {
   display: flex;
   align-items: baseline;
@@ -131,4 +132,11 @@
 .login p.forgot {
   cursor: pointer;
   color: var(--border);
+}
+input.twoFactorCode {
+  padding: 5px;
+  font-size: 24px;
+  letter-spacing: 10px;
+  width: calc(6ch + 65px);
+  text-align: center;
 }
