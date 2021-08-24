@@ -1,11 +1,13 @@
 import React from 'react';
 import _JSXStyle from "styled-jsx/style";
 
-export const DeviceInfo = ({ state }) => (
+export const DeviceInfo = ({ state }) => {
+  console.debug('jookie state = %o', state);
+  return (
   <div className="deviceInfo">
     <Usage {...state.device.diskUsage} />
     <Battery {...state.power} />
-    <Network ip={state.device.ip} wifi={state.wifi.ssid} />
+    <Network ip={state.device.ip} wifi={state.wifi ? state.wifi.ssid : null} />
     <style jsx>{`
       .deviceInfo {
         margin: 1em 0;
@@ -13,6 +15,7 @@ export const DeviceInfo = ({ state }) => (
     `}</style>
   </div>
 );
+};
 
 const formatSize = (n) => {
   if (n < 1024) {
@@ -94,6 +97,6 @@ const Battery = ({ charging, connected, level }) => {
 const Network = ({ wifi, ip }) => (
   <div className="network">
     <b>Network:</b>
-    {' '}{ip} / {wifi}
+    {' '}{ip} / {wifi || 'N/A'}
   </div>
 );

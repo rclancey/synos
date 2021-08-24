@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
-import { useTheme } from '../../../lib/theme';
 import { useFocus } from '../../../lib/useFocus';
 import { PLAYLIST_ORDER } from '../../../lib/distinguished_kinds';
 import { Folder } from './Folder';
@@ -22,7 +21,6 @@ export const PlaylistBrowser = ({
   controlAPI,
   setPlayer,
 }) => {
-  const colors = useTheme();
   const { focused, node, focus, onFocus, onBlur } = useFocus();
 
   useEffect(() => {
@@ -86,6 +84,27 @@ export const PlaylistBrowser = ({
           folder={false}
           onSelect={() => wrappedOnSelect(null)}
         />
+        <Label
+          icon="recent"
+          name="Recently Added"
+          selected={selected === 'recent'}
+          folder={false}
+          onSelect={() => wrappedOnSelect({ persistent_id: 'recent' })}
+        />
+        <Label
+          icon="artists"
+          name="Artists"
+          selected={selected === 'artists'}
+          folder={false}
+          onSelect={() => wrappedOnSelect({ persistent_id: 'artists' })}
+        />
+        <Label
+          icon="albums"
+          name="Albums"
+          selected={selected === 'albums'}
+          folder={false}
+          onSelect={() => wrappedOnSelect({ persistent_id: 'albums' })}
+        />
         { playlists.filter(pl => {
             const o = PLAYLIST_ORDER[pl.kind];
             if (o === null || o === undefined || o < 0 || o >= 100) {
@@ -115,10 +134,10 @@ export const PlaylistBrowser = ({
       </div>
       { playlists.filter(pl => {
           const o = PLAYLIST_ORDER[pl.kind];
-          if (o === null || o === undefined || o >= 100) {
-            return true;
+          if (o === null || o === undefined || o < 100) {
+            return false;
           }
-          return false;
+          return true;
         }).map(pl => pl.folder ? (
           <Folder
             key={pl.persistent_id}
@@ -158,9 +177,6 @@ export const PlaylistBrowser = ({
           font-size: 13px;
           height: 100%;
           overflow: auto;
-          /*
-          background-color: ${colors.panelBackground};
-          */
           background-color: var(--dark);
           color: var(--text);
           border-right: solid var(--border) 1px;
@@ -180,9 +196,6 @@ export const PlaylistBrowser = ({
           margin-left: 1em;
         }
         .playlistBrowser :global(.selected) {
-          /*
-          background-color: ${colors.blurHighlight};
-          */
           background-color: var(--dark);
         }
         .playlistBrowser:focus-within :global(.selected) {
@@ -190,12 +203,12 @@ export const PlaylistBrowser = ({
           color: var(--inverse);
         }
         .playlistBrowser :global(.folder>.label.dropTarget) {
-          background-color: ${colors.dropTarget.folderBackground};
-          color: ${colors.dropTarget.folderText};
+          background-color: yellow;
+          color: black;
         }
         .playlistBrowser :global(.playlist>.label.dropTarget) {
-          background-color: ${colors.dropTarget.playlistBackground} !important;
-          color: ${colors.dropTarget.playlistText} !important;
+          background-color: orange;
+          color: black;
         }
         .playlistBrowser .split {
           display: flex;

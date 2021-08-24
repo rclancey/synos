@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../../../lib/theme';
 
 export const useTab = (tabs) => {
   const [tab, setTab] = useState(() => tabs[0]);
@@ -13,7 +12,6 @@ export const Tabs = ({
   current,
   onChange,
 }) => {
-  const colors = useTheme();
   return (
     <div className="tabs">
       { tabs.map((tab, i) => (
@@ -26,7 +24,7 @@ export const Tabs = ({
       )) }
       <style jsx>{`
         .tabs {
-          border: solid ${colors.text} 1px;
+          border: solid var(--border) 1px;
           border-radius: 4px;
           overflow: hidden;
           width: 100%;
@@ -36,10 +34,10 @@ export const Tabs = ({
         .tabs :global(.tab) {
           flex: 1;
           text-align: center;
-          background-color: ${colors.tabBackground};
-          color: ${colors.tabColor};
-          border-left: solid ${colors.text} 1px;
-          border-right: solid ${colors.text} 1px;
+          background-color: var(--highlight-blur);
+          color: var(--text);
+          border-left: solid var(--border) 1px;
+          border-right: solid var(--border) 1px;
           font-size: 14px;
           padding: 2px;
           cursor: default;
@@ -51,8 +49,8 @@ export const Tabs = ({
           border-right: none;
         }
         .tabs :global(.tab.selected) {
-          background-color: ${colors.highlightText};
-          color: ${colors.highlightInverse};
+          background-color: var(--highlight);
+          color: var(--inverse);
         }
       `}</style>
     </div>

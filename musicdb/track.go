@@ -17,11 +17,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/rclancey/itunes/loader"
+	"github.com/rclancey/itunes/persistentId"
 )
 
 type Track struct {
-	PersistentID     PersistentID `json:"persistent_id" db:"id"`
-	OwnerID          PersistentID `json:"owner_id,omitempty" db:"owner_id"`
+	PersistentID     pid.PersistentID `json:"persistent_id" db:"id"`
+	OwnerID          pid.PersistentID `json:"owner_id,omitempty" db:"owner_id"`
 	JookiID          *string      `json:"jooki_id,omitempty" db:"jooki_id"`
 	Album            *string      `json:"album,omitempty" db:"album"`
 	AlbumArtist      *string      `json:"album_artist,omitempty" db:"album_artist"`
@@ -78,12 +79,12 @@ type Track struct {
 	db *DB
 }
 
-func (t *Track) ID() PersistentID {
+func (t *Track) ID() pid.PersistentID {
 	return t.PersistentID
 }
 
-func (t *Track) SetID(pid PersistentID) {
-	t.PersistentID = pid
+func (t *Track) SetID(p pid.PersistentID) {
+	t.PersistentID = p
 }
 
 func (t *Track) String() string {
@@ -108,6 +109,24 @@ func (t *Track) String() string {
 		s += delim + *t.Name
 	}
 	return s
+}
+
+func (t *Track) GetOwner(db *DB) (*User, error) {
+	if db == nil {
+		if t.db == nil {
+			return nil, errors.New("no database reference")
+		}
+		db = t.db
+	}
+	auser, err := db.GetUserByID(t.OwnerID.Int64())
+	if err != nil {
+		return nil, err
+	}
+	user, isa := auser.(*User)
+	if !isa {
+		return nil, errors.New("invalid user")
+	}
+	return user, nil
 }
 
 type stimes []Time
@@ -792,7 +811,7 @@ func TrackFromITunes(itr *loader.Track) *Track {
 		fn = GetGlobalFinder().Clean(u.Path)
 	}
 	tr := &Track{
-		PersistentID:     PersistentID(itr.GetPersistentID()),
+		PersistentID:     itr.GetPersistentID(),
 		Album:            itr.Album,
 		AlbumArtist:      itr.AlbumArtist,
 		AlbumRating:      itr.AlbumRating,

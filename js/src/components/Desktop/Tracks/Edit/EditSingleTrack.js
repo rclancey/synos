@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { API } from '../../../../lib/api';
 import { useAPI } from '../../../../lib/useAPI';
-import { Dialog, ButtonRow, Button, Padding } from '../../Dialog';
+import { Dialog, ButtonRow, Padding } from '../../Dialog';
+import Button from '../../../Input/Button';
 import { Header } from './Header';
 import { Tabs, useTab } from './Tabs';
 import { Details } from './Details';
@@ -12,6 +13,11 @@ import { Sorting } from './Sorting';
 import { FileInfo } from './FileInfo';
 import { Error } from './Error';
 import { useGenres } from './genres';
+
+const buttonStyle = {
+  width: '25px',
+  fontSize: '17px',
+};
 
 export const EditSingleTrackInfo = ({
   tracks,
@@ -30,6 +36,7 @@ export const EditSingleTrackInfo = ({
   const api = useAPI(API);
 
   const onChange = useCallback(update => setEditing(orig => {
+    console.debug('onChange(%o)', update);
     const out = orig.slice(0);
     out[trackIndex] = Object.assign({}, out[trackIndex], update, { _modified: true });
     return out;
@@ -65,30 +72,19 @@ export const EditSingleTrackInfo = ({
         <Comp track={editing[trackIndex]} genres={genres} onChange={onChange} />
       </div>
       <ButtonRow>
-        <Button
-          label={'\u2039'}
+        <Button type="secondary"
           disabled={trackIndex === 0}
           onClick={() => setTrackIndex(cur => Math.max(0, cur - 1))}
-          style={{ width: '25px', fontSize: '22px' }}
-        />
-        <Button
-          label={'\u203a'}
+          style={buttonStyle}
+        >{'\u2039'}</Button>
+        <Button type="secondary"
           disabled={trackIndex === tracks.length - 1}
           onClick={() => setTrackIndex(cur => Math.min(tracks.length - 1, cur + 1))}
-          style={{ width: '25px', fontSize: '22px' }}
-        />
+          style={buttonStyle}
+        >{'\u203a'}</Button>
         <Padding />
-        <Button
-          label="Cancel"
-          disabled={saving}
-          onClick={onClose}
-        />
-        <Button
-          label="Save"
-          disabled={saving}
-          highlight={true}
-          onClick={onSave}
-        />
+        <Button type="secondary" disabled={saving} onClick={onClose}>Cancel</Button>
+        <Button disabled={saving} onClick={onSave}>Save</Button>
       </ButtonRow>
     </Dialog>
   );

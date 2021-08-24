@@ -17,6 +17,7 @@ import (
 	"github.com/rclancey/go-sonos/model"
 	"github.com/rclancey/go-sonos/ssdp"
 	"github.com/rclancey/go-sonos/upnp"
+	"github.com/rclancey/itunes/persistentId"
 	"github.com/pkg/errors"
 
 	"github.com/rclancey/synos/musicdb"
@@ -67,7 +68,10 @@ func NewSonos(iface string, rootUrl *url.URL, db *musicdb.DB) (*Sonos, error) {
 			ev := <-c
 			evt, err := s.prettyEvent(ev)
 			if err == nil {
+				log.Println("sending event to listeners")
 				s.Events <- evt
+			} else {
+				log.Println("error prettying event:", ev, err)
 			}
 		}
 	}()
@@ -257,7 +261,7 @@ func (s *Sonos) GetQueue() (queue *Queue, xerr error) {
 			continue
 		}
 		_, fn := path.Split(uri.Path)
-		id := new(musicdb.PersistentID)
+		id := new(pid.PersistentID)
 		id.Decode(strings.Split(fn, ".")[0])
 		tr, _ := s.db.GetTrack(*id)
 		if tr != nil {
@@ -673,7 +677,7 @@ func parseDidl(data string) ([]*musicdb.Track, error) {
 	tracks := make([]*musicdb.Track, len(doc.Item))
 	for i, item := range doc.Item {
 		var title, artist string
-		id := new(musicdb.PersistentID)
+		id := new(pid.PersistentID)
 		var dur uint
 		if len(item.Title) > 0 {
 			title = item.Title[0].Value

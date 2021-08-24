@@ -2,10 +2,8 @@ import React, { useMemo } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import { AutoSizeList } from '../AutoSizeList';
 import { QueueHeader, QueueItem } from '../Queue';
-import { useTheme } from '../../lib/theme';
 
 export const Queue = ({ playMode, tracks, index, onSelect, onShuffle, onRepeat }) => {
-  const colors = useTheme();
   const selIdx = index;
   const curIdx = index;
   const rowRenderer = useMemo(() => {

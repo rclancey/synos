@@ -1,6 +1,5 @@
 import React from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../../../lib/theme';
 
 export const Grid = ({ children }) => (
   <div className="grid">
@@ -41,7 +40,6 @@ export const GridKey = ({ children }) => (
 );
 
 export const GridValue = ({ children }) => {
-  const colors = useTheme();
   return (
     <div className="value">
       {children}
@@ -50,16 +48,23 @@ export const GridValue = ({ children }) => {
           margin-right: 3em;
           line-height: 23px;
         }
+        /*
         .value :global(input) {
-          border: solid ${colors.inputGradient} 1px;
-          color: ${colors.input};
-          background-color: ${colors.inputBackground};
+          border: solid var(--border) 1px;
+          color: var(--text);
+          background-color: var(--gradient-end);
           font-size: 12px;
           padding: 2px;
           margin: 1px;
         }
+        .value :global(select) {
+          background: var(--gradient-end);
+          color: var(--text);
+        }
+        */
         .value :global(input[type="text"]) {
           width: calc(100% - 24px);
+          box-sizing: border-box;
         }
       `}</style>
     </div>

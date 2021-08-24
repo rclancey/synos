@@ -1,8 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
+
 import { API } from '../../../lib/api';
 import { useAPI } from '../../../lib/useAPI';
-import { useTheme } from '../../../lib/theme';
+import Button from '../../Input/Button';
+import MenuInput from '../../Input/MenuInput';
+import TextInput from '../../Input/TextInput';
+import DateInput from '../../Input/DateInput';
+import TimeInput from '../../Input/TimeInput';
+import IntegerInput from '../../Input/IntegerInput';
+import StarInput from '../../Input/StarInput';
+//import DurationInput from '../../Input/DurationInput';
 
 const newRule = () => {
   return {
@@ -43,17 +51,20 @@ const newRuleSet = () => {
   };
 };
 
+const conjunctionOptions = [
+  { value: 'AND', label: 'all' },
+  { value: 'OR', label: 'any' },
+];
+
 const ConjunctionMenu = ({
   value,
   onChange,
 }) => {
+  const myOnChange = useCallback((opt) => onChange(opt.value), [onChange]);
   return (
     <>
       {'Match\u00a0 '}
-      <select value={value} onChange={evt => onChange(evt.target.options[evt.target.selectedIndex].value)}>
-        <option value="AND">all</option>
-        <option value="OR">any</option>
-      </select>
+      <MenuInput value={value} options={conjunctionOptions} onChange={myOnChange} />
     </>
   );
 };
@@ -83,7 +94,6 @@ export const SmartPlaylistRuleSet = ({
   onAddRule,
   onDeleteRule,
 }) => {
-  const colors = useTheme();
   return (
     <>
       <div className="ruleset">
@@ -102,8 +112,9 @@ export const SmartPlaylistRuleSet = ({
           .ruleset {
             display: flex;
             flex-direction: row;
+            align-items: baseline;
             margin-left: ${depth}em;
-            border-bottom: solid ${colors.text3} 1px;
+            border-bottom: solid var(--border) 1px;
             padding-bottom: 4px;
             margin-top: 4px;
             font-size: 12px;
@@ -135,14 +146,18 @@ export const PlusMinus = ({
   onAdd,
   onDelete,
 }) => {
-  const colors = useTheme();
   return (
     <div className="plusminus">
       <div className="padding" />
       <div className="content">
+        <Button type="secondary" onClick={onDelete}>{'\u2212'}</Button>
+        <Button type="secondary" onClick={() => onAdd(newRule)}>+</Button>
+        <Button type="secondary" onClick={() => onAdd(newRuleSetRule())}>{'\u21b3'}</Button>
+        {/*
         <span onClick={onDelete}>{'\u2212'}</span>
         <span onClick={() => onAdd(newRule)}>+</span>
         <span className="ruleset" onClick={() => onAdd(newRuleSetRule())}>{'\u21b3'}</span>
+        */}
         {/*
         <span className="fas fa-minus-circle" onClick={onDelete}>{'\u2212'}</span>
         <span className="fas fa-plus-circle" onClick={() => onAdd(newRule)}>+</span>
@@ -153,8 +168,10 @@ export const PlusMinus = ({
         .plusminus {
           display: flex;
           flex-direction: row;
+          align-items: baseline;
           flex: 2;
           text-align: right;
+          margin-left: 8px;
         }
         .plusminus .padding {
           flex: 20;
@@ -163,13 +180,13 @@ export const PlusMinus = ({
           flex: 1;
           display: flex;
           white-space: nowrap;
-          color: ${colors.button};
+          color: var(--text);
         }
         .plusminus .content span {
           margin-left: 2px;
           line-height: 14px;
           display: block;
-          border: solid ${colors.text} 1px;
+          border: solid var(--border) 1px;
           border-radius: 6px;
           width: 16px;
           height: 16px;
@@ -200,16 +217,16 @@ export const PlusMinus = ({
 const fields = {
   'album': { name: 'Album', type: 'string' },
   'album_artist': { name: 'Album Artist', type: 'string' },
-  'album_rating': { name: 'Album Rating', type: 'string' },
+  'album_rating': { name: 'Album Rating', type: 'star' },
   'artist': { name: 'Artist', type: 'string' },
-  'bpm': { name: 'BPM', type: 'int' },
+  'bpm': { name: 'BPM', type: 'int', max: 9999 },
   'bitrate': { name: 'Bit Rate', type: 'int', unit: 'kbps', multiplier: 1024 },
   'comments': { name: 'Comments', type: 'string' },
   'compilation': { name: 'Compilation', type: 'boolean' },
   'composer': { name: 'Composer', type: 'string' },
   'date_added': { name: 'Date Added', type: 'date' },
   'date_modified': { name: 'Date Modified', type: 'date' },
-  'disk_number': { name: 'Disk Number', type: 'int' },
+  'disk_number': { name: 'Disk Number', type: 'int', max: 99 },
   'genre': { name: 'Genre', type: 'string' },
   'grouping': { name: 'Grouping', type: 'string' },
   'kind': { name: 'Kind', type: 'string' },
@@ -219,38 +236,31 @@ const fields = {
   'media_kind': { name: 'Media Kind', type: 'mediakind' },
   'name': { name: 'Name', type: 'string' },
   'playlist_persistent_id': { name: 'Playlist', type: 'playlist' },
-  'play_count': { name: 'Plays', type: 'int' },
+  'play_count': { name: 'Plays', type: 'int', max: 999999 },
   'purchased': { name: 'Purchased', type: 'boolean' },
-  'rating': { name: 'Rating', type: 'int', unit: 'stars', multiplier: 20 },
-  'sample_rate': { name: 'Sample Rate', type: 'int', unit: 'Hz' },
-  'size': { name: 'Size', type: 'int', unit: 'MB', multiplier: 1024 * 1024 },
-  'skip_count': { name: 'Skips', type: 'int' },
+  'rating': { name: 'Rating', type: 'star', unit: 'stars', multiplier: 20, max: 5 },
+  'sample_rate': { name: 'Sample Rate', type: 'int', unit: 'Hz', max: 999999 },
+  'size': { name: 'Size', type: 'int', unit: 'MB', multiplier: 1024 * 1024, max: 9999 },
+  'skip_count': { name: 'Skips', type: 'int', max: 999999 },
   'sort_album': { name: 'Sort Album', type: 'string' },
   'sort_album_artist': { name: 'Sort Album Artist', type: 'string' },
   'sort_composer': { name: 'Sort Composer', type: 'string' },
   'sort_name': { name: 'Sort Name', type: 'string' },
-  'total_time': { name: 'Time', type: 'int', format: 'time' },
-  'track_number': { name: 'Track Number', type: 'int' },
-  'year': { name: 'Year', type: 'int' },
+  'total_time': { name: 'Time', type: 'time' },
+  'track_number': { name: 'Track Number', type: 'int', max: 99 },
+  'year': { name: 'Year', type: 'int', max: 9999 },
 };
 
 export const FieldMenu = ({
   value,
   onChange,
 }) => {
+  const options = useMemo(() => Object.entries(fields)
+    .sort((a, b) => a.name < b.name ? -1 : 1)
+    .map(([value, label]) => ({ value, label: label.name })), []);
+  const myOnChange = useCallback((opt) => onChange(opt.value, fields[opt.value].type), [onChange]);
   return (
-    <select
-      value={value}
-      onChange={evt => {
-        const field = evt.target.options[evt.target.selectedIndex].value;
-        const type = fields[field].type;
-        onChange(field, type);
-      }}
-    >
-      { Object.entries(fields).sort((a, b) => a.name < b.name ? -1 : 1).map(entry => (
-        <option key={entry[0]} value={entry[0]}>{entry[1].name}</option>
-      )) }
-    </select>
+    <MenuInput value={value} options={options} onChange={myOnChange} />
   );
 };
 
@@ -259,18 +269,17 @@ export const DurationMenu = ({
   onChange,
 }) => {
   const opts = [
-    { name: 'months', value: 30 * 24 * 60 * 60 * 1000 },
-    { name: 'weeks', value: 7 * 24 * 60 * 60 * 1000 },
-    { name: 'days', value: 24 * 60 * 60 * 1000 },
-    { name: 'hours', value: 60 * 60 * 1000 },
-    { name: 'minutes', value: 60 * 1000 },
-    { name: 'seconds', value: 1000 },
-    { name: 'milliseconds', value: 1 },
+    { label: 'months', value: 30 * 24 * 60 * 60 * 1000 },
+    { label: 'weeks', value: 7 * 24 * 60 * 60 * 1000 },
+    { label: 'days', value: 24 * 60 * 60 * 1000 },
+    { label: 'hours', value: 60 * 60 * 1000 },
+    { label: 'minutes', value: 60 * 1000 },
+    { label: 'seconds', value: 1000 },
+    { label: 'milliseconds', value: 1 },
   ];
+  const myOnChange = useCallback((opt) => onChange(opt.value), [onChange]);
   return (
-    <select value={value} onChange={evt => onChange(opts[evt.target.selectedIndex].value)}>
-      { opts.map(opt => (<option key={opt.value} value={opt.value}>{opt.name}</option>)) }
-    </select>
+    <MenuInput value={value} options={opts} onChange={myOnChange} />
   );
 };
 
@@ -280,7 +289,13 @@ export const OpMenu = ({
   sign,
   onChange,
 }) => {
-  const idx = ops.findIndex(x => x.op === op && x.sign === sign);
+  let idx = ops.findIndex(x => x.op === op && x.sign === sign);
+  if (idx < 0) {
+    idx = 0;
+  }
+  return (
+    <MenuInput value={ops[idx].value} options={ops} onChange={onChange} />
+  );
   return (
     <select value={idx} onChange={evt => onChange(ops[evt.target.selectedIndex])}>
       { ops.map((op, i) => (<option key={i} value={i}>{op.name}</option>)) }
@@ -289,35 +304,78 @@ export const OpMenu = ({
 };
 
 export const SmartPlaylistStringRule = ({
-  strings,
+  strings = [''],
   onUpdate,
 }) => {
+  const myOnChange = useCallback((val) => onUpdate({ strings: [val].concat(strings.slice(1)) }), [strings, onUpdate]);
   return (
-    <input
-      type="text"
-      value={strings[0]}
-      onInput={evt => onUpdate({ strings: [evt.target.value].concat(strings.slice(1)) })}
-    />
+    <TextInput value={strings[0]} onInput={myOnChange} />
   );
 };
 
 export const SmartPlaylistIntRule = ({
   field,
   op,
-  ints,
+  ints = [0, 0],
   depth,
   onUpdate,
 }) => {
+  const onChangeOne = useCallback((val) => onUpdate({ ints: [val].concat(ints.slice(1)) }), [ints, onUpdate]);
+  const onChangeTwo = useCallback((val) => onUpdate({ ints: ints.slice(0, 1).concat([val]).concat(ints.slice(2)) }), [ints, onUpdate]);
   return (
     <>
-      <input type="number" value={ints[0]} onInput={evt => onUpdate({ ints: [parseInt(evt.target.value)].concat(ints.slice(1)) })} />
+      <IntegerInput value={ints[0]} min={0} max={999999} onInput={onChangeOne} />
       { op === 'BETWEEN' ? (
         <>
           {'\u00a0 to \u00a0'}
-          <input type="number" value={ints[1]} onInput={evt => onUpdate({ ints: ints.slice(0, 1).concat([parseInt(evt.target.value)]).concat(ints.slice(2)) })} />
+          <IntegerInput value={ints[1]} min={ints[0]} max={999999} onInput={onChangeTwo} />
         </>
       ) : null }
       { fields[field].unit }
+    </>
+  );
+};
+
+export const SmartPlaylistRatingRule = ({
+  field,
+  op,
+  ints = [0, 0],
+  depth,
+  onUpdate,
+}) => {
+  const onChangeOne = useCallback((val) => onUpdate({ ints: [val * 20].concat(ints.slice(1)) }), [ints, onUpdate]);
+  const onChangeTwo = useCallback((val) => onUpdate({ ints: ints.slice(0, 1).concat([val * 20]).concat(ints.slice(2)) }), [ints, onUpdate]);
+  return (
+    <>
+      <StarInput value={ints[0] / 20} max={5} onInput={onChangeOne} />
+      { op === 'BETWEEN' ? (
+        <>
+          {'\u00a0 to \u00a0'}
+          <StarInput value={ints[1] / 20} min={ints[0] / 20} max={5} onInput={onChangeTwo} />
+        </>
+      ) : null }
+    </>
+  );
+};
+
+export const SmartPlaylistTimeRule = ({
+  field,
+  op,
+  ints = [0, 0],
+  depth,
+  onUpdate,
+}) => {
+  const onChangeOne = useCallback((val) => onUpdate({ ints: [val / 60].concat(ints.slice(1)) }), [ints, onUpdate]);
+  const onChangeTwo = useCallback((val) => onUpdate({ ints: ints.slice(0, 1).concat([val / 60]).concat(ints.slice(2)) }), [ints, onUpdate]);
+  return (
+    <>
+      <TimeInput value={ints[0]} onInput={onChangeOne} />
+      { op === 'BETWEEN' ? (
+        <>
+          {'\u00a0 to \u00a0'}
+          <TimeInput value={ints[1]} onInput={onChangeTwo} />
+        </>
+      ) : null }
     </>
   );
 };
@@ -327,11 +385,11 @@ export const SmartPlaylistBooleanRule = ({
   ...rule
 }) => {
   const ops = rule.bool ? [
-    { op: "IS", name: "is true", sign: "POS" },
-    { op: "IS", name: "is false", sign: "NEG" },
+    { value: 'is_true', op: "IS", name: "is true", sign: "POS" },
+    { value: 'is_false', op: "IS", name: "is false", sign: "NEG" },
   ] : [
-    { op: "IS", name: "is true", sign: "NEG" },
-    { op: "IS", name: "is false", sign: "POS" },
+    { value: 'is_true', op: "IS", name: "is true", sign: "NEG" },
+    { value: 'is_false', op: "IS", name: "is false", sign: "POS" },
   ];
   return (
     <OpMenu
@@ -345,13 +403,12 @@ export const SmartPlaylistBooleanRule = ({
 
 export const SmartPlaylistDateRule = ({
   op,
-  times,
+  times = [],
   onUpdate,
 }) => {
-  const dates = times.map(t => new Date(t).toISOString().substr(0, 10));
   switch (op) {
   case 'WITHIN':
-    const t = times[0];
+    const t = times.length > 0 ? times[0] : 0;
     const m = [
       30 * 24 * 60 * 60 * 1000,
       7 * 24 * 60 * 60 * 1000,
@@ -363,40 +420,24 @@ export const SmartPlaylistDateRule = ({
     ].find(x => t % x === 0);
     return (
       <>
-        <input
-          type="number"
-          value={t / m}
-          onInput={evt => onUpdate({ times: [parseInt(evt.target.value) * m].concat(times.slice(1)) })}
-        />
+        <IntegerInput value={t / m} min={0} max={999} onInput={(val) => onUpdate({ times: [val * m].concat(times.slice(1)) })} />
         <DurationMenu
           value={m}
-          onChange={val => onUpdate({ times: [t * val].concat(times.slice(1)) })}
+          onChange={val => onUpdate({ times: [t * val / m].concat(times.slice(1)) })}
         />
       </>
     );
   case 'BETWEEN':
     return (
       <>
-        <input
-          type="date"
-          value={dates[0]}
-          onInput={evt => onUpdate({ times: [new Date(evt.target.value).getTime()].concat(times.slice(1)) })}
-        />
+        <DateInput value={times[0]} onInput={(val) => onChange({ times: [val].concat(times.slice(1)) })} />
         {'\u00a0 to \u00a0'}
-        <input
-          type="date"
-          value={dates[1]}
-          onInput={evt => onUpdate({ times: times.slice(0, 1).concat([new Date(evt.target.value).getTime()]).concat(times.slice(2)) })}
-        />
+        <DateInput value={times[1]} onInput={(val) => onChange({ times: times.slice(0, 1).concat([val]).concat(times.slice(2)) })} />
       </>
     );
   default:
     return (
-      <input
-        type="date"
-        value={dates[0]}
-        onInput={evt => onUpdate({ times: [new Date(evt.target.value).getTime()].concat(times.slice(1)) })}
-      />
+      <DateInput value={times[0]} onInput={(val) => onChange({ times: [val].concat(times.slice(1)) })} />
     );
   }
 };
@@ -407,9 +448,7 @@ const ValueMenu = ({
   onChange,
 }) => {
   return (
-    <select value={value} onChange={evt => onChange(evt.target.options[evt.target.selectedIndex].value)}>
-      { options.map(opt => (<option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.name}</option>)) }
-    </select>
+    <MenuInput value={value} options={options} onChange={(opt) => onChange(opt.value)} />
   );
 };
 
@@ -526,10 +565,14 @@ const SmartPlaylistRuleData = ({
     return (<SmartPlaylistStringRule {...props} />);
   case "int":
     return (<SmartPlaylistIntRule {...props} />);
+  case 'star':
+    return (<SmartPlaylistRatingRule {...props} />);
   case "boolean":
     return (<SmartPlaylistBooleanRule {...props} />);
   case "date":
     return (<SmartPlaylistDateRule {...props} />);
+  case "time":
+    return (<SmartPlaylistTimeRule {...props} />);
   case "mediakind":
     return (<SmartPlaylistMediaKindRule {...props} />);
   case "playlist":
@@ -549,34 +592,36 @@ const SmartPlaylistRuleData = ({
 
 const ops = {
   "string": [
-    { op: "CONTAINS", name: "contains", sign: "STRPOS" },
-    { op: "CONTAINS", name: "does not contain", sign: "STRNEG" },
-    { op: "IS", name: "is", sign: "STRPOS" },
-    { op: "IS", name: "is not", sign: "STRNEG" },
-    { op: "STARTSWITH", name: "begins with", sign: "STRPOS" },
-    { op: "ENDSWITH", name: "ends with", sign: "STRPOS" },
+    { value: 'contains', op: "CONTAINS", name: "contains", sign: "STRPOS" },
+    { value: 'does_not_contain', op: "CONTAINS", name: "does not contain", sign: "STRNEG" },
+    { value: 'is', op: "IS", name: "is", sign: "STRPOS" },
+    { value: 'is_not', op: "IS", name: "is not", sign: "STRNEG" },
+    { value: 'starts_with', op: "STARTSWITH", name: "begins with", sign: "STRPOS" },
+    { value: 'ends_with', op: "ENDSWITH", name: "ends with", sign: "STRPOS" },
   ],
   "int": [
-    { op: "IS", name: "is", sign: "POS" },
-    { op: "IS", name: "is not", sign: "NEG" },
-    { op: "GREATERTHAN", name: "is greater than", sign: "POS" },
-    { op: "LESSTHAN", name: "is less than", sign: "POS" },
-    { op: "BETWEEN", name: "is in the range", sign: "POS" },
+    { value: 'is', op: "IS", name: "is", sign: "POS" },
+    { value: 'is_not', op: "IS", name: "is not", sign: "NEG" },
+    { value: 'greater_than', op: "GREATERTHAN", name: "is greater than", sign: "POS" },
+    { value: 'less_than', op: "LESSTHAN", name: "is less than", sign: "POS" },
+    { value: 'between', op: "BETWEEN", name: "is in the range", sign: "POS" },
   ],
   "date": [
-    { op: "IS", name: "is", sign: "POS" },
-    { op: "IS", name: "is not", sign: "NEG" },
-    { op: "GREATERTHAN", name: "is after", sign: "POS" },
-    { op: "LESSTHAN", name: "is before", sign: "POS" },
-    { op: "WITHIN", name: "in the last", sign: "POS" },
-    { op: "WITHIN", name: "not in the last", sign: "NEG" },
-    { op: "BETWEEN", name: "is in the range", sign: "NEG" },
+    { value: 'is', op: "IS", name: "is", sign: "POS" },
+    { value: 'is_not', op: "IS", name: "is not", sign: "NEG" },
+    { value: 'greater_than', op: "GREATERTHAN", name: "is after", sign: "POS" },
+    { value: 'less_than', op: "LESSTHAN", name: "is before", sign: "POS" },
+    { value: 'in_the_last', op: "WITHIN", name: "in the last", sign: "POS" },
+    { value: 'not_in_the_last', op: "WITHIN", name: "not in the last", sign: "NEG" },
+    { value: 'between', op: "BETWEEN", name: "is in the range", sign: "NEG" },
   ],
 };
+ops.star = ops.int;
+ops.duration = ops.int;
 
 const defaultOps = [
-  { op: "IS", name: "is", sign: "POS" },
-  { op: "IS", name: "is not", sign: "NEG" },
+  { value: 'is', op: "IS", name: "is", sign: "POS" },
+  { value: 'is_not', op: "IS", name: "is not", sign: "NEG" },
 ];
 
 export const SmartPlaylistRule = ({
@@ -586,7 +631,6 @@ export const SmartPlaylistRule = ({
   onAddRule,
   onDeleteRule,
 }) => {
-  const colors = useTheme();
   if (rule.type === 'ruleset') {
     return (<SmartPlaylistRuleSet ruleset={rule.ruleset} depth={depth} onChange={rs => onChange(Object.assign({}, rule, { ruleset: rs}))} onAddRule={onAddRule} onDeleteRule={onDeleteRule} />);
   }
@@ -625,8 +669,9 @@ export const SmartPlaylistRule = ({
         .rule {
           display: flex;
           flex-direction: row;
+          align-items: baseline;
           margin-left: ${depth}em;
-          border-bottom: solid ${colors.text3} 1px;
+          border-bottom: solid var(--border) 1px;
           padding-bottom: 4px;
           margin-top: 4px;
           font-size: 12px;
@@ -641,37 +686,26 @@ const SmartPlaylistLimits = ({
   limit,
   onChange,
 }) => {
+  const onToggle = useCallback((evt) => {
+    onChange(evt.target.checked ? { items: 50, field: 'random' } : null);
+  }, [onChange]);
   return (
     <>
       <input
         type="checkbox"
-        checked={limit !== null}
-        onClick={evt => {
-          if (limit) {
-            onChange(null);
-          } else {
-            onChange({ items: 50, field: 'random' });
-          }
-        }}
+        checked={limit !== null && limit !== undefined}
+        onClick={onToggle}
       />
       {' \u00a0Limit to\u00a0 '}
-      <SmartPlaylistItemLimit
-        limit={limit !== null}
-        items={limit ? (limit.items || 0) : 50}
-        onChange={items => onChange({ items })}
-      />
       <SmartPlaylistSizeLimit
-        limit={limit !== null}
-        size={limit ? (limit.size || 0) : 0}
-        onChange={size => onChange({ size })}
-      />
-      <SmartPlaylistTimeLimit
-        limit={limit !== null}
-        time={limit ? (limit.time || 0) : 0}
-        onChange={time => onChange({ time })}
+        disabled={limit === null || limit === undefined}
+        items={limit ? limit.items : null}
+        size={limit ? limit.size : null}
+        time={limit ? limit.time : null}
+        onChange={onChange}
       />
       <SmartPlaylistLimitField
-        limit={limit !== null}
+        disabled={limit === null || limit === undefined}
         field={limit ? limit.field || 'random' : 'random'}
         desc={limit ? limit.desc || false : false}
         onChange={(field, desc) => onChange({ field, desc })}
@@ -681,184 +715,119 @@ const SmartPlaylistLimits = ({
 };
 
 const SmartPlaylistLimitField = ({
-  limit,
+  disabled,
   field,
   desc,
   onChange,
 }) => {
-  const fields = [
+  const options = [
     { value: 'random', desc: false, name: 'random' },
-    {},
+    null,
     { value: 'album', desc: false, name: 'album' },
     { value: 'artist', desc: false, name: 'artist' },
     { value: 'genre', desc: false, name: 'genre' },
     { value: 'name', desc: false, name: 'name' },
-    {},
+    null,
     { value: 'rating', desc: true, name: 'highest rating' },
     { value: 'rating', desc: false, name: 'lowest rating' },
-    {},
+    null,
     { value: 'play_date', desc: true, name: 'most recently played' },
     { value: 'play_date', desc: false, name: 'least recently played' },
-    {},
+    null,
     { value: 'play_count', desc: true, name: 'most often played' },
     { value: 'play_count', desc: false, name: 'least often played' },
-    {},
+    null,
     { value: 'date_added', desc: true, name: 'most recently added' },
     { value: 'date_added', desc: false, name: 'least recently added' },
   ];
-  const i = fields.findIndex(f => f.value === field && f.desc === desc);
   return (
     <>
-      <span className={limit ? '' : 'disabled'}>{' \u00a0selected by\u00a0 '}</span>
-      <select
-        disabled={!limit}
-        value={i}
-        onChange={evt => {
-          const f = fields[evt.target.selectedIndex];
-          onChange(f.value, f.desc);
-        }}
-      >
-        {fields.map((f, i) => f.value ? (
-          <option key={i} value={i}>{f.name}</option>
-        ) : (
-          <option key={i} value={i} disabled={true}>-------------------</option>
-        ))}
-      </select>
+      <span className={disabled ? 'disabled' : ''}>{' \u00a0selected by\u00a0 '}</span>
+      <MenuInput value={field} options={options} disabled={disabled} onChange={(opt) => onChange(opt.value, opt.desc)} />
     </>
   );
 };
 
-const SmartPlaylistItemLimit = ({
-  limit,
-  items,
-  onChange,
-}) => {
-  return (
-    <>
-      <input
-        type="number"
-        disabled={!limit}
-        min={0}
-        max={Math.max((items || 0) + 1, 99)}
-        step={1}
-        value={items || 0}
-        onInput={evt => {
-          const n = parseInt(evt.target.value);
-          if (n === 0 || Number.isNaN(n)) {
-            onChange(null);
-          } else {
-            onChange(n);
-          }
-        }}
-      />
-      <span className={limit ? '' : 'disabled'}>{' \u00a0items\u00a0 '}</span>
-    </>
-  );
-};
+const limitUnitOptions = [
+  { value: 'items', label: 'items', mult: 1, key: 'items', max: 10000 },
+  { value: 'bytes', label: 'bytes', mult: 1, key: 'size', max: 10240 },
+  { value: 'kB', label: 'kB', mult: 1024, key: 'size', max: 10240 },
+  { value: 'MB', label: 'MB', mult: 1024*1024, key: 'size', max: 10240 },
+  { value: 'GB', label: 'GB', mult: 1024*1024*1024, key: 'size', max: 10240 },
+  { value: 'seconds', label: 'seconds', mult: 1000, key: 'time', max: 99 },
+  { value: 'minutes', label: 'minutes', mult: 60*1000, key: 'time', max: 99 },
+  { value: 'hours', label: 'hours', mult: 60*60*1000, key: 'time', max: 99 },
+  { value: 'days', label: 'days', mult: 24*60*60*1000, key: 'time', max: 99 },
+];
 
 const SmartPlaylistSizeLimit = ({
-  limit,
+  disabled,
+  items,
   size,
-  onChange,
-}) => {
-  const [sizeUnit, setSizeUnit] = useState(size ? Math.pow(1024, Math.floor(Math.log(size) / Math.log(1024))) : 1024 * 1024);
-  return (
-    <>
-      <input
-        type="number"
-        disabled={!limit}
-        min={0}
-        max={1023}
-        step={1}
-        value={Math.round((size || 0) / sizeUnit)}
-        onInput={evt => {
-          const n = parseInt(evt.target.value);
-          if (n === 0 || Number.isNaN(n)) {
-            onChange(null);
-          } else {
-            onChange(n * sizeUnit);
-          }
-        }}
-      />
-      <select
-        disabled={!limit}
-        value={sizeUnit}
-        onChange={evt => {
-          const n = parseInt(evt.target.options[evt.target.selectedIndex].value);
-          if (size) {
-            onChange(n * Math.round(size / sizeUnit));
-          }
-          setSizeUnit(n);
-        }}
-      >
-        <option value={1}>bytes</option>
-        <option value={1024}>kB</option>
-        <option value={1024*1024}>MB</option>
-        <option value={1024*1024*1024}>GB</option>
-      </select>
-      {' \u00a0 '}
-    </>
-  );
-};
-
-const SmartPlaylistTimeLimit = ({
-  limit,
   time,
   onChange,
 }) => {
-  const timeUnits = [
-    24 * 60 * 60 * 1000,
-    60 * 60 * 1000,
-    60 * 1000,
-    1000,
-    1,
-  ];
-  const [timeUnit, setTimeUnit] = useState(time ? timeUnits.find(x => time % x === 0) : 60 * 60 * 1000);
+  let val, unit;
+  if (items !== null && items !== undefined) {
+    val = items;
+    unit = limitUnitOptions.find((opt) => opt.value = 'items');
+  } else if (size !== null && size !== undefined) {
+    const mult = size ? Math.pow(1024, Math.floor(Math.log(size) / Math.log(1024))) : 1024;
+    unit = limitUnitOptions.find((opt) => opt.key === 'size' && opt.mult === mult);
+    if (!unit) {
+      unit = limitUnitOptions.find((opt) => opt.value === 'MB');
+    }
+    val = size / (unit ? unit.mult : 1);
+  } else if (time !== null && time !== undefined) {
+    unit = limitUnitOptions.filter((opt) => opt.key === 'time').reverse().find((opt) => opt.mult * Math.floor(time / opt.mult) === time);
+    if (!unit) {
+      unit = limitUnitOptions.find((opt) => opt.value === 'minutes');
+    }
+    val = time / (unit ? unit.mult : 1);
+  } else {
+    val = 50;
+    unit = limitUnitOptions.find((opt) => opt.value = 'items');
+  }
+  console.debug('%o', { items, size, time, val, unit });
+  const onChangeVal = useCallback((v) => {
+    const update = { items: null, size: null, time: null };
+    if (v === null || Number.isNaN(v) || v < 0) {
+      update[unit.key] = 0;
+    } else {
+      update[unit.key] = v * unit.mult;
+    }
+    onChange(update);
+  }, [onChange, unit]);
+  const onChangeUnit = useCallback((opt) => {
+    const update = { items: null, size: null, time: null };
+    update[opt.key] = val * opt.mult;
+    onChange(update);
+  }, [onChange, val]);
   return (
     <>
-      <input
-        type="number"
-        disabled={!limit}
+      <IntegerInput
+        disabled={disabled}
         min={0}
-        max={99}
-        step={1}
-        value={Math.round((time || 0) / timeUnit)}
-        onInput={evt => {
-          const n = parseInt(evt.target.value);
-          if (n === 0 || Number.isNaN(n)) {
-            onChange(null);
-          } else {
-            onChange(n * timeUnit);
-          }
-        }}
+        max={unit.max}
+        value={Math.round(val)}
+        onInput={onChangeVal}
       />
-      <select
-        disabled={!limit}
-        value={timeUnit}
-        onChange={evt => {
-          const n = parseInt(evt.target.options[evt.target.selectedIndex].value);
-          if (time) {
-            onChange(n * Math.round(time / timeUnit));
-          }
-          setTimeUnit(n);
-        }}
-      >
-        <option value={1000}>seconds</option>
-        <option value={60 * 1000}>minutes</option>
-        <option value={60 * 60 * 1000}>hours</option>
-        <option value={24 * 60 * 60 * 1000}>days</option>
-      </select>
+      <MenuInput
+        disabled={disabled}
+        value={unit.value}
+        options={limitUnitOptions}
+        onChange={onChangeUnit}
+      />
+      {' \u00a0 '}
     </>
   );
 };
 
 export const SmartPlaylistEditor = ({
   ruleset,
-  limit,
+  limit = null,
   onChange,
 }) => {
-  const colors = useTheme();
-        //onAddSub={() => onAddRule({ rules: rules.concat({ type: 'ruleset', ruleset: { conjunction: 'AND', rules: [{}] } }) })}
   return (
     <div className="smartEditor">
       <div className="rules">
@@ -883,6 +852,9 @@ export const SmartPlaylistEditor = ({
         />
       </div>
       <style jsx>{`
+        .smartEditor {
+          min-width: 800px;
+        }
         .smartEditor :global(input),
         .smartEditor :global(select) {
           display: inline-block;
@@ -891,11 +863,11 @@ export const SmartPlaylistEditor = ({
         }
         .smartEditor :global(input[disabled]),
         .smartEditor :global(select[disabled]) {
-          background-color: ${colors.disabledBackground};
-          color: ${colors.text2};
+          background-color: var(--highlight-blur) !important;
+          color: var(--border) !important;
         }
         .smartEditor :global(span.disabled) {
-          color: ${colors.text2};
+          color: var(--border) !important;
         }
         .smartEditor .limit {
           margin-top: 4px;

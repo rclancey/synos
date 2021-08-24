@@ -6,7 +6,6 @@ import { DotsMenu } from './TrackMenu';
 import { CoverArt } from '../CoverArt';
 import { Icon } from '../Icon';
 import { AddIcon, DeleteIcon } from './ActionIcon';
-import { useTheme } from '../../lib/theme';
 
 export const SongRow = React.memo(({
   data,
@@ -61,7 +60,6 @@ const InteriorRow = React.memo(({
   onMove,
   onDelete,
 }) => {
-  const colors = useTheme();
   /*
   const [dragCollect, connectDragSource, preview] = useDrag({
     item: {
@@ -185,7 +183,7 @@ const InteriorRow = React.memo(({
           overflow: hidden;
         }
         .item.editing {
-          border-bottom: solid ${colors.trackList.border} 1px;
+          border-bottom: solid var(--border) 1px;
         }
         .item :global(.fa-bars) {
           line-height: 44px;
@@ -231,7 +229,7 @@ const InteriorRow = React.memo(({
           color: var(--highlight);
         }
         .item :global(.move) .disabled {
-          color: ${colors.text};
+          color: var(--text);
         }
       `}</style>
     </div>

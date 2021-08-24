@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { API } from '../../../../lib/api';
 import { useAPI } from '../../../../lib/useAPI';
-import { Dialog, ButtonRow, Button, Padding } from '../../Dialog';
+import { Dialog, ButtonRow, Padding } from '../../Dialog';
+import Button from '../../../Input/Button';
 import { Header } from './Header';
 import { Tabs, useTab } from './Tabs';
 import { Details } from './Details';
@@ -130,8 +131,8 @@ export const EditMultiTrackInfo = ({
       </div>
       <ButtonRow>
         <Padding />
-        <Button label="Cancel" disabled={saving} onClick={onClose} />
-        <Button label="Save" highlight={true} disabled={saving} onClick={onSave} />
+        <Button type="secondary" disabled={saving} onClick={onClose}>Cancel</Button>
+        <Button disabled={saving} onClick={onSave}>Save</Button>
       </ButtonRow>
     </Dialog>
   );

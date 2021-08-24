@@ -52,10 +52,12 @@ export const currentTrack = (playbackInfo) => {
   if (playbackInfo.index < 0 || playbackInfo.index >= playbackInfo.queue.length) {
     return {};
   }
+  /*
   if (playbackInfo.queueOrder && playbackInfo.queueOrder.length === playbackInfo.queue.length) {
     const idx = playbackInfo.queueOrder[playbackInfo.index];
     return playbackInfo.queue[idx];
   }
+  */
   return playbackInfo.queue[playbackInfo.index];
 };
 

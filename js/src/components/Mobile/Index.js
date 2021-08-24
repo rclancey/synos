@@ -1,9 +1,7 @@
 import React, { useMemo } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../lib/theme';
 
 export const Index = ({ index, list }) => {
-  const colors = useTheme();
   return (
     <div className="index">
       {index.map(idx => (
@@ -25,7 +23,7 @@ export const Index = ({ index, list }) => {
           color: var(--highlight);
         }
         .index .disabled {
-          color: ${colors.text2};
+          color: var(--border);
         }
         .index>div {
           padding-left: 1em;

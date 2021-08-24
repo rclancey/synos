@@ -1,43 +1,22 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import { useMeasure } from '../../../lib/useMeasure';
-import { useTheme } from '../../../lib/theme';
 import {
-  TrackSelectionList,
+  TSL,
   GENRE_FILTER,
   ARTIST_FILTER,
   ALBUM_FILTER
 } from '../../../lib/trackList';
 import { PlaylistHeader } from '../Playlists/PlaylistHeader';
 import * as COLUMNS from '../../../lib/columns';
+import { Recents } from '../Recents';
+import { ArtistList } from '../ArtistList';
+import { AlbumList } from '../AlbumList';
 import { TrackList } from './TrackList';
 import { ColumnBrowser } from './ColumnBrowser';
 
-const tsl = new TrackSelectionList([], {});
+const tsl = TSL;
 window.tsl = tsl;
-
-const playlistColors = [
-  'purple',
-  'darkred',
-  'darkblue',
-  'darkgreen',
-  '#930',
-  'fuchsia',
-  'deeppink',
-  'darkorchid',
-  'darkslateblue',
-  '#356',
-  '#365',
-  'indigo',
-  'maroon',
-  'midnightblue',
-  'teal',
-  'sienna',
-  'olive',
-  '#444',
-  'darkmagenta',
-  'crimson',
-];
 
 const defaultColumns = [
   Object.assign({}, COLUMNS.PLAYLIST_POSITION, { width: 100 /*1*/ }),
@@ -89,10 +68,11 @@ const setDefaultSortKey = (playlist, sortKey) => {
   window.localStorage.setItem('defaultSort', data);
 };
 
+const emptyTracks = [];
 export const TrackBrowser = ({
   columnBrowser = false,
   columns = defaultColumns,
-  tracks = [],
+  tracks = emptyTracks,
   playlist = null,
   search = null,
   onDelete,
@@ -101,7 +81,6 @@ export const TrackBrowser = ({
   onShowInfo,
   onShowMultiInfo,
 }) => {
-  const colors = useTheme();
   const prevTracks = useRef(null);
   const [displayTracks, setDisplayTracks] = useState(tsl.tracks);
   const [selected, setSelected] = useState([]);
@@ -145,8 +124,9 @@ export const TrackBrowser = ({
   }, [setDisplayTracks, setSelected]);
 
   useEffect(() => {
-    //console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
+    console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
     console.debug('tracks updated: %o', playlist);
+    console.debug('update = %o', update);
     prevTracks.current = tracks;
     tsl.setTracks(tracks);
     const sortKey = getDefaultSortKey(playlist);
@@ -263,14 +243,17 @@ export const TrackBrowser = ({
       },
     }));
   }, [update, genres, artists, albums]);
-  const bgstyle = useMemo(() => {
-    const color = (playlist ? playlist.color : null) || playlistColors[Math.floor(Math.random() * playlistColors.length)];
-    const dir = Math.random() < 0.5 ? -20 : -200;
-    return {
-      background: `linear-gradient(${dir}deg, ${color} 0%, black)`,
-    };
-  }, [playlist]);
 
+  if (playlist) {
+    switch (playlist.persistent_id) {
+      case 'recent':
+        return <Recents />;
+      case 'artists':
+        return <ArtistList />;
+      case 'albums':
+        return <AlbumList />;
+    }
+  }
   return (
     <div className="trackBrowser">
       { playlist && (<PlaylistHeader playlist={playlist} controlAPI={controlAPI} />) }

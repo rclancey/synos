@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../lib/theme';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import { useStack } from './Router/StackContext';
@@ -68,7 +67,6 @@ export const PlaylistTitle = ({
   onEditPlaylist,
 }) => {
   const api = useAPI(API);
-  const colors = useTheme();
   const menu = useMenuContext();
   const dur = useDuration(tracks);
   const [shared, setShared] = useState(playlist.shared);
@@ -156,7 +154,6 @@ export const SongList = ({
   onUpdatePlaylist = () => {},
   children,
 }) => {
-  const colors = useTheme();
   const stack = useStack();
   const menu = useMenuContext();
   const [chooser, setChooser] = useState(false);
@@ -238,7 +235,7 @@ export const SongList = ({
 
   return (
     <div className={`songList ${editing ? 'editing' : ''}`}>
-      <Header colors={colors}>
+      <Header>
         {children}
       </Header>
       <div className="items">
@@ -432,7 +429,11 @@ export const Album = ({
   const [tracks, setTracks] = useState(null);
   const api = useAPI(API);
   useEffect(() => {
-    api.songIndex(album).then(setTracks);
+    if (album.tracks) {
+      setTracks(album.tracks);
+    } else {
+      api.songIndex(album).then(setTracks);
+    }
   }, [api, album]);
 
   if (tracks === null) {
@@ -458,7 +459,7 @@ export const Album = ({
   );
 };
 
-const Header = React.memo(({ colors, children }) => (
+const Header = React.memo(({ children }) => (
   <div className="header">
     {children}
     <style jsx>{`

@@ -9,8 +9,9 @@ import '@fortawesome/fontawesome-free/css/all.css';
 import './themes/animations.css';
 import { Main } from './components/Main';
 import { isMobile, getUserAgent } from './lib/useMedia';
-import './styles/common.css';
 import './styles/theme.css';
+import './styles/common.css';
+import './styles/login.css';
 
 //const backend = MultiBackend(HTML5toTouch);
 

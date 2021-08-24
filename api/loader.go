@@ -8,7 +8,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/rclancey/file-monitor"
+	"github.com/rclancey/itunes"
 	"github.com/rclancey/itunes/loader"
+	"github.com/rclancey/itunes/persistentId"
 	"github.com/rclancey/logging"
 	"github.com/rclancey/synos/musicdb"
 )
@@ -143,10 +145,10 @@ func updateItunes(user *musicdb.User, fn string, errlog *logging.Logger) error {
 	if err != nil {
 		return err
 	}
-	l := loader.NewLoader()
-	go l.Load(fn)
-	tracks := -1
-	playlists := -1
+	l := itunes.NewLoader(fn)
+	go l.LoadFile(fn)
+	tracks := [2]int{0, 0}
+	playlists := [2]int{0, 0}
 	//count := 0
 	errlog.Info("begin itunes library update")
 	evt := &LibraryEvent{
@@ -155,10 +157,13 @@ func updateItunes(user *musicdb.User, fn string, errlog *logging.Logger) error {
 		Playlists: []*musicdb.Playlist{},
 		Tracks: []*musicdb.Track{},
 	}
+	ch := l.GetChan()
 	for {
-		update, ok := <-l.C
+		update, ok := <-ch
 		if !ok {
 			//errlog.("loader channel closed")
+			errlog.Infof("%d / %d itunes tracks updated", tracks[0], tracks[1])
+			errlog.Infof("%d / %d itunes playlists updated", playlists[0], playlists[1])
 			err = db.DeleteITunesTracks(deletedTracks, user)
 			if err != nil {
 				return err
@@ -184,18 +189,11 @@ func updateItunes(user *musicdb.User, fn string, errlog *logging.Logger) error {
 		switch tupdate := update.(type) {
 		case *loader.Library:
 			//errlog.Debug("library update")
-			if tracks == -1 && tupdate.Tracks != nil && *tupdate.Tracks > 0 {
-				tracks = *tupdate.Tracks
-				errlog.Infof("%d / %d itunes tracks updated", len(evt.Tracks), tracks)
-			}
-			if playlists == -1 && tupdate.Playlists != nil && *tupdate.Playlists > 0 {
-				playlists = *tupdate.Playlists
-				errlog.Infof("%d / %d itunes playlists updated", len(evt.Playlists), playlists)
-			}
 		case *loader.Track:
+			tracks[1] += 1
 			if tupdate.PersistentID != nil {
-				pid := musicdb.PersistentID(*tupdate.PersistentID).String()
-				delete(deletedTracks, pid)
+				id := pid.PersistentID(*tupdate.PersistentID).String()
+				delete(deletedTracks, id)
 			}
 			if tupdate.GetDisabled() {
 				// noop
@@ -208,17 +206,24 @@ func updateItunes(user *musicdb.User, fn string, errlog *logging.Logger) error {
 					l.Abort()
 					return err
 				}
+				if updated {
+					tracks[0] += 1
+				}
 				if updated && tupdate.PersistentID != nil {
-					tr, err := db.GetTrack(musicdb.PersistentID(*tupdate.PersistentID))
+					tr, err := db.GetTrack(pid.PersistentID(*tupdate.PersistentID))
 					if err == nil {
 						evt.Tracks = append(evt.Tracks, tr)
 					}
 				}
 			}
+			if tracks[1] % 1000 == 0 {
+				errlog.Infof("%d / %d itunes tracks updated", tracks[0], tracks[1])
+			}
 		case *loader.Playlist:
+			playlists[1] += 1
 			if tupdate.PersistentID != nil {
-				pid := musicdb.PersistentID(*tupdate.PersistentID).String()
-				delete(deletedPlaylists, pid)
+				id := pid.PersistentID(*tupdate.PersistentID).String()
+				delete(deletedPlaylists, id)
 			}
 			updated, err := db.UpdateITunesPlaylist(tupdate, user)
 			if err != nil {
@@ -226,11 +231,17 @@ func updateItunes(user *musicdb.User, fn string, errlog *logging.Logger) error {
 				l.Abort()
 				return err
 			}
+			if updated {
+				playlists[0] += 1
+			}
 			if updated && tupdate.PersistentID != nil {
-				pl, err := db.GetPlaylist(musicdb.PersistentID(*tupdate.PersistentID), user)
+				pl, err := db.GetPlaylist(pid.PersistentID(*tupdate.PersistentID), user)
 				if err == nil {
 					evt.Playlists = append(evt.Playlists, pl)
 				}
+			}
+			if playlists[1] % 100 == 0 {
+				errlog.Infof("%d / %d itunes playlists updated", playlists[0], playlists[1])
 			}
 		case error:
 			errlog.Error("error in loader:", tupdate)

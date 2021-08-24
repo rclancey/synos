@@ -11,6 +11,7 @@ import (
 	"time"
 
 	H "github.com/rclancey/httpserver/v2"
+	"github.com/rclancey/itunes/persistentId"
 	"github.com/rclancey/jooki"
 	"github.com/rclancey/synos/musicdb"
 )
@@ -23,7 +24,7 @@ type JookiEvent struct {
 }
 
 type TrackProgress struct {
-	PersistentID musicdb.PersistentID `json:"persistent_id"`
+	PersistentID pid.PersistentID `json:"persistent_id"`
 	JookiID *string `json:"jooki_id,omitempty"`
 	UploadID *int `json:"upload_id,omitempty"`
 	UploadProgress *float64 `json:"upload_progress,omitempty"`

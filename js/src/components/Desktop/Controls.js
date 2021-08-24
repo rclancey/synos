@@ -1,5 +1,7 @@
 import React, { useContext, useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
+
+import LoginContext from '../../context/LoginContext';
 import displayTime from '../../lib/displayTime';
 import { Player } from '../Player/Player';
 import { currentTrack, usePlaybackInfo, useControlAPI } from '../Player/Context';
@@ -10,7 +12,9 @@ import { Queue } from './Queue';
 import { Icon } from '../Icon';
 import { SVGIcon } from '../SVGIcon';
 import { Cover } from '../Cover';
-import { useTheme, ThemeContext } from '../../lib/theme';
+import { UserAdmin } from './Admin/UserAdmin';
+import { ThemeContext } from '../../lib/theme';
+import Settings from './Settings';
 
 import HeadphonesIcon from '../icons/Headphones';
 import HamburgerMenuIcon from '../icons/HamburgerMenu';
@@ -29,7 +33,6 @@ const Buttons = React.memo(({
   onDisableSonos,
   onReload,
 }) => {
-  const colors = useTheme();
   return (
     <div className="playpause">
       <div className="wrapper">
@@ -136,7 +139,6 @@ const ButtonMenu = ({
   setOpen,
   children,
 }) => {
-  const colors = useTheme();
   const menuRef = useRef();
   const onOpen = useCallback(() => setOpen(true), []);
   const rect = menuRef.current ? menuRef.current.getBoundingClientRect() : { x: 0, y: 0 };
@@ -145,7 +147,7 @@ const ButtonMenu = ({
       <div className="button" onClick={onOpen}>
         <SVGIcon icn={icon} size={18} />
       </div>
-      { open ? (
+      { (open && children) ? (
         <>
           <Cover zIndex={9} onClear={() => setOpen(false)} />
           <div className="menu">
@@ -273,7 +275,6 @@ const NowPlaying = React.memo(({
   timing,
   playMode,
   track,
-  colors,
   onSeekTo,
   onShuffle,
   onRepeat,
@@ -309,9 +310,6 @@ const NowPlaying = React.memo(({
           display: flex;
           height: 56px;
           overflow: hidden;
-          /*
-          background-color: ${colors.sectionBackground};
-          */
           background-color: rgba(255, 255, 255, 0.05);
         }
         .outerwrapper {
@@ -364,7 +362,7 @@ const DarkMode = ({ darkMode, onChange }) => (
     <style jsx>{`
       margin-top: 1em;
     `}</style>
-    Dark Mode:
+    {'Dark Mode: '}
     <input type="radio" name="darkmode" value="on" checked={darkMode === true} onClick={onChange} />
     {'On\u00a0\u00a0\u00a0'}
     <input type="radio" name="darkmode" value="off" checked={darkMode === false} onClick={onChange} />
@@ -390,18 +388,24 @@ const themes = [
 ];
 
 const ThemeChooser = ({ theme, onChange }) => (
-  <div>
+  <div className="themeChooser">
     <style jsx>{`
-      margin-top: 1em;
+      .themeChooser {
+        margin-top: 1em;
+      }
+      .themeChooser select {
+        font-size: 14px;
+      }
     `}</style>
-    Theme:
+    {'Theme: '}
     <select value={theme} onChange={onChange}>
       {themes.map((t) => (<option key={t} value={t}>{`${t.substr(0, 1).toUpperCase()}${t.substr(1)}`}</option>))}
     </select>
   </div>
 );
 
-const PrefsContent = ({ onClose }) => {
+const PrefsContent = ({ onClose, onOpenUserAdmin }) => {
+  const { onLogout } = useContext(LoginContext);
   const { theme, darkMode, setTheme, setDarkMode } = useContext(ThemeContext);
   const onChangeTheme = useCallback((evt) => setTheme(evt.target.value), [setTheme]);
   const onChangeDark = useCallback((evt) => {
@@ -421,21 +425,42 @@ const PrefsContent = ({ onClose }) => {
           background: var(--gradient);
           overflow: auto;
           padding: 1em;
+          font-size: 14px;
+        }
+        .prefs p {
+          cursor: pointer;
+          margin-top: 1em;
         }
       `}</style>
       <DarkMode darkMode={darkMode} onChange={onChangeDark} />
       <ThemeChooser theme={theme} onChange={onChangeTheme} />
+      <p onClick={onOpenUserAdmin}>Account Settings</p>
+      <p onClick={onLogout}>Logout</p>
     </div>
   );
 };
 
 const PrefsMenu = () => {
   const [open, setOpen] = useState(false);
+  const [userAdmin, setUserAdmin] = useState(false);
   const onClose = useCallback((evt) => setOpen(false), []);
+  const onOpenUserAdmin = useCallback(() => {
+    setUserAdmin(true);
+    onClose();
+  }, [onClose]);
+  const onCloseUserAdmin = useCallback(() => {
+    setUserAdmin(false);
+    onClose();
+  }, [onClose]);
   return (
-    <ButtonMenu icon={GearIcon} maxWidth={350} open={open} setOpen={setOpen}>
-      <PrefsContent onClose={onClose} />
-    </ButtonMenu>
+    <>
+      <ButtonMenu icon={GearIcon} maxWidth={350} open={open} setOpen={setOpen} />
+        {/*
+        <PrefsContent onClose={onClose} onOpenUserAdmin={onOpenUserAdmin} />
+        */}
+      {open ?  <Settings onClose={onClose} /> : null}
+      {userAdmin ? <UserAdmin onClose={onCloseUserAdmin} /> : null}
+    </>
   );
 };
 
@@ -467,7 +492,7 @@ const Search = React.memo(({ search, onSearch }) => {
         ref={n => node.current = n || node.current}
         tabIndex={20}
         type="text"
-        placeholder={'\u{1f50d} Search'}
+        placeholder={/*'\u{1f50d} Search'*/'Search'}
         value={search || ''}
         onInput={evt => onSearch(evt.target.value)}
       />
@@ -484,16 +509,18 @@ const Search = React.memo(({ search, onSearch }) => {
         .padding {
           flex: 2;
         }
-        input {
+        .searchBar input {
           flex: 1;
           font-size: 10pt;
-          border-radius: 30px;
-          border-style: solid;
-          border-width: 1px;
+          border-radius: 30px !important;
           padding: 5px;
-          padding-left: 10px;
+          padding-left: 30px;
           width: 100%;
           box-sizing: border-box;
+          background-image: url(/assets/icons/search-2.svg);
+          background-size: 14px 14px;
+          background-repeat: no-repeat;
+          background-position: 12px center;
         }
       `}</style>
     </div>
@@ -559,7 +586,6 @@ export const Controls = ({
   onReload,
   onSearch,
 }) => {
-  const colors = useTheme();
   const playbackInfo = usePlaybackInfo();
   const controlAPI = useControlAPI();
   const track = useMemo(() => currentTrack(playbackInfo), [playbackInfo]);
@@ -595,7 +621,6 @@ export const Controls = ({
         timing={timing}
         track={track}
         playMode={playbackInfo.playMode}
-        colors={colors}
         onSeekTo={controlAPI.onSeekTo}
         onShuffle={controlAPI.onShuffle}
         onRepeat={controlAPI.onRepeat}
@@ -618,9 +643,6 @@ export const Controls = ({
           min-height: 56px;
           max-height: 56px;
           height: 56px;
-          /*
-          background-color: ${colors.panelBackground};
-          */
           background-color: var(--contrast3);
           border-bottom: solid var(--border) 1px;
         }

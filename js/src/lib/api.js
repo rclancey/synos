@@ -29,7 +29,7 @@ export class APIBase {
     }
     return fetch(url, args)
       .then(resp => {
-        if (resp.status === 401) {
+        if (resp.status === 401 && this.onLoginRequired) {
           this.onLoginRequired();
           throw new Error(resp.status.toString());
         }
@@ -160,6 +160,11 @@ export class API extends APIBase {
   unsharePlaylist(playlistId) {
     const url = `/api/shared/${playlistId}`;
     return this.delete(url);
+  }
+
+  loadRecent() {
+    const url = '/api/recents';
+    return this.get(url);
   }
 
   loadGenres() {
@@ -386,6 +391,26 @@ export class API extends APIBase {
 
   changeSonosVolumeBy(delta) {
     return this.posManip('volume', 'PUT', Math.round(delta));
+  }
+
+  listUsers() {
+    return this.get('/api/admin/users');
+  }
+
+  getUser(username) {
+    return this.get(`/api/admin/user/${username}`);
+  }
+
+  editUser(user) {
+    return this.put(`/api/admin/user/${user.username}`, user);
+  }
+
+  createUser(user) {
+    return this.post('/api/admin/user', user);
+  }
+
+  deleteUser(username) {
+    return this.delete(`/api/admin/user/${username}`);
   }
 
 }

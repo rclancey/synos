@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../../../lib/theme';
 import { Icon } from '../../../Icon';
 import { ScreenHeader } from '../../ScreenHeader';
 import { JookiControls } from '../../../Jooki/Controls';
@@ -10,7 +9,6 @@ import { DeviceInfo } from '../../../Jooki/DeviceInfo';
 import { Playlists } from './Playlists';
 
 export const JookiDevice = ({ device, setPlayer, onClose, ...props }) => {
-  const colors = useTheme();
   const [playbackInfo,] = useState({});
   const [controlAPI,] = useState({});
   const [showPlaylists, setShowPlaylists] = useState(false);
@@ -53,7 +51,7 @@ export const JookiDevice = ({ device, setPlayer, onClose, ...props }) => {
       </div>
       <style jsx>{`
         .device {
-          background-color: ${colors.background};
+          background-color: var(--gradient-end);
           height: 100vh;
         }
         .device .content {

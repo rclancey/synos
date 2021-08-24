@@ -1,11 +1,9 @@
 import React, { useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../lib/theme';
 import { AutoSizeList } from '../AutoSizeList';
 import { QueueHeader, QueueItem } from '../Queue';
 
 export const Queue = React.memo(({ playMode, tracks, index, onSelect, onShuffle, onRepeat, onClose }) => {
-  const colors = useTheme();
   const selIdx = index;
   const curIdx = index;
   const rowRenderer = useCallback(({ index, style }) => (

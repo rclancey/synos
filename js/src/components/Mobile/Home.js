@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme } from '../../lib/theme';
 import { useStack } from './Router/StackContext';
 import { useAPI } from '../../lib/useAPI';
 import { JookiAPI } from '../../lib/jooki';
@@ -21,6 +20,7 @@ import { AppleDevicePlaylist } from './Device/Apple/DevicePlaylist';
 import { AndroidDevicePlaylist } from './Device/Android/DevicePlaylist';
 import { PlexDevicePlaylist } from './Device/Plex/DevicePlaylist';
 import { Search } from './Search';
+import { Settings } from '../Settings';
 
 import CassetteIcon from '../icons/Cassette';
 import GuitarPlayerIcon from '../icons/GuitarPlayer';
@@ -31,10 +31,10 @@ import AudiobookIcon from '../icons/Audiobook';
 import TimerIcon from '../icons/Timer';
 import ShoppingCartIcon from '../icons/ShoppingCart';
 import SearchIcon from '../icons/Search';
+import GearIcon from '../icons/Gear';
 
 export const Home = React.memo(({ children, onOpen, ...props }) => {
   const stack = useStack();
-  const colors = useTheme();
   const [jooki, setJooki] = useState(null);
   const api = useAPI(JookiAPI);
   useEffect(() => {
@@ -102,6 +102,9 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
         <HomeItem name="Search" icon={SearchIcon} onOpen={stack.onPush}>
           <Search prev="Library" {...props} />
         </HomeItem>
+        <HomeItem name="Settings" icon={GearIcon} onOpen={stack.onPush}>
+          <Settings prev="Library" {...props} />
+        </HomeItem>
       </div>
       <style jsx>{`
         .header {
@@ -121,6 +124,7 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
           height: calc(100vh - 185px);
           padding: 0 0.5em;
           box-sizing: border-box;
+          overflow: auto;
         }
       `}</style>
     </div>

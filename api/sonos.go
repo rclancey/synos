@@ -9,6 +9,7 @@ import (
 	"time"
 
 	H "github.com/rclancey/httpserver/v2"
+	"github.com/rclancey/itunes/persistentId"
 	"github.com/rclancey/synos/musicdb"
 	"github.com/rclancey/synos/sonos"
 )
@@ -159,7 +160,7 @@ func SonosGetQueue(w http.ResponseWriter, req *http.Request) (interface{}, error
 }
 
 func readTracks(req *http.Request) ([]*musicdb.Track, error) {
-	trackIds := []musicdb.PersistentID{}
+	trackIds := []pid.PersistentID{}
 	err := H.ReadJSON(req, &trackIds)
 	if err != nil {
 		return nil, err
@@ -185,7 +186,7 @@ func SonosReplaceQueue(w http.ResponseWriter, req *http.Request) (interface{}, e
 	}
 	user := getUser(req)
 	var err error
-	plid := new(musicdb.PersistentID)
+	plid := new(pid.PersistentID)
 	err = plid.Decode(req.URL.Query().Get("playlist"))
 	if err == nil && *plid != 0 {
 		var pl *musicdb.Playlist
@@ -234,7 +235,7 @@ func SonosAppendQueue(w http.ResponseWriter, req *http.Request) (interface{}, er
 	}
 	user := getUser(req)
 	var err error
-	plid := new(musicdb.PersistentID)
+	plid := new(pid.PersistentID)
 	err = plid.Decode(req.URL.Query().Get("playlist"))
 	if err == nil && *plid != 0 {
 		var pl *musicdb.Playlist
@@ -270,7 +271,7 @@ func SonosInsertQueue(w http.ResponseWriter, req *http.Request) (interface{}, er
 		return nil, SonosError.Wrap(err, "")
 	}
 	user := getUser(req)
-	plid := new(musicdb.PersistentID)
+	plid := new(pid.PersistentID)
 	err = plid.Decode(req.URL.Query().Get("playlist"))
 	if err == nil && *plid != 0 {
 		var pl *musicdb.Playlist

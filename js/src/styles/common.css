@@ -24,3 +24,103 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]:focus {
   outline: none;
 }
+
+/*
+#app select {
+  background: var(--gradient-end);
+  color: var(--text);
+}
+*/
+
+input, select {
+  background-color: var(--gradient-end);
+  color: var(--text);
+  border: solid var(--border) 1px;
+  border-radius: 4px;
+}
+
+button, input[type="button"] {
+  font-size: 14px;
+  line-height: 17px;
+  border: solid var(--highlight) 1px;
+  border-radius: 4px;
+  color: var(--text);
+  background: var(--gradient-end);
+  padding: 3px 10px;
+  margin: 1px;
+  margin-right: 3px;
+}
+
+button.default, input[type="button"].default {
+  color: var(--highlight);
+  border-color: var(--highlight);
+  border-width: 2px;
+  padding: 2px 9px;
+  background: linear-gradient(var(--gradient-start), var(--gradient-end));
+  font-weight: bold;
+}
+
+button[disabled], input[type="button"][disabled] {
+  background: var(--highlight-blur) !important;
+  border-color: var(--border) !important;
+  color: var(--border) !important;
+}
+
+.timer {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+
+.timer .padding {
+  flex: 10;
+}
+
+.queue .header {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  padding: 0.5em;
+  color: var(--highlight);
+}
+.queue .header .title {
+  flex: 1;
+  font-size: 10pt;
+  font-weight: bold;
+  white-space: nowrap;
+  margin-top: 0;
+}
+.queue .header .toggles {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  white-space: nowrap;
+  margin-right: 0.5em;
+}
+
+.queue .item {
+  display: flex;
+  flex-direction: row;
+  box-sizing: border-box;
+  width: 100%;
+  height: 48px;
+  border: solid transparent 1px;
+  border-radius: 4px;
+  padding-left: 1em;
+  padding-right: 1em;
+  padding-top: 1px;
+  padding-bottom: 1px;
+  margin-bottom: 1px;
+  cursor: pointer;
+}
+.queue .item.selected {
+  background-color: var(--highlight);
+  color: var(--inverse);
+}
+.queue .item .coverart {
+  flex: 1;
+  box-sizing: border-box;
+  border: solid transparent 1px;
+  border-radius: 3px;
+  margin-right: 1em;
+}

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	H "github.com/rclancey/httpserver/v2"
+	"github.com/rclancey/itunes/persistentId"
 	"github.com/rclancey/synos/musicdb"
 )
 
@@ -319,7 +320,7 @@ func TrackCount(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 type MultiTrackUpdate struct {
-	TrackIDs []musicdb.PersistentID `json:"track_ids"`
+	TrackIDs []pid.PersistentID `json:"track_ids"`
 	Update map[string]interface{} `json:"update"`
 }
 
@@ -356,17 +357,17 @@ func UpdateTracks(w http.ResponseWriter, req *http.Request) (interface{}, error)
 }
 
 func getTrackById(req *http.Request) (*musicdb.Track, error) {
-	pid, err := getPathId(req)
+	id, err := getPathId(req)
 	if err != nil {
 		return nil, err
 	}
-	tr, err := db.GetTrack(pid)
+	tr, err := db.GetTrack(id)
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
 	if tr == nil {
-		log.Printf("track %s does not exist", pid)
-		return nil, H.NotFound.Wrapf(nil, "Track %s does not exist", pid)
+		log.Printf("track %s does not exist", id)
+		return nil, H.NotFound.Wrapf(nil, "Track %s does not exist", id)
 	}
 	return tr, nil
 }

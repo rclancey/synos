@@ -1,12 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import _JSXStyle from "styled-jsx/style";
-import { useTheme } from '../lib/theme';
 import { ShuffleButton, RepeatButton, CloseButton } from './Controls';
 import { CoverArt } from './CoverArt';
 import { TrackInfo, TrackTime } from './TrackInfo';
 
 export const QueueHeader = ({ playMode, tracks, onShuffle, onRepeat, onClose }) => {
-  const colors = useTheme();
   const toggleStyle = { flex: 1, marginRight: '0.5em' };
   return (
     <div className="header">
@@ -31,56 +29,33 @@ export const QueueHeader = ({ playMode, tracks, onShuffle, onRepeat, onClose }) 
           <CloseButton onClose={onClose} style={toggleStyle} />
         ) : null }
       </div>
-      <style jsx>{`
-        .header {
-          display: flex;
-          flex-direction: row;
-          width: 100%;
-          padding: 0.5em;
-          color: var(--highlight);
-        }
-        .header .title {
-          flex: 1;
-          font-size: 10pt;
-          font-weight: bold;
-          white-space: nowrap;
-          margin-top: 0;
-        }
-        .header .toggles {
-          flex: 1;
-          display: flex;
-          flex-direction: row;
-          white-space: nowrap;
-          margin-right: 0.5em;
-        }
-      `}</style>
     </div>
   );
 };
 
+const plur = (n, s) => (n === 1 ? s : `${s}s`);
+
 export const QueueInfo = ({ tracks, ...props }) => {
-  let durT = 0;
-  try {
-    durT = tracks.reduce((sum, val) => sum + val.total_time, 0) / 60000;
-  } catch (err) {
-    console.error("error getting queue duration for %o: %o", tracks, err);
-  }
-  let dur = '';
-  if (durT < 59.5) {
-    dur = `${Math.round(durT)} minutes`;
-  } else if (durT < 60 * 24) {
-    const hours = Math.floor(durT / 60);
-    const mins = Math.round(durT) % 60;
-    dur = `${hours} ${hours > 1 ? 'hours' : 'hour'}, ${mins} ${mins > 1 ? 'minutes' : 'minute'}`;
-  } else {
+  const dur = useMemo(() => {
+    const durT = tracks.reduce((sum, val) => sum + val.total_time, 0) / 60000;
+    let s = '';
+    if (durT < 59.5) {
+      const mins = Math.round(durT);
+      return `${mins} ${plur(mins, 'minute')}`;
+    }
+    if (durT < 60 * 24) {
+      const hours = Math.floor(durT / 60);
+      const mins = Math.round(durT) % 60;
+      return `${hours} ${plur(hours, 'hour')}, ${mins} ${plur(mins, 'minute')}`;
+    }
     const days = Math.floor(durT / (60 * 24));
     const hours = Math.round(durT / 60);
-    dur = `${days} ${days > 1 ? 'days': 'day'}, ${hours} ${hours > 1 ? 'hours' : 'hour'}`;
-  }
-  const songs = tracks.length > 1 ? 'songs' : 'song';
+    return `${days} ${plur(days, 'day')}, ${hours} ${plur(hours, 'hour')}`;
+  }, [tracks]);
+  const n = tracks.length;
   return (
     <div className="queueInfo" {...props}>
-      {`${tracks.length} ${songs}\u00a0\u2014\u00a0${dur}`}
+      {`${n} ${plur(n, 'song')}\u00a0\u2014\u00a0${dur}`}
     </div>
   );
 };
@@ -95,7 +70,6 @@ export const QueueItem = ({
   onSelect,
   onPlay
 }) => {
-  const colors = useTheme();
   return (
     <div
       className={"item" + (selected ? ' selected' : '')}
@@ -107,34 +81,6 @@ export const QueueItem = ({
       </CoverArt>
       <TrackInfo track={track} className="queue" />
       <TrackTime ms={track.total_time} className="time" />
-      <style jsx>{`
-        .item {
-          display: flex;
-          flex-direction: row;
-          box-sizing: border-box;
-          width: 100%;
-          height: 48px;
-          border: solid transparent 1px;
-          border-radius: 4px;
-          padding-left: 1em;
-          padding-right: 1em;
-          padding-top: 1px;
-          padding-bottom: 1px;
-          margin-bottom: 1px;
-          cursor: pointer;
-        }
-        .item.selected {
-          background-color: var(--highlight);
-          color: var(--inverse);
-        }
-        .item :global(.coverart) {
-          flex: 1;
-          box-sizing: border-box;
-          border: solid transparent 1px;
-          border-radius: 3px;
-          margin-right: 1em;
-        }
-      `}</style>
     </div>
   );
 };

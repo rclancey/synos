@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import Draggable from 'react-draggable';
-import { useTheme } from '../../../lib/theme';
 import { useColumns } from '../../../lib/colsize';
 import { useFocus } from '../../../lib/useFocus';
 import { AutoSizeList } from '../../AutoSizeList';
@@ -66,7 +65,6 @@ export const TrackList = ({
   onDelete,
   onShowInfo,
 }) => {
-  const colors = useTheme();
   const { focused, focus, node, onFocus, onBlur } = useFocus(onKeyPress);
   const [cols, onResize, setColNode] = useColumns(columns);
   //const [, , setTLNode] = useMeasure(100, 100);
@@ -138,17 +136,11 @@ export const TrackList = ({
           flex: 10;
           width: 100%;
           overflow: hidden;
-          /*
-          background-color: ${colors.trackList.background};
-          */
           font-size: 12px;
           color: var(--text);
         }
         .trackList .header {
           border-bottom-color: var(--border);
-          /*
-          background-color: ${colors.trackList.background};
-          */
           background-color: var(--contrast3);
           color: var(--text);
           display: flex;
@@ -163,11 +155,16 @@ export const TrackList = ({
         }
         .trackList:focus :global(.row.selected),
         .trackList:focus-within :global(.row.selected) {
-          /*
-          background-color: ${colors.highlightText};
-          color: ${colors.highlightInverse};
-          */
           background-color: var(--highlight);
+          color: var(--inverse);
+        }
+        .trackList :global(.stars) {
+          font-family: monospace;
+          color: var(--highlight);
+          font-size: 20px;
+        }
+        .trackList:focus :global(.row.selected .stars),
+        .trackList:focus-within :global(.row.selected .stars) {
           color: var(--inverse);
         }
         .trackList :global(.DragHandle) {

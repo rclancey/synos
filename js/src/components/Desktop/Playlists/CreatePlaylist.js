@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
-import { Dialog, ButtonRow, Button, Padding } from '../Dialog';
+
+import { Dialog, ButtonRow, Padding } from '../Dialog';
+import Button from '../../Input/Button';
+import MenuInput from '../../Input/MenuInput';
+import TextInput from '../../Input/TextInput';
 import { SmartPlaylistEditor } from './SmartPlaylistEditor';
-import { useTheme } from '../../../lib/theme';
+
+const playlistTypeOptions = [
+  { value: 'standard', label: 'Regular Playlist' },
+  { value: 'folder', label: 'Playlist Folder' },
+  { value: 'smart', label: 'Smart Playlist' },
+];
 
 export const CreatePlaylist = ({
   parentId,
   onCreatePlaylist,
   onCancel,
 }) => {
-  const colors = useTheme();
   const [kind, setKind] = useState("standard");
   const [name, setName] = useState("Untitled Playlist");
   const [nameUpdated, setNameUpdated] = useState(false);
@@ -38,10 +46,39 @@ export const CreatePlaylist = ({
       desc: true,
     },
   });
+  const onCreate = useCallback(() => {
+    const playlist = { kind, name };
+    if (parentId) {
+      playlist.parent_persistent_id = parentId;
+    }
+    if (kind === 'smart') {
+      playlist.smart = smart;
+    }
+    if (kind === 'folder') {
+      playlist.folder = true;
+    }
+    if (kind === 'standard') {
+      playlist.track_ids = [];
+    }
+    onCreatePlaylist(playlist);
+  }, [kind, name, smart, parentId, onCreatePlaylist]);
   return (
     <Dialog title="Create Playlist..." style={{minWidth: '400px'}} onDismiss={onCancel}>
       <div className="content">
         <div className="kind">
+          <MenuInput
+            options={playlistTypeOptions}
+            onChange={(k) => {
+              setKind(k);
+              if (!nameUpdated) {
+                if (k === 'folder') {
+                  setName('Untitled Folder');
+                } else {
+                  setName('Untitled Playlist');
+                }
+              }
+            }}
+          />
           <select value={kind} onChange={evt => {
             const k = evt.target.options[evt.target.selectedIndex].value;
             setKind(k);
@@ -59,50 +96,18 @@ export const CreatePlaylist = ({
           </select>
         </div>
         <div className="name">
-          Name: <input type="text" value={name} onChange={evt => { setName(evt.target.value); setNameUpdated(true); }} />
+          Name:
+          <TextInput value={name} onChange={(value) => { setName(value); setNameUpdated(true); }} />
         </div>
         { kind === 'smart' ? (<SmartPlaylistEditor {...smart} onChange={setSmart} />) : null }
         <ButtonRow>
           <Padding />
-          <Button
-            label="Cancel"
-            onClick={onCancel}
-          />
-          <Button
-            label="Create"
-            highlight={true}
-            onClick={() => {
-              const playlist = { kind, name };
-              if (parentId) {
-                playlist.parent_persistent_id = parentId;
-              }
-              if (kind === 'smart') {
-                playlist.smart = smart;
-              }
-              if (kind === 'folder') {
-                playlist.folder = true;
-              }
-              if (kind === 'standard') {
-                playlist.track_ids = [];
-              }
-              onCreatePlaylist(playlist);
-            }}
-          />
+          <Button type="secondary" onClick={onCancel}>Cancel</Button>
+          <Button onClick={onCreate}>Create</Button>
         </ButtonRow>
         <style jsx>{`
           .content>.kind, .content>.name, .content :global(.smartEditor) {
             margin-bottom: 1em;
-          }
-          .content :global(select),
-          .content :global(input) {
-            color: ${colors.input};
-            background-color: ${colors.inputBackground};
-          }
-          .content :global(input[type="text"]),
-          .content :global(input[type="number"]),
-          .content :global(input[type="date"]) {
-            border: solid ${colors.text} 1px;
-            border-radius: 3px;
           }
         `}</style>
       </div>

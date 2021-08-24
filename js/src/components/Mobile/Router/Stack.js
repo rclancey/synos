@@ -1,7 +1,6 @@
 import React from 'react';
 import _JSXStyle from 'styled-jsx/style';
 import { useStack } from './StackContext';
-import { useTheme } from '../../../lib/theme';
 import { Home } from '../Home';
 
 export const Stack = () => {
@@ -32,7 +31,6 @@ export const Stack = () => {
 };
 
 export const ScreenHeader = () => {
-  const colors = useTheme();
   const stack = useStack();
   const page = stack.pages[stack.pages.length - 1];
   const title = page ? page.title : 'Library';
@@ -46,7 +44,7 @@ export const ScreenHeader = () => {
         .header {
           padding: 0.5em;
           padding-top: 54px;
-          background-color: ${colors.sectionBackground};
+          background-color: var(--contrast4);
         }
         .header .title {
           font-size: 24pt;
@@ -61,7 +59,6 @@ export const ScreenHeader = () => {
 };
 
 export const Back = () => {
-  const colors = useTheme();
   const stack = useStack();
   const page = stack.pages[stack.pages.length - 2];
   if (!page) {

@@ -5,9 +5,9 @@ import { Stack } from './Router/Stack';
 import { Home } from './Home';
 import { TrackMenu, PlaylistMenu, MenuContext, useMenus } from './TrackMenu';
 import { Controls } from './NowPlaying';
-import { useTheme } from '../../lib/theme';
 import { useControlAPI } from '../Player/Context';
 import { WithRouter } from '../../lib/router';
+import { setTheme } from '../../lib/theme';
 import { BackButton } from './BackButton';
 import { Screen } from './Screen';
 
@@ -21,7 +21,6 @@ export const MobileSkin = ({
 }) => {
   const controlAPI = useControlAPI();
 
-  const colors = useTheme();
   const pages = usePages();
   const menus = useMenus();
 
@@ -75,9 +74,11 @@ export const MobileSkin = ({
   }, [onOpen]);
   */
 
+  /*
   useEffect(() => {
     document.body.style.background = dark ? 'black' : 'white';
   }, [dark]);
+  */
 
   const onList = null;
   return (

@@ -12,6 +12,7 @@ import (
 
 	"github.com/goulash/audio"
 	"github.com/pkg/errors"
+	"github.com/rclancey/itunes/persistentId"
 )
 
 type FileType audio.Codec
@@ -977,7 +978,7 @@ func (f Field) StringValue(tr *Track) string {
 	case reflect.String:
 		return rf.String()
 	case reflect.Uint64:
-		pid, isa := rf.Interface().(PersistentID)
+		pid, isa := rf.Interface().(pid.PersistentID)
 		if isa {
 			return pid.String()
 		}

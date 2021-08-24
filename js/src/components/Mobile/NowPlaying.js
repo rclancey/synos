@@ -1,6 +1,6 @@
 import React, { useContext, useState, useMemo, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useTheme, ThemeContext } from '../../lib/theme';
+import { ThemeContext } from '../../lib/theme';
 import { usePlaybackInfo, useControlAPI, currentTrack } from '../Player/Context';
 import { TrackInfo } from '../TrackInfo';
 import { CoverArt } from '../CoverArt';
@@ -11,7 +11,6 @@ import { Queue } from './Queue';
 import { Player } from '../Player/Player';
 
 const Expander = ({ onExpand }) => {
-  const colors = useTheme();
   return (
     <div className="fas fa-angle-up" onClick={onExpand}>
       <style jsx>{`
@@ -25,7 +24,6 @@ const Expander = ({ onExpand }) => {
 };
 
 const Collapser = ({ onCollapse }) => {
-  const colors = useTheme();
   return (
     <div className="collapse fas fa-angle-down" onClick={onCollapse}>
       <style jsx>{`
@@ -39,7 +37,6 @@ const Collapser = ({ onCollapse }) => {
 };
 
 const Hamburger = ({ onOpen }) => {
-  const colors = useTheme();
   return (
     <div className="showQueue fas fa-bars" onClick={onOpen}>
       <style jsx>{`
@@ -95,7 +92,6 @@ export const MiniControls = ({
 }) => {
   const playbackInfo = usePlaybackInfo();
   const controlAPI = useControlAPI();
-  const colors = useTheme();
   const track = useMemo(() => currentTrack(playbackInfo), [playbackInfo]);
 
   return (
@@ -144,7 +140,6 @@ export const ExpandedControls = ({
   onCollapse,
   onList,
 }) => {
-  const colors = useTheme();
   const playbackInfo = usePlaybackInfo();
   const controlAPI = useControlAPI();
   const track = useMemo(() => currentTrack(playbackInfo), [playbackInfo]);
@@ -285,78 +280,6 @@ export const ExpandedControls = ({
   );
 };
 
-/*
-export const NowPlaying = ({
-  controlAPI,
-  playbackInfo,
-  sonos,
-  onEnableSonos,
-  onDisableSonos,
-}) => {
-  const colors = useTheme();
-  const [expanded, setExpanded] = useState(false);
-  const track = useMemo(() => {
-    if (!playbackInfo.queue) {
-      return {};
-    }
-    return playbackInfo.queue[playbackInfo.index] || {};
-  }, [playbackInfo.queue, playbackInfo.index]);
-  const onCollapse = useCallback(() => setExpanded(false), [setExpanded]);
-  const onExpand = useCallback(() => setExpanded(true), [setExpanded]);
-
-  if (expanded) {
-    return (
-      <Expanded
-        playbackInfo={playbackInfo}
-        controlAPI={controlAPI}
-        track={track}
-        sonos={sonos}
-        onEnableSonos={onEnableSonos}
-        onDisableSonos={onDisableSonos}
-        onCollapse={onCollapse}
-      />
-    );
-  }
-  return (
-    <div className="nowplaying">
-      <Expander onExpand={onExpand} />
-      <CoverArt track={track} size={48} radius={4} />
-      <TrackInfo track={track} className="mobile controls" />
-      <Center orientation="vertical">
-        <PlayPauseSkip
-          width={100}
-          height={18}
-          paused={playbackInfo.playStatus !== 'PLAYING'}
-          onPlay={controlAPI.onPlay}
-          onPause={controlAPI.onPause}
-          onSkipBy={controlAPI.onSkipBy}
-          onSeekBy={controlAPI.onSeekBy}
-        />
-      </Center>
-      <style jsx>{`
-        .nowplaying {
-          padding: 10px;
-          position: fixed;
-          z-index: 3;
-          bottom: 0px;
-          width: 100vw;
-          box-sizing: border-box;
-          border-top-style: solid;
-          border-top-width: 1px;
-          display: flex;
-          flex-direction: row;
-          background: ${colors.background};
-        }
-        .fa-angle-up {
-          color: ${colors.highlightText};
-          padding: 1em 1em 1em 0;
-        }
-      `}</style>
-    </div>
-  );
-};
-*/
-
 const Header = ({ onCollapse, onShowQueue }) => (
   <div className="header">
     <Collapser onCollapse={onCollapse} />
@@ -451,103 +374,3 @@ const ThemeChooser = () => {
     </div>
   );
 };
-
-/*
-const Expanded = ({
-  playbackInfo,
-  controlAPI,
-  track,
-  sonos,
-  onEnableSonos,
-  onDisableSonos,
-  onCollapse,
-}) => {
-  const colors = useTheme();
-  const [showQueue, setShowQueue] = useState(false);
-  const onSelect = useCallback((track, i) => controlAPI.onSkipTo(i), [controlAPI]);
-  const onClose = useCallback(() => setShowQueue(false), [setShowQueue]);
-  if (showQueue) {
-    return (
-      <Queue
-        playMode={playbackInfo.playMode}
-        tracks={playbackInfo.queue}
-        index={playbackInfo.index}
-        onShuffle={controlAPI.onShuffle}
-        onRepeat={controlAPI.onRepeat}
-        onSelect={onSelect}
-        onClose={onClose}
-      />
-    );
-  }
-  return (
-    <div className="nowplaying big">
-      <Header onCollapse={onCollapse} onShowQueue={() => setShowQueue(true)} />
-      <div className="content">
-        <CoverArt track={track} size={280} radius={10} />
-        <Progress
-          style={{
-            flex: 1,
-            marginTop: '5px',
-            marginBottom: '10px',
-          }}
-          currentTime={playbackInfo.currentTime}
-          duration={playbackInfo.duration}
-          onSeekTo={controlAPI.onSeekTo}
-        />
-        <Timers
-          style={{ fontSize: '9px' }}
-          currentTime={playbackInfo.currentTime}
-          duration={playbackInfo.duration}
-        />
-        <TrackInfo track={track} className="mobile controls" />
-        <PlayPauseSkip
-          style={{
-            padding: '0 5em',
-            margin: '1em 0',
-            boxSizing: 'border-box',
-          }}
-          height={24}
-          paused={playbackInfo.playStatus !== 'PLAYING'}
-          onPlay={controlAPI.onPlay}
-          onPause={controlAPI.onPause}
-          onSkipBy={controlAPI.onSkipBy}
-          onSeekBy={controlAPI.onSeekBy}
-        />
-        <Volume
-          volume={playbackInfo.volume}
-          style={{width: '100%'}}
-          onChange={controlAPI.onSetVolumeTo}
-        />
-        <SonosSwitch state={sonos} on={onEnableSonos} off={onDisableSonos} />
-
-      </div>
-      <style jsx>{`
-        .nowplaying {
-          position: fixed;
-          z-index: 3;
-          bottom: 0px;
-          width: 100vw;
-          box-sizing: border-box;
-          border-top-style: solid;
-          flex-direction: row;
-          display: block;
-          flex-direction: column;
-          height: 100%;
-          padding: 0;
-          border-top: none;
-          background-color: ${colors.background};
-        }
-        .content {
-          flex: 10;
-          width: 280px;
-          min-width: 280px;
-          max-width: 280px;
-          margin-left: auto;
-          margin-right: auto;
-          padding-top: 1em;
-        }
-      `}</style>
-    </div>
-  );
-};
-*/

@@ -13,22 +13,23 @@ import (
 
 	"github.com/rclancey/itunes"
 	"github.com/rclancey/itunes/loader"
+	"github.com/rclancey/itunes/persistentId"
 )
 
 type Playlist struct {
-	PersistentID         PersistentID   `json:"persistent_id,omitempty" db:"id"`
-	OwnerID              PersistentID   `json:"owner_id,omitempty" db:"owner_id"`
+	PersistentID         pid.PersistentID   `json:"persistent_id,omitempty" db:"id"`
+	OwnerID              pid.PersistentID   `json:"owner_id,omitempty" db:"owner_id"`
 	Shared               bool           `json:"shared" db:"shared"`
 	JookiID              *string        `json:"jooki_id" db:"jooki_id"`
-	ParentPersistentID   *PersistentID  `json:"parent_persistent_id,omitempty" db:"parent_id"`
+	ParentPersistentID   *pid.PersistentID  `json:"parent_persistent_id,omitempty" db:"parent_id"`
 	Kind                 PlaylistKind   `json:"kind" db:"kind"`
 	Folder               bool           `json:"folder,omitempty" db:"folder"`
 	Name                 string         `json:"name,omitempty" db:"name"`
 	DateAdded            *Time          `json:"date_added" db:"date_added"`
 	DateModified         *Time          `json:"date_modified" db:"date_modified"`
 	Smart                *Smart         `json:"smart,omitempty" db:"smart"`
-	GeniusTrackID        *PersistentID  `json:"genius_track_id,omitempty" db:"genius_track_id"`
-	TrackIDs             []PersistentID `json:"track_ids" db:"-"`
+	GeniusTrackID        *pid.PersistentID  `json:"genius_track_id,omitempty" db:"genius_track_id"`
+	TrackIDs             []pid.PersistentID `json:"track_ids" db:"-"`
 	Children             []*Playlist    `json:"children,omitempty" db:"-"`
 	PlaylistItems        []*Track       `json:"items,omitempty" db:"-"`
 	SortField            string         `json:"sort_field,omitempty" db:"sort_field"`
@@ -42,12 +43,12 @@ func NewPlaylist() *Playlist {
 	return p
 }
 
-func (p *Playlist) ID() PersistentID {
+func (p *Playlist) ID() pid.PersistentID {
 	return p.PersistentID
 }
 
-func (p *Playlist) SetID(pid PersistentID) {
-	p.PersistentID = pid
+func (p *Playlist) SetID(id pid.PersistentID) {
+	p.PersistentID = id
 }
 
 func (p *Playlist) Serialize(w io.Writer) error {
@@ -128,7 +129,8 @@ func (p *Playlist) SortFolder() {
 	sort.Sort(SortablePlaylistList(p.Children))
 }
 
-func (p *Playlist) Update(orig, cur *Playlist) (*PersistentID, bool) {
+func (p *Playlist) Update(orig, cur *Playlist) (*pid.PersistentID, bool) {
+	//log.Printf("orig.DateAdded = %s, cur.DateAdded = %s", orig.DateAdded, cur.DateAdded)
 	if p.Folder != cur.Folder {
 		return nil, false
 	}
@@ -150,6 +152,11 @@ func (p *Playlist) Update(orig, cur *Playlist) (*PersistentID, bool) {
 	if orig.Name != cur.Name {
 		p.Name = cur.Name
 	}
+	if p.DateAdded == nil {
+		p.DateAdded = cur.DateAdded
+	} else if orig.DateAdded != nil && orig.DateAdded.Time().Before(cur.DateAdded.Time()) {
+		p.DateAdded = orig.DateAdded
+	}
 	tracksDiffer := false
 	if len(orig.TrackIDs) != len(cur.TrackIDs) {
 		tracksDiffer = true
@@ -165,8 +172,22 @@ func (p *Playlist) Update(orig, cur *Playlist) (*PersistentID, bool) {
 		n1 := len(p.TrackIDs)
 		n2 := len(orig.TrackIDs)
 		n3 := len(cur.TrackIDs)
-		p.TrackIDs, _ = ThreeWayMerge(orig.TrackIDs, cur.TrackIDs, p.TrackIDs)
-		log.Printf("three way merge tracks (%d, %d, %d) => %d", n1, n2, n3, len(p.TrackIDs))
+		changed := false
+		if n1 != n2 {
+			changed = true
+		} else {
+			for i, tid := range p.TrackIDs {
+				if tid != orig.TrackIDs[i] {
+					changed = true
+				}
+			}
+		}
+		if changed {
+			p.TrackIDs, _ = ThreeWayMerge(orig.TrackIDs, cur.TrackIDs, p.TrackIDs)
+			log.Printf("three way merge tracks (%d, %d, %d) => %d", n1, n2, n3, len(p.TrackIDs))
+		} else {
+			p.TrackIDs = cur.TrackIDs
+		}
 	}
 	if orig.ParentPersistentID == nil {
 		if cur.ParentPersistentID != nil {
@@ -185,17 +206,25 @@ func (p *Playlist) Update(orig, cur *Playlist) (*PersistentID, bool) {
 
 func PlaylistFromITunes(ipl *loader.Playlist) *Playlist {
 	pl := &Playlist{
-		PersistentID: PersistentID(ipl.GetPersistentID()),
+		PersistentID: ipl.GetPersistentID(),
 		Folder: ipl.GetFolder(),
 		Name: ipl.GetName(),
 	}
+	if ipl.DateAdded != nil {
+		t := FromTime(*ipl.DateAdded)
+		pl.DateAdded = &t
+	}
+	if ipl.DateModified != nil {
+		t := FromTime(*ipl.DateModified)
+		pl.DateModified = &t
+	}
 	if ipl.ParentPersistentID != nil {
-		pid := PersistentID(*ipl.ParentPersistentID)
-		pl.ParentPersistentID = &pid
+		p := *ipl.ParentPersistentID
+		pl.ParentPersistentID = &p
 	}
 	if ipl.GeniusTrackID != nil {
-		pid := PersistentID(*ipl.GeniusTrackID)
-		pl.GeniusTrackID = &pid
+		p := *ipl.GeniusTrackID
+		pl.GeniusTrackID = &p
 	}
 	if !pl.Folder {
 		if ipl.IsSmart() {
@@ -205,9 +234,9 @@ func PlaylistFromITunes(ipl *loader.Playlist) *Playlist {
 			}
 		}
 		if pl.Smart == nil {
-			pl.TrackIDs = make([]PersistentID, len(ipl.TrackIDs))
+			pl.TrackIDs = make([]pid.PersistentID, len(ipl.TrackIDs))
 			for i, uid := range ipl.TrackIDs {
-				pl.TrackIDs[i] = PersistentID(uid)
+				pl.TrackIDs[i] = uid
 			}
 		}
 	} else {

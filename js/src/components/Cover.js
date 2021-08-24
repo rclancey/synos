@@ -24,6 +24,7 @@ export const Cover = ({ zIndex, onClear, children }) => {
         background-color: rgba(0, 0, 0, 0.5);
         display: flex;
         flex-direction: column;
+        backdrop-filter: blur(1px);
       `}</style>
     </div>
   );

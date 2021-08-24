@@ -1,148 +1,113 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext } from 'react';
 
-export const ThemeContext = React.createContext('dark');
+import Dimension from './dimension';
+import Color from './color';
 
-export const colors = {
-  dark: {
-    background: '#000',
-    sectionBackground: '#222',
-    text: '#999',
-    text1: '#999',
-    text2: '#777',
-    text3: '#333',
-    blurHighlight: '#545456',
-    highlightText: '#09c',
-    highlightInverse: '#fff',
-    input: '#fff',
-    inputBackground: '#222',
-    inputGradient: '#555',
-    infoBackground: '#555',
-    tabBackground: '#888',
-    tabColor: '#fff',
-    disabledBackground: '#444',
-    button: '#09c',
-    switch: {
-      border: {
-        on: '#09c',
-        off: 'rgba(204, 204, 204, 0.7)',
-      },
-      knob: {
-        background: '#444',
-        shadow: 'rgba(200, 200, 200, 0.7)',
-      },
-    },
-    disabler: 'rgba(0, 153, 204, 0.3)',
-    panelBackground: '#32363b',
-    panelText: '#fff',
-    panelBorder: '#444',
-    dropTarget: {
-      folderBackground: 'yellow',
-      folderText: 'black',
-      playlistBackground: 'orange',
-      playlistText: 'black',
-    },
-    trackList: {
-      background: '#1e2023',
-      border: '#353739',
-      evenBg: '#292b2e',
-      text: 'white',
-      separator: '#494b4d',
-    },
-    login: {
-      border: '#fff',
-      text: '#2687fb',
-      shadow: '#2687fb',
-      background: '#1e2023',
-      gradient1: '#144987',
-      gradient2: '#1e2023',
-    },
-  },
+export const ThemeContext = React.createContext({ theme: 'grey', dark: false });
 
-  light: {
-    background: '#fff',
-    sectionBackground: '#ddd',
-    text: '#000',
-    text1: '#000',
-    text2: '#666',
-    text3: '#ddd',
-    blurHighlight: '#999',
-    highlightText: '#09c',
-    highlightInverse: '#fff',
-    input: '#000',
-    inputBackground: '#fff',
-    inputGradient: '#999',
-    infoBackground: '#ddd',
-    tabBackground: '#999',
-    tabColor: '#000',
-    button: '$09c',
-    switch: {
-      border: {
-        on: '#09c',
-        off: 'rgba(204, 204, 204, 0.7)',
-      },
-      knob: {
-        background: '#fff',
-        shadow: 'rgba(200, 200, 200, 0.7)',
-      },
-    },
-    disabler: 'rgba(0, 153, 204, 0.3)',
-    panelBackground: '#ccc',
-    panelText: '#000',
-    panelBorder: '#aaa',
-    dropTarget: {
-      folderBackground: 'yellow',
-      folderText: 'black',
-      playlistBackground: 'orange',
-      playlistText: 'black',
-    },
-    trackList: {
-      background: '#fff',
-      border: '#999',
-      evenBg: '#eee',
-      text: '#000',
-      separator: '#777',
-    },
-    login: {
-      border: '#000',
-      text: '#000',
-      shadow: '#000',
-      background: '#ccc',
-      gradient1: '#144987',
-      gradient2: '#1e2023',
-    },
-  },
-};
+const state = { current: null };
 
-const gradientColors = [
-  'purple',
-  'darkred',
-  'darkblue',
-  'darkgreen',
-  '#930',
-  'fuchsia',
-  'deeppink',
-  'darkorchid',
-  'darkslateblue',
-  '#356',
-  '#365',
-  'indigo',
-  'maroon',
-  'midnightblue',
-  'teal',
-  'sienna',
-  'olive',
-  '#444',
-  'darkmagenta',
-  'crimson',
+const cssVars = [
+  '--gradient-end',
+  '--lightness',
+  '--lightness-contrast',
+  '--inverse',
+  '--highlight-dull',
+  '--hue',
+  '--sat',
+  '--gradient-stretch',
+  '--gradient-compress',
+  //'--highlight-lightness',
+
+  '--highlight-blur',
+  '--blur-background',
+  '--text',
+  '--contrast1',
+  '--contrast2',
+  '--contrast3',
+  '--contrast4',
+  '--contrast5',
+  '--border',
+
+  '--gradient-start',
+  '--text',
+  '--highlight',
+  '--highlight-muted',
 ];
 
-export const useTheme = () => {
-  const { theme } = useContext(ThemeContext);
-  const base = theme.match(/dark/) ? 'dark' : 'light';
-  return useMemo(() => ({
-    ...colors[base],
-    ...colors[theme],
-    gradient: gradientColors[Math.floor(Math.random() * gradientColors.length)],
-    gradientDir: Math.random() < 0.5 ? -20 : -200,
-  }), [base, theme]);
+const getProperty = (style, prop) => {
+  let value = style.getPropertyValue(prop).trim();
+  const dim = new Dimension(value);
+  if (dim.type === null) {
+    return new Color(value);
+  }
+  return dim;
+};
+
+export const setTheme = (theme, dark, time) => {
+  if (time <= 0) {
+    state.current = Math.random();
+    document.body.className = `${theme} ${dark ? 'dark' : 'light'}`;
+    return Promise.resolve({ theme, dark });
+  }
+  return new Promise((resolve, reject) => {
+    let style = getComputedStyle(document.body);
+    const startValues = {};
+    const targetValues = {};
+    cssVars.forEach((prop) => {
+      startValues[prop] = getProperty(style, prop);
+    });
+    cssVars.forEach((prop) => {
+      document.body.style.removeProperty(prop);
+    });
+    document.body.className = `${theme} ${dark ? 'dark' : 'light'}`;
+    style = getComputedStyle(document.body);
+    cssVars.forEach((prop) => {
+      targetValues[prop] = getProperty(style, prop);
+    });
+    cssVars.forEach((prop) => {
+      document.body.style.setProperty(prop, startValues[prop].css());
+    });
+    document.body.className = '';
+    startValues['--hue'].value = (startValues['--hue'].value + 720) % 360;
+    targetValues['--hue'].value = (targetValues['--hue'].value + 720) % 360;
+    if (targetValues['--hue'].value - startValues['--hue'].value > 180) {
+      targetValues['--hue'].value -= 360;
+    } else if (startValues['--hue'].value - targetValues['--hue'].value > 180) {
+      targetValues['--hue'].value += 360;
+    }
+    const startTime = Date.now();
+    const trid = Math.random();
+    state.current = trid;
+    console.debug('transition %o => %o', startValues, targetValues)
+    const callback = () => {
+      window.debugColor = Color;
+      if (trid !== state.current) {
+        reject({ theme, dark, time, aborted: true });
+        return;
+      }
+      const now = Date.now();
+      const pct = (now - startTime) / time;
+      if (pct >= 1) {
+        document.body.className = `${theme} ${dark ? 'dark' : 'light'}`;
+        cssVars.forEach((prop) => document.body.style.removeProperty(prop));
+        resolve({ theme, dark });
+      } else {
+        cssVars.forEach((prop) => {
+          try {
+            const val = startValues[prop].interpolate(targetValues[prop], pct);
+            document.body.style.setProperty(prop, val.css());
+          } catch (err) {
+            console.error("%o interpolate %o => %o (%o) error: %o", prop, startValues[prop], targetValues[prop], pct, err);
+          }
+        });
+        if (pct > 0.8) {
+          //return;
+        }
+        window.requestAnimationFrame(callback);
+      }
+    };
+    window.requestAnimationFrame(callback);
+
+  });
 };

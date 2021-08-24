@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rclancey/itunes/artwork"
+	"github.com/rclancey/itunes/persistentId"
 
 	"github.com/rclancey/synos/musicdb"
 )
@@ -144,6 +146,7 @@ func GetArtistImageFilename(name string) (string, error) {
 }
 
 func GetAlbumArtFilename(tr *musicdb.Track) (string, error) {
+	log.Printf("GetAlbumArtFilename(%s)", tr.PersistentID)
 	finder := cfg.Finder.FileFinder()
 	dn := filepath.Dir(tr.Path())
 	basefn := strings.TrimSuffix(filepath.Base(tr.Path()), filepath.Ext(tr.Path()))
@@ -157,9 +160,34 @@ func GetAlbumArtFilename(tr *musicdb.Track) (string, error) {
 		for _, x := range []string{".jpg", ".png", ".gif"} {
 			fn, err := finder.FindFile(filepath.Join(dn, root + x), tr.Homedir)
 			if err == nil {
+				log.Println("found", fn)
 				return fn, nil
 			}
 		}
+	}
+	owner, err := tr.GetOwner(db)
+	if err == nil && owner.LibraryID != nil && owner.HomeDirectory != nil {
+		src, err := artwork.NewArtworkSource(*owner.HomeDirectory, pid.PersistentID(*owner.LibraryID))
+		if err == nil {
+			defer src.Close()
+			img, err := src.GetJPEG(pid.PersistentID(tr.PersistentID))
+			if err == nil {
+				log.Println("found itunes artwork")
+				fn, err := db.SaveTrackArtwork(tr, ".jpg", img)
+				if err == nil {
+					log.Println("saved itunes artwork to", fn)
+					return fn, nil
+				} else {
+					log.Println("error saving track artwork:", err)
+				}
+			} else {
+				log.Println("no itunes artwork:", err)
+			}
+		} else {
+			log.Println("no itunes artwork source:", err)
+		}
+	} else {
+		log.Println("no base info for itunes artwork source", err)
 	}
 	var art, alb string
 	if tr.Album != nil {

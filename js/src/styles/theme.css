@@ -15,24 +15,31 @@
   --highlight: #09c;
   --highlight-inverse: #fff;
   */
+
+  --font-size-huge: 24px;
+  --font-size-large: 18px;
+  --font-size-normal: 14px;
+  --font-size-small: 12px;
+  --font-size-tiny: 10px;
 }
 
-#app {
+body {
   --hue: 0;
   --sat: 100%;
   --lightness-muted: calc((var(--lightness) + var(--lightness-contrast)) / 2);
   --gradient-dir: -20deg;
   --gradient-stretch: -10%;
   --gradient-compress: 90%;
-  --highlight: hsl(calc(var(--hue) - 10), var(--sat), var(--lightness-contrast));
-  --highlight-muted: hsl(calc(var(--hue) - 10), calc(var(--sat) * 0.8), var(--lightness-muted));
+  --highlight: hsl(var(--highlight-hue), var(--sat), var(--lightness-contrast));
+  --highlight-muted: hsl(var(--highlight-hue), calc(var(--sat) * 0.8), var(--lightness-muted));
   --gradient-start: hsl(var(--hue), var(--sat), var(--lightness));
   --gradient: linear-gradient(var(--gradient-dir), var(--gradient-start) var(--gradient-stretch), var(--gradient-end) var(--gradient-compress));
-
+  background: var(--gradient);
   color: var(--text);
+  --shadow: rgba(0, 0, 0, 0.8);
 }
 
-#app.dark {
+body.dark {
   --gradient-end: black;
   --lightness: 30%;
   --lightness-contrast: 60%;
@@ -40,15 +47,17 @@
   --highlight-blur: var(--lightish);
   --blur-background: var(--lighten);
   --text: var(--lightest);
+  --text-bright: white;
   --contrast1: var(--darkish);
   --contrast2: var(--darken);
   --contrast3: var(--darker);
   --contrast4: var(--darkest);
   --contrast5: var(--superdark);
   --border: var(--lighten);
+  --muted-text: var(--lighter);
 }
 
-#app.light {
+body.light {
   --gradient-end: white;
   --lightness: 60%;
   --lightness-contrast: 30%;
@@ -56,156 +65,165 @@
   --highlight-blur: var(--darkish);
   --blur-background: var(--darkest);
   --text: var(--darkest);
+  --text-bright: black;
   --contrast1: var(--lightish);
   --contrast2: var(--lighten);
   --contrast3: var(--lighter);
   --contrast4: var(--lightest);
   --contrast5: var(--superlight);
   --border: var(--darken);
+  --muted-text: var(--darker);
 }
 
-#app.grey {
+body.grey {
   --hue: 0;
+  --highlight-hue: 0;
   --sat: 0%;
   --lightness: 50%;
   --gradient-stretch: -30%;
   --gradient-compress: 80%;
 }
 
-#app.dark.grey {
+body.dark.grey {
   --lightness-contrast: 80%;
 }
 
-#app.red {
+body.red {
   --hue: 0;
+  --highlight-hue: 350;
 }
 
-#app.orange {
+body.orange {
   --hue: 25;
+  --highlight-hue: 15;
 }
 
-#app.yellow {
+body.yellow {
   --hue: 60;
+  --highlight-hue: 50;
 }
 
-#app.light.yellow {
+body.light.yellow {
   --gradient-stretch: -30%;
 }
 
-#app.green {
+body.green {
   --hue: 120;
+  --highlight-hue: 110;
 }
 
-#app.light.green {
+body.light.green {
   --gradient-stretch: -40%;
 }
 
-#app.dark.green {
+body.dark.green {
   --gradient-stretch: -25%;
 }
 
-#app.seafoam {
+body.seafoam {
   --hue: 165;
+  --highlight-hue: 155;
 }
 
-#app.dark.seafoam {
+body.dark.seafoam {
   --gradient-stretch: -25%;
 }
 
-#app.teal {
+body.teal {
   --hue: 180;
+  --highlight-hue: 170;
 }
 
-#app.dark.teal {
+body.dark.teal {
   --gradient-stretch: -30%;
 }
 
-#app.slate {
+body.slate {
   --hue: 210;
+  --highlight-hue: 200;
 }
 
-#app.dark.slate {
+body.dark.slate {
   --gradient-stretch: -30%;
 }
 
-#app.blue {
+body.blue {
   --hue: 240;
+  --highlight-hue: 230;
   --inverse: white;
 }
 
-#app.dark.blue {
+body.dark.blue {
   --highlight-lightness: 75%;
 }
 
-#app.indigo {
+body.indigo {
   --hue: 278;
+  --highlight-hue: 268;
   --inverse: white;
 }
 
-#app.dark.indigo {
+body.dark.indigo {
   --lightness: 20%;
   --highlight-lightness: 75%;
 }
 
-#app.purple {
+body.purple {
   --hue: 295;
+  --highlight-hue: 285;
 }
 
-#app.dark.purple {
+body.dark.purple {
   --lightness: 20%;
   --highlight-lightness: 75%;
 }
 
-#app.fuchsia {
+body.fuchsia {
   --hue: 320;
+  --highlight-hue: 310;
 }
 
-#app.dark.fuchsia {
+body.dark.fuchsia {
   --gradient-stretch: -20%;
 }
 
-#app.darkpurple {
+body.darkpurple {
   --hue: 290;
   /*
   */
 }
 
-#app.darkred {
+body.darkred {
   --hue: 0;
   /*
   --gradient: linear-gradient(-20deg, darkred, black);
   */
 }
 
-#app.darkblue {
+body.darkblue {
   --hue: 240;
   /*
   --gradient: linear-gradient(-20deg, darkblue, black);
   */
 }
 
-#app.darkgreen {
+body.darkgreen {
   --hue: 120;
   /*
   --gradient: linear-gradient(-20deg, darkgreen, black);
   */
 }
 
-#app.darkorange {
+body.darkorange {
   --hue: 25;
   /*
   --gradient: linear-gradient(-20deg, #930, black);
   */
 }
 
-#app.darkfuchsia {
+body.darkfuchsia {
   --hue: 320;
   /*
   --gradient: linear-gradient(-20deg, fuchsia, black);
   */
-}
-
-
-input[type="range"]::-webkit-slider-thumb {
-  color: red;
 }
