@@ -33,6 +33,7 @@ NODE_ENV ?= production
 all: compile
 
 $(BUILDDIR)/$(PKGNAME)/bin/%: $(GOSRC) go.mod go.sum
+	echo $(TAGNAME) > api/version.txt
 	mkdir -p $(BUILDDIR)/$(PKGNAME)/bin
 	env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) go build -o $@ cmd/$*.go
 

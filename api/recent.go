@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 	"sort"
 	"time"
@@ -35,16 +36,23 @@ type RecentItem struct {
 func ListRecents(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	user := getUser(r)
 	since := musicdb.FromTime(time.Now().AddDate(-1, 0, 0))
+	start := time.Now()
 	tracks, err := db.RecentTracks(user, since)
 	if err != nil {
 		return nil, err
 	}
+	end := time.Now()
+	log.Printf("%d recent tracks loaded in %s", len(tracks), end.Sub(start))
+	start = time.Now()
 	playlists, err := db.RecentPlaylists(user, since)
 	if err != nil {
 		return nil, err
 	}
+	end = time.Now()
+	log.Printf("%d recent playlists loaded in %s", len(playlists), end.Sub(start))
 	recents := []*RecentItem{}
 	albums := map[albumKey]*Album{}
+	start = time.Now()
 	for _, t := range tracks {
 		/*
 		recents = append(recents, &RecentItem{
@@ -105,6 +113,9 @@ func ListRecents(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 		}
 		album.Tracks = append(album.Tracks, t)
 	}
+	end = time.Now()
+	log.Printf("collected %d albums in %s", len(albums), end.Sub(start))
+	start = time.Now()
 	for _, pl := range playlists {
 		tracks, err := db.PlaylistTracks(pl)
 		if err != nil {
@@ -117,6 +128,9 @@ func ListRecents(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 			Playlist: pl,
 		})
 	}
+	end = time.Now()
+	log.Printf("collected %d playlists in %s", len(playlists), end.Sub(start))
+	start = time.Now()
 	for _, album := range albums {
 		sort.Slice(album.Tracks, func(i, j int) bool {
 			a := album.Tracks[i]
@@ -164,5 +178,7 @@ func ListRecents(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 		}
 		return false
 	})
+	end = time.Now()
+	log.Println("sorted %d items in %s", len(recents), end.Sub(start))
 	return recents, nil
 }

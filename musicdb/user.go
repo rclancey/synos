@@ -10,9 +10,9 @@ import (
 	//"time"
 
 	"github.com/pkg/errors"
+	"github.com/rclancey/authenticator"
 	"github.com/rclancey/httpserver/v2/auth"
 	"github.com/rclancey/itunes/persistentId"
-	"github.com/rclancey/twofactor"
 )
 
 type User struct {
@@ -37,8 +37,11 @@ type User struct {
 	DateAdded     *Time        `json:"date_added,omitempty" db:"date_added"`
 	DateModified  *Time        `json:"date_modified,omitempty" db:"date_modified"`
 	Active        bool         `json:"active,omitempty" db:"active"`
-	Auth          *twofactor.Auth `json:"auth,omitempty" db:"auth"`
+	Password      *authenticator.PasswordAuthenticator  `json:"password_auth,omitempty" db:"password_auth"`
+	TwoFactor     *authenticator.TwoFactorAuthenticator `json:"twofactor_auth,omitempty" db:"twofactor_auth"`
+	TmpTwoFactor  *authenticator.TwoFactorAuthenticator `json:"tmp_twofactor_auth,omitempty" db:"tmp_twofactor_auth"`
 	IsAdmin       bool         `json:"admin,omitempty" db:"admin"`
+	LastLibraryUpdate *Time `json:"last_library_update" db:"last_library_update"`
 	db *DB
 }
 
@@ -50,7 +53,6 @@ func NewUser(db *DB, username string) *User {
 		DateAdded: &now,
 		DateModified: &now,
 		Active: true,
-		Auth: &twofactor.Auth{},
 		db: db,
 	}
 	ou, err := user.Lookup(username)
@@ -65,6 +67,32 @@ func NewUser(db *DB, username string) *User {
 		}
 	}
 	return u
+}
+
+func (u *User) PasswordStrengthInputs() []string {
+	sps := []*string{
+		&u.Username,
+		u.Email,
+		u.FirstName,
+		u.LastName,
+		u.Phone,
+		u.AppleID,
+		u.GitHubID,
+		u.GoogleID,
+		u.AmazonID,
+		u.FacebookID,
+		u.TwitterID,
+		u.LinkedInID,
+		u.SlackID,
+		u.BitBucketID,
+	}
+	inputs := []string{}
+	for _, sp := range sps {
+		if sp != nil && *sp != "" {
+			inputs = append(inputs, *sp)
+		}
+	}
+	return inputs
 }
 
 func (u *User) Create() error {
@@ -164,21 +192,84 @@ func (u *User) GetAvatar() string {
 	return *u.Avatar
 }
 
-func (u *User) GetAuth() (*twofactor.Auth, error) {
-	log.Printf("user auth data: %#v", u.Auth)
-	return u.Auth, nil
+func (u *User) GetAuth() (authenticator.Authenticator, error) {
+	return u.Password, nil
 }
 
-func (u *User) SetAuth(auth *twofactor.Auth) error {
+func (u *User) SetAuth(auth authenticator.Authenticator) error {
 	if u.db == nil {
 		return errors.New("no database handle")
 	}
-	query := `UPDATE xuser SET auth = ? WHERE username = ?`
-	_, err := u.db.Exec(query, auth, u.Username)
+	pwauth, isa := auth.(*authenticator.PasswordAuthenticator)
+	if !isa {
+		return errors.New("invalid authentication mechanism")
+	}
+	query := `UPDATE xuser SET password_auth = ? WHERE username = ?`
+	_, err := u.db.Exec(query, pwauth, u.Username)
 	if err != nil {
 		return err
 	}
-	u.Auth = auth
+	u.Password = pwauth
+	return nil
+}
+
+func (u *User) GetTwoFactorAuth() (authenticator.Authenticator, error) {
+	return u.TwoFactor, nil
+}
+
+func (u *User) SetTwoFactorAuth(auth authenticator.Authenticator) error {
+	if u.db == nil {
+		return errors.New("no database handle")
+	}
+	tfa, isa := auth.(*authenticator.TwoFactorAuthenticator)
+	if !isa {
+		return errors.New("invalid authentication mechanism")
+	}
+	query := `UPDATE xuser SET twofactor_auth = ? WHERE username = ?`
+	_, err := u.db.Exec(query, tfa, u.Username)
+	if err != nil {
+		return err
+	}
+	u.TwoFactor = tfa
+	return nil
+}
+
+func (u *User) InitTwoFactorAuth() (authenticator.Authenticator, error) {
+	if u.db == nil {
+		return nil, errors.New("no database handle")
+	}
+	tfa, err := authenticator.NewTwoFactorAuthenticator(u.Username, "")
+	if err != nil {
+		return nil, err
+	}
+	query := `UPDATE xuser SET tmp_twofactor_auth = ? WHERE username = ?`
+	_, err = u.db.Exec(query, tfa, u.Username)
+	if err != nil {
+		return nil, err
+	}
+	u.TmpTwoFactor = tfa
+	return tfa, nil
+}
+
+func (u *User) CompleteTwoFactorAuth(code string) error {
+	if u.db == nil {
+		return errors.New("no database handle")
+	}
+	tfa := u.TmpTwoFactor
+	if tfa == nil {
+		return errors.New("no authenticator configured")
+	}
+	err := tfa.Authenticate(code)
+	if err != nil {
+		return err
+	}
+	query := `UPDATE xuser SET twofactor_auth = ?, tmp_twofactor_auth = NULL WHERE username = ?`
+	_, err = u.db.Exec(query, tfa, u.Username)
+	if err != nil {
+		return err
+	}
+	u.TwoFactor = tfa
+	u.TmpTwoFactor = nil
 	return nil
 }
 
@@ -211,7 +302,9 @@ func (u *User) Clean() *User {
 	clone.SlackID = nil
 	clone.BitBucketID = nil
 	clone.HomeDirectory = nil
-	clone.Auth = nil
+	clone.Password = nil
+	clone.TwoFactor = nil
+	clone.TmpTwoFactor = nil
 	return &clone
 }
 
@@ -255,4 +348,16 @@ func (u *User) Reload(db *DB) error {
 		return errors.WithStack(auth.ErrUnknownUser)
 	}
 	return errors.WithStack(err)
+}
+
+func (u *User) UpdateLibrary(db *DB) error {
+	query := `UPDATE xuser SET last_library_update = ? WHERE id = ?`
+	now := Now()
+	_, err := u.db.Exec(query, now, u.PersistentID)
+	if err != nil {
+		log.Println("error updating user:", err)
+		return err
+	}
+	u.LastLibraryUpdate = &now
+	return nil
 }

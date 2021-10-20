@@ -5,11 +5,12 @@ import (
 	H "github.com/rclancey/httpserver/v2"
 )
 
+var websocketHub H.Hub
+
 func WebSocketAPI(router H.Router, authmw H.Middleware) {
+	websocketHub = nil
 	router.GET("/ws", authmw(H.HandlerFunc(ServeWS)))
 }
-
-var websocketHub H.Hub
 
 func getWebsocketHub() (H.Hub, error) {
 	if websocketHub != nil && !websocketHub.Closed() {

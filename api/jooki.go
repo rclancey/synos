@@ -17,6 +17,8 @@ import (
 	"github.com/rclancey/synos/musicdb"
 )
 
+var jookiDevice *jooki.Client
+
 func JookiAPI(router H.Router, authmw H.Middleware) {
 	router.GET("/state", authmw(H.HandlerFunc(JookiGetState)))
 	router.GET("/tokens", authmw(H.HandlerFunc(JookiListTokens)))

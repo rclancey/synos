@@ -16,8 +16,6 @@ import (
 	"github.com/rclancey/synos/musicdb"
 )
 
-var jookiDevice *jooki.Client
-
 type JookiEvent struct {
 	Type string `json:"type"`
 	Deltas []*jooki.JookiState `json:"deltas"`

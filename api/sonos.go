@@ -14,6 +14,8 @@ import (
 	"github.com/rclancey/synos/sonos"
 )
 
+var sonosDevice *sonos.Sonos
+
 func SonosAPI(router H.Router, authmw H.Middleware) {
 	router.GET("/available", authmw(H.HandlerFunc(HasSonos)))
 	router.GET("/queue", authmw(H.HandlerFunc(SonosGetQueue)))
@@ -41,8 +43,6 @@ func SonosAPI(router H.Router, authmw H.Middleware) {
 	router.GET("/children/:id", authmw(H.HandlerFunc(SonosChildren)))
 	router.GET("/media", authmw(H.HandlerFunc(SonosMedia)))
 }
-
-var sonosDevice *sonos.Sonos
 
 type SonosEvent struct {
 	Type string `json:"type"`

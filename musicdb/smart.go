@@ -344,6 +344,9 @@ func (spl *Smart) Scan(value interface{}) error {
 }
 
 func (rs *RuleSet) Where() (string, []interface{}) {
+	if rs.Rules == nil || len(rs.Rules) == 0 {
+		return "", nil
+	}
 	s := "("
 	args := []interface{}{}
 	for i, r := range rs.Rules {
