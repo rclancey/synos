@@ -175,7 +175,7 @@ export const Library = ({
   */
 
   const onSelectPlaylist = useCallback((pl, dev) => {
-    const special = { recent: true, albums: true, artists: true };
+    const special = { recent: true, albums: true, artists: true, genius: true, geniusMix: true };
     //console.error('onSelectPlaylist(%o, %o)', pl, dev);
     if (!dev) {
       if (!pl) {
@@ -187,7 +187,7 @@ export const Library = ({
       if (pl.folder) {
         return;
       }
-      if (special[pl.persistent_id]) {
+      if (special[pl.persistent_id] || pl.persistent_id.startsWith('genius-mix:')) {
         setPlaylist(pl);
         return;
       }

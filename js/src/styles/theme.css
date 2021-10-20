@@ -48,6 +48,7 @@ body.dark {
   --blur-background: var(--lighten);
   --text: var(--lightest);
   --text-bright: white;
+  --text-disabled: var(--lighten);
   --contrast1: var(--darkish);
   --contrast2: var(--darken);
   --contrast3: var(--darker);
@@ -66,6 +67,7 @@ body.light {
   --blur-background: var(--darkest);
   --text: var(--darkest);
   --text-bright: black;
+  --text-disabled: var(--darken);
   --contrast1: var(--lightish);
   --contrast2: var(--lighten);
   --contrast3: var(--lighter);

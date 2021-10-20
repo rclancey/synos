@@ -7,15 +7,28 @@ import ThemeChooser from '../Settings/ThemeChooser';
 import TwoFactor from '../Settings/TwoFactor';
 import ChangeProfileInfo from '../Settings/ChangeProfileInfo';
 import Logout from '../Settings/Logout';
+import Config from './Admin/Config';
 import { Dialog } from './Dialog';
 
 export const Settings = ({ onClose }) => {
+  const [showConfig, setShowConfig] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
   const style = useMemo(() => ({
     top: `calc(50vh - ${twoFactor ? 310 : 275}px)`,
     height: (twoFactor ? '620px' : '550px'),
     maxHeight: '100vh',
   }), [twoFactor]);
+  if (showConfig) {
+    return (
+      <Dialog
+        title="Admin Config"
+        width={1400}
+        onDismiss={onClose}
+      >
+        <Config onClose={onClose} />
+      </Dialog>
+    );
+  }
   return (
     <Dialog
       title="Settings"
@@ -52,6 +65,8 @@ export const Settings = ({ onClose }) => {
           <ChangeProfileInfo />
           <hr />
           <Logout />
+          <hr />
+          <Button onClick={() => setShowConfig(true)}>Admin Config</Button>
         </>
       )}
     </div>

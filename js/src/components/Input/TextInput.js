@@ -14,7 +14,7 @@ export const TextInput = ({ type = 'text', value, valid = true, onInput, ...prop
   return (
     <input
       type={type}
-      value={value || ''}
+      value={value === null || value === undefined ? '' : value}
       valid={valid}
       onInput={myOnInput}
       {...props}

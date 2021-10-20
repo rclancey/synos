@@ -286,13 +286,14 @@ export const DurationMenu = ({
 export const OpMenu = ({
   ops,
   op,
-  sign,
+  sign = 'POS',
   onChange,
 }) => {
   let idx = ops.findIndex(x => x.op === op && x.sign === sign);
   if (idx < 0) {
     idx = 0;
   }
+  console.debug('ops %o => %o/%o = %o', ops, op, sign, idx);
   return (
     <MenuInput value={ops[idx].value} options={ops} onChange={onChange} />
   );
@@ -560,7 +561,9 @@ const SmartPlaylistRuleData = ({
   type,
   ...props
 }) => {
-  switch (type) {
+  const xfield = fields[props.field];
+  const xtype = xfield ? xfield.type : type;
+  switch (xtype) {
   case "string":
     return (<SmartPlaylistStringRule {...props} />);
   case "int":
@@ -828,6 +831,7 @@ export const SmartPlaylistEditor = ({
   limit = null,
   onChange,
 }) => {
+  console.debug({ ruleset, limit });
   return (
     <div className="smartEditor">
       <div className="rules">
