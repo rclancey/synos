@@ -35,39 +35,46 @@ type ProgressEvent struct {
 }
 
 func getJooki(quick bool) (*jooki.Client, error) {
+	log.Println("getJooki")
 	if jookiDevice != nil && !jookiDevice.Closed() {
+		//log.Println("jooki device already configured")
 		return jookiDevice, nil
 	}
 	if quick {
+		log.Println("no jooki device available")
 		return nil, nil
 	}
+	//log.Println("get websocket hub")
 	hub, err := getWebsocketHub()
 	if err != nil {
+		log.Println("error getting websocket hub", err)
 		return nil, err
 	}
-	jookiDevice, err = jooki.Discover()
-	if err != nil {
+	//log.Println("discovering jooki")
+	dev, err := jooki.Discover()
+	if err != nil || dev == nil {
 		log.Println("jooki not available")
 		jookiDevice = nil
 		return nil, err
 	}
+	//log.Println("found a jooki device")
+	jookiDevice = dev
 	go func() {
-		awaiter, err := jookiDevice.AddAwaiter()
+		awaiter, err := dev.AddAwaiter()
 		if err != nil {
 			log.Println("error getting jooki awaiter:", err)
-			jookiDevice.Disconnect()
+			dev.Disconnect()
 			jookiDevice = nil
 			return
 		}
 		events := awaiter.GetChannel()
+		//log.Println("listening for jooki updates")
 		for {
 			msg, ok := <-events
 			if !ok {
 				log.Println("jooki awaiter shut down")
 				awaiter.Close()
-				if jookiDevice != nil {
-					jookiDevice.Disconnect()
-				}
+				dev.Disconnect()
 				jookiDevice = nil
 				break
 			}

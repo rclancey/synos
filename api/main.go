@@ -250,17 +250,33 @@ func startup() (*logging.Logger, *httpserver.Server, error) {
 
 	errlog.Infoln("Synos server starting...")
 	go func() {
-		getSonos(false)
+		dev, err := getSonos(false)
+		if err != nil {
+			errlog.Errorln("error getting sonos device:", err)
+		} else if dev == nil {
+			errlog.Warnln("sonos not available")
+		} else {
+			errlog.Infoln("sonos ready")
+		}
 	}()
 
 	go func() {
+		log.Println("loading jooki cron")
 		cron, err := cfg.Jooki.LoadCron()
 		if err != nil {
 			log.Println("error loading cron config:", err)
 		} else {
 			ScheduleFromConfig(cron)
 		}
-		getJooki(false)
+		log.Println("loading jooki device")
+		dev, err := getJooki(false)
+		if err != nil {
+			errlog.Errorln("error getting jooki device:", err)
+		} else if dev == nil {
+			errlog.Warnln("jooki not available")
+		} else {
+			errlog.Infoln("jooki ready")
+		}
 	}()
 
 	api := srv.Prefix("/api")

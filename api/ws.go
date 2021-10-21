@@ -16,8 +16,11 @@ func getWebsocketHub() (H.Hub, error) {
 	if websocketHub != nil && !websocketHub.Closed() {
 		return websocketHub, nil
 	}
-	websocketHub = H.NewGenericHub(nil)
-	websocketHub.Run()
+	hub := H.NewGenericHub(nil)
+	go func() {
+		hub.Run()
+	}()
+	websocketHub = hub
 	return websocketHub, nil
 }
 
