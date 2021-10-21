@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import { useFocus } from '../../../lib/useFocus';
+import { TSL } from '../../../lib/trackList';
 import { PLAYLIST_ORDER } from '../../../lib/distinguished_kinds';
 import { Folder } from './Folder';
 import { Playlist } from './Playlist';
 import { Label } from './Label';
 import { DevicePlaylists } from '../Device/Playlists';
 import { CreatePlaylist } from './CreatePlaylist';
+import { GeniusMixes } from './GeniusMixes';
 import { API } from '../../../lib/api';
 import { useAPI } from '../../../lib/useAPI';
+import { ProgressBar } from '../ProgressBar';
 
 export const PlaylistBrowser = ({
   devices,
@@ -22,6 +25,7 @@ export const PlaylistBrowser = ({
   setPlayer,
 }) => {
   const { focused, node, focus, onFocus, onBlur } = useFocus();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const handler = event => {
@@ -105,6 +109,28 @@ export const PlaylistBrowser = ({
           folder={false}
           onSelect={() => wrappedOnSelect({ persistent_id: 'albums' })}
         />
+        <Label
+          icon="genius"
+          name="Genius"
+          selected={selected === 'genius'}
+          folder={false}
+          onSelect={() => {
+            const tracks = TSL.tracks.filter((t) => t.selected)
+              .map((t) => t.track.persistent_id);
+            wrappedOnSelect({ persistent_id: 'genius', items: [] });
+            setLoading(true);
+            api.makeGenius(tracks)
+              .then((pl) => {
+                wrappedOnSelect({ ...pl, persistent_id: 'genius' });
+                setLoading(false);
+              })
+              .catch((err) => {
+                console.error(err);
+                setLoading(false);
+              });
+          }}
+        />
+        <GeniusMixes selected={selected} onSelect={wrappedOnSelect} controlAPI={controlAPI} setLoading={setLoading} />
         { playlists.filter(pl => {
             const o = PLAYLIST_ORDER[pl.kind];
             if (o === null || o === undefined || o < 0 || o >= 100) {
@@ -169,6 +195,7 @@ export const PlaylistBrowser = ({
             onAddToPlaylist={onAddToPlaylist}
           />
         )) }
+      { loading ? <ProgressBar total={100} complete={100} /> : null }
       <style jsx>{`
         .playlistBrowser {
           flex: 1;

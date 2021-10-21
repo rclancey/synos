@@ -68,6 +68,26 @@ const setDefaultSortKey = (playlist, sortKey) => {
   window.localStorage.setItem('defaultSort', data);
 };
 
+const handlePagingEvent = (event) => {
+  const node = event.target.firstElementChild.nextElementSibling.firstElementChild;
+  switch (event.code) {
+    case "PageDown":
+      node.scrollBy(0, node.parentNode.scrollHeight);
+      return true;
+    case "PageUp":
+      node.scrollBy(0, -1 * node.parentNode.scrollHeight);
+      return true;
+    case "Home":
+      node.scrollTo(0, 0);
+      return true;
+    case "End":
+      node.scrollTo(0, node.scrollHeight);
+      return true;
+    default:
+      return false;
+  }
+};
+
 const emptyTracks = [];
 export const TrackBrowser = ({
   columnBrowser = false,
@@ -208,6 +228,9 @@ export const TrackBrowser = ({
       event.preventDefault();
       setDisplayTracks(tsl.tracks);
       setSelected(tsl.selected);
+    } else if (handlePagingEvent(event)) {
+      event.stopPropagation();
+      event.preventDefault();
     }
   }, [setDisplayTracks, setSelected, onShowInfo, onShowMultiInfo]);
 
@@ -239,6 +262,9 @@ export const TrackBrowser = ({
           event.preventDefault();
           //event.target.focus();
           update();
+        } else if (handlePagingEvent(event)) {
+          event.stopPropagation();
+          event.preventDefault();
         }
       },
     }));

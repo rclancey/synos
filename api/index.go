@@ -43,7 +43,11 @@ func SearchArtists(w http.ResponseWriter, req *http.Request) (interface{}, error
 }
 
 func ListGenres(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	genres, err := db.Genres()
+	user := getUser(req)
+	if user == nil {
+		return nil, H.Unauthorized
+	}
+	genres, err := db.Genres(&user.PersistentID)
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
@@ -51,8 +55,12 @@ func ListGenres(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 func ListArtists(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	user := getUser(req)
+	if user == nil {
+		return nil, H.Unauthorized
+	}
 	genre := musicdb.NewGenre(req.URL.Query().Get("genre"))
-	artists, err := db.GenreArtists(genre)
+	artists, err := db.GenreArtists(genre, &user.PersistentID)
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
@@ -60,9 +68,13 @@ func ListArtists(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 }
 
 func ListAlbums(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	user := getUser(req)
+	if user == nil {
+		return nil, H.Unauthorized
+	}
 	genre  := musicdb.NewGenre(req.URL.Query().Get("genre"))
 	artist := musicdb.NewArtist(req.URL.Query().Get("artist"))
-	albums, err := db.GetAlbums(artist, genre)
+	albums, err := db.GetAlbums(artist, genre, &user.PersistentID)
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
@@ -70,7 +82,11 @@ func ListAlbums(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 func ListAlbumsByArtist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	albums, err := db.GetAlbums(nil, nil)
+	user := getUser(req)
+	if user == nil {
+		return nil, H.Unauthorized
+	}
+	albums, err := db.GetAlbums(nil, nil, &user.PersistentID)
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
@@ -78,6 +94,10 @@ func ListAlbumsByArtist(w http.ResponseWriter, req *http.Request) (interface{}, 
 }
 
 func ListSongs(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	user := getUser(req)
+	if user == nil {
+		return nil, H.Unauthorized
+	}
 	q := req.URL.Query()
 	genre  := musicdb.NewGenre(q.Get("genre"))
 	artist := musicdb.NewArtist(q.Get("artist"))
@@ -86,11 +106,11 @@ func ListSongs(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var err error
 	if album != nil {
 		log.Printf("artist = %s, album = %s", album.Artist.SortName, album.SortName)
-		tracks, err = db.AlbumTracks(album)
+		tracks, err = db.AlbumTracks(album, &user.PersistentID)
 	} else if artist != nil {
-		tracks, err = db.ArtistTracks(artist)
+		tracks, err = db.ArtistTracks(artist, &user.PersistentID)
 	} else if genre != nil {
-		tracks, err = db.GenreTracks(genre)
+		tracks, err = db.GenreTracks(genre, &user.PersistentID)
 	} else {
 		return nil, H.BadRequest.Wrap(nil, "must include album, artist or genre")
 	}

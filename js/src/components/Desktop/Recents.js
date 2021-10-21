@@ -117,11 +117,17 @@ export const Recents = ({}) => {
           overflow: hidden;
           text-overflow: ellipsis;
           margin-top: 5px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
         }
         .recents :global(.item .artist) {
           width: 160px;
           overflow: hidden;
           text-overflow: ellipsis;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
         }
       `}</style>
       { recent.map((item) => (

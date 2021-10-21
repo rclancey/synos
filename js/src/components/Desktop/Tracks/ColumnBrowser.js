@@ -27,6 +27,10 @@ const ColBrowserRow = React.memo(({
       .row {
         padding: 0px 10px;
         line-height: 18px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        box-sizing: border-box;
       }
     `}</style>
   </div>

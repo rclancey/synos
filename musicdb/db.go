@@ -26,6 +26,7 @@ import (
 	"github.com/rclancey/httpserver/v2/auth"
 	"github.com/rclancey/itunes/loader"
 	"github.com/rclancey/itunes/persistentId"
+	"github.com/rclancey/spotify"
 )
 
 var CircularPlaylistFolder = builtinErrors.New("playlist can't be a descendant of itself")
@@ -60,6 +61,10 @@ func Open(connstr string) (*DB, error) {
 	return &DB{ conn: conn }, nil
 }
 
+func (db *DB) Close() error {
+	return db.conn.Close()
+}
+
 type Search struct {
 	Genre *string
 	Artist *string
@@ -71,6 +76,7 @@ type Search struct {
 	Name *string
 	LooseName *string
 	Any *string
+	OwnerID *pid.PersistentID
 }
 
 func searchSort(field, val string) (string, []interface{}) {
@@ -155,6 +161,10 @@ func searchFilters(s Search) (string, []interface{}) {
 		filters = append(filters, "(" + strings.Join(any, " OR ") + ")")
 		*/
 	}
+	if s.OwnerID != nil {
+		filters = append(filters, `owner_id = ?`)
+		vals = append(vals, *s.OwnerID)
+	}
 	return strings.Join(filters, " AND "), vals
 }
 
@@ -224,13 +234,13 @@ func (db *DB) SearchAlbums(s Search) ([]*Album, error) {
 }
 
 func (db *DB) RecentTracks(user *User, since Time) ([]*Track, error) {
-	qs := `SELECT * FROM track WHERE date_added >= ? `
+	qs := `SELECT * FROM track WHERE date_added >= ?`
 	args := []interface{}{since}
 	if user != nil {
-		qs += `AND owner_id = ? `
+		qs += ` AND owner_id = ?`
 		args = append(args, user.PersistentID)
 	}
-	qs += `ORDER BY date_added DESC`
+	qs += ` ORDER BY date_added DESC`
 	rows, err := db.Query(qs, args...)
 	if err != nil {
 		return nil, err
@@ -250,7 +260,7 @@ func (db *DB) RecentTracks(user *User, since Time) ([]*Track, error) {
 }
 
 func (db *DB) RecentPlaylists(user *User, since Time) ([]*Playlist, error) {
-	qs := `SELECT * FROM playlist WHERE (folder IS NULL OR folder = ?) AND date_added >= ? `
+	qs := `SELECT * FROM playlist WHERE (folder IS NULL OR folder = ?) AND date_added >= ?`
 	args := []interface{}{false, since}
 	if user == nil {
 		qs += ` AND shared = 't'`
@@ -258,7 +268,7 @@ func (db *DB) RecentPlaylists(user *User, since Time) ([]*Playlist, error) {
 		qs += ` AND (shared = 't' OR owner_id = ?)`
 		args = append(args, user.PersistentID)
 	}
-	qs += `ORDER BY date_added DESC`
+	qs += ` ORDER BY date_added DESC`
 	rows, err := db.Query(qs, args...)
 	if err != nil {
 		return nil, err
@@ -497,9 +507,15 @@ func (db *DB) GetPlaylistTree(root *pid.PersistentID, user *User) ([]*Playlist, 
 	return nil, errors.WithStack(NoSuchPlaylistFolder)
 }
 
-func (db *DB) Genres() ([]*Genre, error) {
-	qs := `SELECT genre, sort_genre, COUNT(*) FROM track WHERE genre IS NOT NULL GROUP BY sort_genre, genre`
-	rows, err := db.Query(qs)
+func (db *DB) Genres(ownerId *pid.PersistentID) ([]*Genre, error) {
+	qs := `SELECT genre, sort_genre, COUNT(*) FROM track WHERE genre IS NOT NULL`
+	args := []interface{}{}
+	if ownerId != nil {
+		qs += ` AND owner_id = ?`
+		args = append(args, *ownerId)
+	}
+	qs += ` GROUP BY sort_genre, genre`
+	rows, err := db.Query(qs, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -542,12 +558,16 @@ func (db *DB) Genres() ([]*Genre, error) {
 	return genres, nil
 }
 
-func (db *DB) getArtists(col string, genre *Genre) (map[string]*Artist, error) {
+func (db *DB) getArtists(col string, genre *Genre, ownerId *pid.PersistentID) (map[string]*Artist, error) {
 	qs := fmt.Sprintf(`SELECT %s, %s, COUNT(*) FROM track WHERE %s IS NOT NULL`, pq.QuoteIdentifier(col), pq.QuoteIdentifier("sort_" + col), pq.QuoteIdentifier(col))
 	args := []interface{}{}
 	if genre != nil {
 		qs += " AND sort_genre = ?"
 		args = append(args, genre.SortName)
+	}
+	if ownerId != nil {
+		qs += ` AND owner_id = ?`
+		args = append(args, *ownerId)
 	}
 	qs += fmt.Sprintf(" GROUP BY %s, %s", pq.QuoteIdentifier(col), pq.QuoteIdentifier("sort_" + col))
 	rows, err := db.Query(qs, args...)
@@ -593,6 +613,10 @@ func (db *DB) searchArtist(col string, name string, s Search) (*Artist, error) {
 	if s.Name != nil {
 		filters = append(filters, "sort_name = ?")
 		args = append(args, *s.Name)
+	}
+	if s.OwnerID != nil {
+		filters = append(filters, "owner_id = ?")
+		args = append(args, *s.OwnerID)
 	}
 	qs := fmt.Sprintf(`SELECT %s, COUNT(*) FROM track WHERE %s GROUP BY %s`, pq.QuoteIdentifier(col), strings.Join(filters, " AND "), pq.QuoteIdentifier(col))
 	rows, err := db.Query(qs, args...)
@@ -656,6 +680,10 @@ func (db *DB) ArtistGenres(name string, s Search) ([]*Genre, error) {
 		filters = append(filters, "sort_name = ?")
 		args = append(args, *s.Name)
 	}
+	if s.OwnerID != nil {
+		filters = append(filters, "owner_id = ?")
+		args = append(args, *s.OwnerID)
+	}
 	qs := `SELECT genre, sort_genre, COUNT(*) FROM track WHERE `
 	if len(filters) > 0 {
 		qs += strings.Join(filters, " AND ")
@@ -706,8 +734,8 @@ func (db *DB) ArtistGenres(name string, s Search) ([]*Genre, error) {
 	return genres, nil
 }
 
-func (db *DB) Artists() ([]*Artist, error) {
-	return db.GenreArtists(nil)
+func (db *DB) Artists(ownerId *pid.PersistentID) ([]*Artist, error) {
+	return db.GenreArtists(nil, ownerId)
 }
 
 func (db *DB) searchArtists(filter string, args []interface{}) ([]*Artist, error) {
@@ -757,14 +785,18 @@ func (db *DB) searchArtists(filter string, args []interface{}) ([]*Artist, error
 	return artists, nil
 }
 
-func (db *DB) GenreArtists(genre *Genre) ([]*Artist, error) {
-	filter := ""
+func (db *DB) GenreArtists(genre *Genre, ownerId *pid.PersistentID) ([]*Artist, error) {
+	filter := []string{}
 	args := []interface{}{}
 	if genre != nil {
-		filter = `sort_genre = ?`
+		filter = append(filter, `sort_genre = ?`)
 		args = append(args, genre.SortName)
 	}
-	return db.searchArtists(filter, args)
+	if ownerId != nil {
+		filter = append(filter, `owner_id = ?`)
+		args = append(args, *ownerId)
+	}
+	return db.searchArtists(strings.Join(filter, " AND "), args)
 }
 
 func (db *DB) searchAlbums(filter string, args []interface{}) ([]*Album, error) {
@@ -849,7 +881,7 @@ func (db *DB) searchAlbums(filter string, args []interface{}) ([]*Album, error) 
 	return albums, nil
 }
 
-func (db *DB) GetAlbums(artist *Artist, genre *Genre) ([]*Album, error) {
+func (db *DB) GetAlbums(artist *Artist, genre *Genre, ownerId *pid.PersistentID) ([]*Album, error) {
 	filters := []string{}
 	args := []interface{}{}
 	if artist != nil {
@@ -860,28 +892,36 @@ func (db *DB) GetAlbums(artist *Artist, genre *Genre) ([]*Album, error) {
 		filters = append(filters, "sort_genre = ?")
 		args = append(args, genre.SortName)
 	}
+	if ownerId != nil {
+		filters = append(filters, "owner_id = ?")
+		args = append(args, *ownerId)
+	}
 	filter := strings.Join(filters, " AND ")
 	return db.searchAlbums(filter, args)
 }
 
-func (db *DB) Albums() ([]*Album, error) {
-	return db.GetAlbums(nil, nil)
+func (db *DB) Albums(ownerId *pid.PersistentID) ([]*Album, error) {
+	return db.GetAlbums(nil, nil, ownerId)
 }
 
-func (db *DB) ArtistAlbums(artist *Artist) ([]*Album, error) {
-	return db.GetAlbums(artist, nil)
+func (db *DB) ArtistAlbums(artist *Artist, ownerId *pid.PersistentID) ([]*Album, error) {
+	return db.GetAlbums(artist, nil, ownerId)
 }
 
-func (db *DB) GenreAlbums(genre *Genre) ([]*Album, error) {
-	return db.GetAlbums(nil, genre)
+func (db *DB) GenreAlbums(genre *Genre, ownerId *pid.PersistentID) ([]*Album, error) {
+	return db.GetAlbums(nil, genre, ownerId)
 }
 
-func (db *DB) AlbumTracks(album *Album) ([]*Track, error) {
+func (db *DB) AlbumTracks(album *Album, ownerId *pid.PersistentID) ([]*Track, error) {
 	qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE sort_album = ?`
 	args := []interface{}{album.SortName}
 	if album.Artist != nil {
 		qs += ` AND ((sort_album_artist IS NULL AND sort_artist = ?) OR sort_album_artist = ?)`
 		args = append(args, album.Artist.SortName, album.Artist.SortName)
+	}
+	if ownerId != nil {
+		qs += ` AND track.owner_id = ?`
+		args = append(args, *ownerId)
 	}
 	qs += ` ORDER BY disc_number, track_number, sort_name`
 	rows, err := db.Query(qs, args...)
@@ -901,9 +941,19 @@ func (db *DB) AlbumTracks(album *Album) ([]*Track, error) {
 	return tracks, nil
 }
 
-func (db *DB) ArtistTracks(artist *Artist) ([]*Track, error) {
-	qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE sort_artist = ? OR sort_album_artist = ? OR sort_composer = ? ORDER BY sort_album_artist, sort_album, disc_number, track_number, sort_name`
-	rows, err := db.Query(qs, artist.SortName, artist.SortName, artist.SortName)
+func (db *DB) ArtistTracks(artist *Artist, ownerId *pid.PersistentID) ([]*Track, error) {
+	qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE (sort_artist = ? OR sort_album_artist = ? OR sort_composer = ?)`
+	args := []interface{}{
+		artist.SortName,
+		artist.SortName,
+		artist.SortName,
+	}
+	if ownerId != nil {
+		qs += ` AND track.owner_id = ?`
+		args = append(args, *ownerId)
+	}
+	qs += ` ORDER BY sort_album_artist, sort_album, disc_number, track_number, sort_name`
+	rows, err := db.Query(qs, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -921,9 +971,15 @@ func (db *DB) ArtistTracks(artist *Artist) ([]*Track, error) {
 	return tracks, nil
 }
 
-func (db *DB) GenreTracks(genre *Genre) ([]*Track, error) {
-	qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE sort_genre = ? ORDER BY sort_album_artist, sort_album, disc_number, track_number, sort_name`
-	rows, err := db.Query(qs, genre.SortName)
+func (db *DB) GenreTracks(genre *Genre, ownerId *pid.PersistentID) ([]*Track, error) {
+	qs := `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id WHERE sort_genre = ?`
+	args := []interface{}{genre.SortName}
+	if ownerId != nil {
+		qs += ` AND track.owner_id = ?`
+		args = append(args, *ownerId)
+	}
+	qs += ` ORDER BY sort_album_artist, sort_album, disc_number, track_number, sort_name`
+	rows, err := db.Query(qs, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1025,6 +1081,7 @@ func (db *DB) FolderTracks(folder *Playlist) ([]*Track, error) {
 			tracks, err = db.PlaylistTracks(child)
 		}
 		if err != nil {
+			log.Printf("error getting folder child (%s %s): %s", child.PersistentID, child.Name, err)
 			return nil, err
 		}
 		for _, track := range tracks {
@@ -1175,7 +1232,7 @@ func (db *DB) SmartTracks(spl *Smart) ([]*Track, error) {
 	var qs string
 	xargs := []interface{}{}
 	if db.hasPlaylistRule(spl.RuleSet) {
-		qs = `SELECT DISTINCT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id`
+		qs = `SELECT track.*, xuser.homedir FROM track LEFT OUTER JOIN xuser ON track.owner_id = xuser.id`
 		for i, rule := range db.playlistRules(spl.RuleSet) {
 			key := queryKey(i)
 			rule.playlistKey = key
@@ -1200,9 +1257,11 @@ func (db *DB) SmartTracks(spl *Smart) ([]*Track, error) {
 			maxt = int64(*spl.Limit.MaxTime)
 		}
 	}
-	log.Println("SmartTracks:", qs, args)
+	seen := map[pid.PersistentID]bool{}
+	//log.Println("SmartTracks:", qs, args)
 	rows, err := db.Query(qs, args...)
 	if err != nil {
+		log.Println("error in SmartTracks query [", qs, args, "]: ", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -1215,6 +1274,10 @@ func (db *DB) SmartTracks(spl *Smart) ([]*Track, error) {
 		if err != nil {
 			return nil, err
 		}
+		if seen[track.PersistentID] {
+			continue
+		}
+		seen[track.PersistentID] = true
 		if track.Size != nil {
 			maxs -= int64(*track.Size)
 		}
@@ -1722,6 +1785,9 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist, user *User) (bool, error
 	if pl.PersistentID == nil {
 		return false, errors.New("playlist has no persistent id")
 	}
+	if *pl.PersistentID < 100 {
+		return false, nil
+	}
 	id := pl.PersistentID.String()
 	// get the last itunes version we loaded
 	qs := `SELECT data FROM itunes_playlist WHERE id = ? AND owner_id = ?`
@@ -1764,12 +1830,10 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist, user *User) (bool, error
 	}
 	// existing playlist
 	mydata := serializeGob(pl)
-	/*
 	if bytes.Equal(data, mydata) {
 		// playlist hasn't changed
 		return false, nil
 	}
-	*/
 	// get the musicdb version of the playlist
 	qs = `SELECT * FROM playlist WHERE id = ? AND owner_id = ?`
 	row = db.QueryRow(qs, *pl.PersistentID, user.PersistentID)
@@ -2143,4 +2207,33 @@ func (db *DB) UserUpdateChannel() chan *User {
 		db.userChan = make(chan *User, 10)
 	}
 	return db.userChan
+}
+
+func (db *DB) FindSpotifyTrack(st *spotify.Track) (*Track, error) {
+	query := `SELECT * FROM track WHERE SIMILARITY(name, ?) > 0.3 AND SIMILARITY(artist, ?) > 0.5 ORDER BY SIMILARITY(name, ?) * (COALESCE(rating, 0) + 1) DESC, play_count DESC LIMIT 1`
+	artists := []string{}
+	as := st.Artists
+	if len(as) == 0 {
+		as = st.Album.Artists
+	}
+	for _, a := range as {
+		artists = append(artists, a.Name)
+	}
+	var oxford string
+	n := len(artists)
+	if n == 1 {
+		oxford = artists[0]
+	} else if n > 1 {
+		oxford = strings.Join(artists[:n-1], ", ") + ", and " + artists[n-1]
+	}
+	row := db.QueryRow(query, st.Name, oxford, st.Name)
+	tr := &Track{}
+	err := row.StructScan(tr)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return tr, nil
 }

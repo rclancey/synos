@@ -3,6 +3,7 @@ package api
 import (
 	//"io"
 	//"log"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -55,7 +56,7 @@ func WatchITunes() (chan bool, error) {
 	quit := make(chan bool)
 	uchan := db.UserUpdateChannel()
 	go func() {
-		mon := monitor.NewFileMonitor(10 * time.Second, 5 * time.Second, fns...)
+		mon := monitor.NewFileMonitor(10 * time.Second, 5 * time.Minute, fns...)
 		for {
 			select {
 			case <-quit:
@@ -100,12 +101,20 @@ func WatchITunes() (chan bool, error) {
 				if !ok {
 					continue
 				}
+				user.Reload(db)
+				if user.LastLibraryUpdate != nil {
+					st, err := os.Stat(fn)
+					if err == nil && st.ModTime().Before(user.LastLibraryUpdate.Time()) {
+						continue
+					}
+				}
 				errlog.Infoln("itunes library update", user.Username, fn)
 				err := updateItunes(user, fn, errlog)
 				if err != nil {
 					errlog.Error(err)
 				} else {
 					errlog.Infoln("itunes library update complete", user.Username)
+					user.UpdateLibrary(db)
 				}
 				errlog.Infoln("update folder tracks", user.Username)
 				err = db.UpdateFolderTracks()

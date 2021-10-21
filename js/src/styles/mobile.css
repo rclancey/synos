@@ -1,0 +1,75 @@
+@media only screen and (max-width: 600px) {
+  .config {
+    display: grid;
+    grid-template-columns: 120px calc(100vw - 144px);
+    font-size: 12px;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    overflow: hidden;
+  }
+
+  .config>div {
+    grid-column: 1 / span 2;
+    margin-bottom: 4px;
+    align-items: baseline;
+  }
+
+  .config .buttons {
+    grid-column: 1 / span 2;
+    text-align: center;
+    border-top: solid var(--border) 1px;
+    margin-top: 18px;
+    margin-bottom: 6px;
+    padding-top: 12px;
+  }
+
+  .config .header {
+    grid-column: 1 / span 2;
+    font-weight: 600;
+    font-size: 125%;
+    border-bottom: solid var(--border) 1px;
+    margin-top: 12px;
+    margin-bottom: 6px;
+    padding-bottom: 2px;
+  }
+
+  .config .key {
+    font-weight: 600;
+    text-align: left;
+    padding-right: 0.5em;
+    margin-top: 8px;
+    white-space: nowrap;
+  }
+  .config .key.inline {
+    grid-column: 1 / span 1;
+    text-align: left;
+  }
+  .config .value.inline {
+    grid-column: 2 / span 1;
+    margin-top: 8px;
+  }
+
+  .template {
+    display: block;
+  }
+
+  .template .label {
+    white-space: nowrap;
+    padding-left: 4px;
+    color: var(--text-disabled);
+    font-size: 10px;
+    line-height: normal;
+    margin-bottom: 8px;
+  }
+
+  .config input[type="number"] {
+    width: 50px;
+  }
+  .config input, .config textarea {
+    max-width: calc(100vw - 28px);
+    /*
+    max-width: 30px;
+    */
+  }
+}

@@ -32,11 +32,16 @@ input[type="range"]:focus {
 }
 */
 
-input, select {
+input, select, textarea {
   background-color: var(--gradient-end);
   color: var(--text);
   border: solid var(--border) 1px;
   border-radius: 4px;
+}
+
+input[disabled], select[disabled], textarea[disabled] {
+  color: var(--text-disabled);
+  border-color: var(--text-disabled);
 }
 
 button, input[type="button"] {

@@ -34,6 +34,12 @@ type DatabaseConfig struct {
 	db *musicdb.DB
 }
 
+func (cfg *DatabaseConfig) Clone() *DatabaseConfig {
+	clone := *cfg
+	clone.db = nil
+	return &clone
+}
+
 func (cfg *DatabaseConfig) DSN() string {
 	safe := func(k string, v interface{}) string {
 		switch xv := v.(type) {
@@ -293,7 +299,7 @@ func (cfg *SpotifyConfig) Client() *spotify.SpotifyClient {
 
 type SynosConfig struct {
 	*httpserver.ServerConfig
-	Auth     auth.AuthConfig `json:"auth"     arg=:"auth"`
+	Auth     auth.AuthConfig `json:"auth"     arg="auth"`
 	Database DatabaseConfig  `json:"database" arg:"db"`
 	SMTP     SMTPConfig      `json:"smtp"     arg:"smtp"`
 	Finder   FinderConfig    `json:"finder"   arg:"finder"`
@@ -307,6 +313,10 @@ type SynosConfig struct {
 
 func (cfg *SynosConfig) Init() error {
 	err := cfg.ServerConfig.Init()
+	if err != nil {
+		return err
+	}
+	err = cfg.Auth.Init(cfg.ServerRoot)
 	if err != nil {
 		return err
 	}

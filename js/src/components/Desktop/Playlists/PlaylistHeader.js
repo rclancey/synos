@@ -16,34 +16,42 @@ const plural = (n, singular, plural) => {
 };
 
 export const PlaylistInfo = ({ name, tracks, smart, onEdit }) => {
-  const durm = tracks.reduce((acc, tr) => acc + tr.total_time, 0) / 60000;
-  const sizem = tracks.reduce((acc, tr) => acc + tr.size, 0) / (1024 * 1024);
+  let count = '';
   let dur = '';
-  if (durm > 36 * 60) {
-    const days = Math.floor(durm / (24 * 60));
-    const hours = Math.round((durm % (24 * 60)) / 60);
-    dur = `${plural(days, 'day')}, ${plural(hours, 'hour')}`;
-  } else if (durm > 60) {
-    const hours = Math.floor(durm / 60);
-    const mins = Math.round(durm % 60);
-    dur = `${hours}:${mins < 10 ? '0' + mins : mins}`;
-  } else {
-    const mins = Math.round(durm * 10) / 10;
-    dur = plural(mins, 'minute');
-  }
   let size = '';
-  if (sizem >= 10240) {
-    size = `${Math.round(sizem / 1024)} GB`;
-  } else if (sizem > 1024) {
-    size = `${Math.round(sizem / 102.4) / 10} GB`;
+  if (!tracks || tracks.length === 0) {
+    count = '0 songs';
+    dur = '0 minutes';
+    size = '0 MB';
   } else {
-    size = `${Math.round(sizem)} MB`;
+    count = plural(tracks.length, 'song');
+    const durm = tracks.reduce((acc, tr) => acc + tr.total_time, 0) / 60000;
+    const sizem = tracks.reduce((acc, tr) => acc + tr.size, 0) / (1024 * 1024);
+    if (durm > 36 * 60) {
+      const days = Math.floor(durm / (24 * 60));
+      const hours = Math.round((durm % (24 * 60)) / 60);
+      dur = `${plural(days, 'day')}, ${plural(hours, 'hour')}`;
+    } else if (durm > 60) {
+      const hours = Math.floor(durm / 60);
+      const mins = Math.round(durm % 60);
+      dur = `${hours}:${mins < 10 ? '0' + mins : mins}`;
+    } else {
+      const mins = Math.round(durm * 10) / 10;
+      dur = plural(mins, 'minute');
+    }
+    if (sizem >= 10240) {
+      size = `${Math.round(sizem / 1024)} GB`;
+    } else if (sizem > 1024) {
+      size = `${Math.round(sizem / 102.4) / 10} GB`;
+    } else {
+      size = `${Math.round(sizem)} MB`;
+    }
   }
   return (
     <div className="playlistInfo">
       <div className="title">{name}</div>
       <div className="size">
-        { plural(tracks.length, 'song') }
+        { count }
         { ' \u2022 ' }{ dur }
         { ' \u2022 ' }{ size }
         { smart ? (

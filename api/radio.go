@@ -12,14 +12,15 @@ import (
 	"github.com/rclancey/synos/radio"
 )
 
+var streams = map[string]*radio.Stream{}
+
 func RadioAPI(router H.Router, authmw H.Middleware) {
+	streams = map[string]*radio.Stream{}
 	router.GET("/radio", authmw(H.HandlerFunc(ListStations)))
 	router.GET("/radio/:id", H.HandlerFunc(PlayStation))
 	router.POST("/radio", authmw(H.HandlerFunc(CreateStation)))
 	router.DELETE("/radio/:id", authmw(H.HandlerFunc(DeleteStation)))
 }
-
-var streams = map[string]*radio.Stream{}
 
 func ListStations(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	vals := []*radio.Stream{}

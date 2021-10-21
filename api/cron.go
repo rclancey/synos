@@ -12,16 +12,13 @@ import (
 	H "github.com/rclancey/httpserver/v2"
 )
 
-func CronAPI(router H.Router, authmw H.Middleware) {
-	router.GET("/cron", authmw(H.HandlerFunc(LoadSchedule)))
-	router.POST("/cron", authmw(H.HandlerFunc(UpdateSchedule)))
-}
-
 var sched *cron.Schedule
 
-func init() {
+func CronAPI(router H.Router, authmw H.Middleware) {
 	sched = cron.NewSchedule()
 	sched.Run()
+	router.GET("/cron", authmw(H.HandlerFunc(LoadSchedule)))
+	router.POST("/cron", authmw(H.HandlerFunc(UpdateSchedule)))
 }
 
 const (

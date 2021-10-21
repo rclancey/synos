@@ -18,6 +18,7 @@ import (
 
 	"github.com/rclancey/itunes/loader"
 	"github.com/rclancey/itunes/persistentId"
+	"github.com/rclancey/spotify"
 )
 
 type Track struct {
@@ -934,3 +935,38 @@ func TrackFromAudioFile(fn string) (*Track, error) {
 	return tr, nil
 }
 
+func (t *Track) AsSpotify() *spotify.Track {
+	if t.SpotifyTrackID != nil {
+		return &spotify.Track{ID: *t.SpotifyTrackID}
+	}
+	artist := &spotify.Artist{}
+	if t.SpotifyArtistID != nil {
+		artist.ID = *t.SpotifyArtistID
+	} else if t.Artist != nil {
+		artist.Name = *t.Artist
+	} else {
+		artist = nil
+	}
+	artists := []*spotify.Artist{}
+	if artist != nil {
+		artists = append(artists, artist)
+	}
+	album := &spotify.Album{}
+	if t.SpotifyAlbumID != nil {
+		album.ID = *t.SpotifyAlbumID
+	} else if t.Album != nil {
+		album.Name = *t.Album
+		if t.AlbumArtist != nil {
+			album.Artists = []*spotify.Artist{
+				&spotify.Artist{Name: *t.AlbumArtist},
+			}
+		}
+	} else {
+		album = nil
+	}
+	return &spotify.Track{
+		Name: *t.Name,
+		Album: album,
+		Artists: artists,
+	}
+}

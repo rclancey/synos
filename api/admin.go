@@ -4,17 +4,19 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rclancey/authenticator"
 	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/httpserver/v2/auth"
 	"github.com/rclancey/synos/musicdb"
-	"github.com/rclancey/twofactor"
 )
 
 func AdminAPI(router H.Router, authmw H.Middleware) {
+	router.GET("/config", authmw(H.HandlerFunc(ReadConfigHandler)))
 	router.POST("/user", authmw(H.HandlerFunc(CreateUserHandler)))
 	router.GET("/user/:username", authmw(H.HandlerFunc(GetUserHandler)))
 	router.PUT("/user/:username", authmw(H.HandlerFunc(EditUserHandler)))
@@ -25,10 +27,12 @@ func AdminAPI(router H.Router, authmw H.Middleware) {
 func readAdmin(req *http.Request) *musicdb.User {
 	admin := getUser(req)
 	if admin == nil {
+		log.Println("no user")
 		return nil
 	}
 	err := admin.Reload(db)
 	if err != nil {
+		log.Println("error reading user:", err)
 		return nil
 	}
 	return admin
@@ -66,21 +70,14 @@ func CreateUserHandler(w http.ResponseWriter, req *http.Request) (interface{}, e
 			user.Avatar = &u
 		}
 	}
-	if tmpuser.Auth != nil && tmpuser.Auth.Password != "" {
-		inputs := []string{user.Username}
-		if user.FirstName != nil {
-			inputs = append(inputs, *user.FirstName)
+	if tmpuser.Password != nil && tmpuser.Password.HashedPassword != "" {
+		pw, err := authenticator.NewPasswordAuthenticator(tmpuser.Password.HashedPassword)
+		if err == nil {
+			err = pw.SetPassword(tmpuser.Password.HashedPassword, user.PasswordStrengthInputs()...)
+			if err != nil {
+				user.Password = pw
+			}
 		}
-		if user.LastName != nil {
-			inputs = append(inputs, *user.LastName)
-		}
-		if user.Email != nil {
-			inputs = append(inputs, *user.Email)
-		}
-		if user.Phone != nil {
-			inputs = append(inputs, *user.Phone)
-		}
-		user.Auth, err = twofactor.NewAuth(tmpuser.Auth.Password, inputs...)
 		if err != nil {
 			return map[string]interface{}{
 				"status": "error",
@@ -173,14 +170,19 @@ func EditUserHandler(w http.ResponseWriter, req *http.Request) (interface{}, err
 			// removing their own admin privileges
 			user.IsAdmin = tmpuser.IsAdmin
 		}
-		if tmpuser.Auth != nil && tmpuser.Auth.Password != "" {
-			if user.Auth == nil {
-				user.Auth, err = twofactor.NewAuth(tmpuser.Auth.Password)
+		if tmpuser.Password != nil && tmpuser.Password.HashedPassword != "" {
+			if user.Password == nil {
+				pw, err := authenticator.NewPasswordAuthenticator(tmpuser.Password.HashedPassword)
 				if err != nil {
 					return nil, H.BadRequest.Wrap(err, "bad password")
 				}
-			} else if user.Auth.Password != tmpuser.Auth.Password {
-				err = user.Auth.SetPassword(tmpuser.Auth.Password)
+				err = pw.SetPassword(tmpuser.Password.HashedPassword, user.PasswordStrengthInputs()...)
+				if err != nil {
+					return nil, H.BadRequest.Wrap(err, "bad password")
+				}
+				user.Password = pw
+			} else if user.Password.HashedPassword != tmpuser.Password.HashedPassword {
+				err = user.Password.SetPassword(tmpuser.Password.HashedPassword, user.PasswordStrengthInputs()...)
 				if err != nil {
 					return nil, H.BadRequest.Wrap(err, "bad password")
 				}

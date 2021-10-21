@@ -189,6 +189,7 @@ func (p *Playlist) Update(orig, cur *Playlist) (*pid.PersistentID, bool) {
 			p.TrackIDs = cur.TrackIDs
 		}
 	}
+	p.ParentPersistentID = cur.ParentPersistentID
 	if orig.ParentPersistentID == nil {
 		if cur.ParentPersistentID != nil {
 			return cur.ParentPersistentID, true

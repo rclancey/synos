@@ -104,6 +104,22 @@ export class API extends APIBase {
     return this.post(url, playlist);
   }
 
+  makeGenius(trackIds) {
+    const items = trackIds.map((id) => `trackId=${id}`).join('&');
+    const url = `/api/genius/tracks?${items}`;
+    return this.get(url);
+  }
+
+  makeGeniusMix(genre, args) {
+    const url = `/api/genius/mix/${genre}`;
+    return this.post(url, args);
+  }
+
+  listGeniusGenres() {
+    const url = `/api/genius/genres`;
+    return this.get(url);
+  }
+
   addToPlaylist(dst, tracks) {
     //const playlist = Object.assign({}, dst);
     const url = `/api/playlist/${dst.persistent_id}`;
