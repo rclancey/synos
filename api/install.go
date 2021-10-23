@@ -267,9 +267,15 @@ func (si *SynosInstaller) getMigrations() []Migration {
 		}),
 
 		// 4: setup fuzzy string matching extension
-		SimpleMigration{
-			`CREATE EXTENSION pg_trgm`,
-		},
+		ComplexMigration(func(tx *sqlx.Tx) error {
+			query := `CREATE EXTENSION pg_trgm`
+			_, err := tx.Exec(query)
+			if err != nil {
+				log.Println("can't use trigram extension. some queries may fail")
+				log.Println(err)
+			}
+			return nil
+		}),
 
 		// 5: new auth config
 		ComplexMigration(func(tx *sqlx.Tx) error {
