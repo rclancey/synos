@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useStack } from './Router/StackContext';
+
 import { useAPI } from '../../lib/useAPI';
 import { JookiAPI } from '../../lib/jooki';
 import { ScreenHeader } from './ScreenHeader';
@@ -34,7 +34,6 @@ import SearchIcon from '../icons/Search';
 import GearIcon from '../icons/Gear';
 
 export const Home = React.memo(({ children, onOpen, ...props }) => {
-  const stack = useStack();
   const [jooki, setJooki] = useState(null);
   const api = useAPI(JookiAPI);
   useEffect(() => {
@@ -50,16 +49,6 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
         console.debug('error loading jooki: %o', err);
       });
   }, [api]);
-  /*
-  useEffect(() => {
-    const playlistPathStr = window.localStorage.getItem('playlistPath');
-    const playlistPath = JSON.parse(playlistPathStr || '[]');
-    if (playlistPath && playlistPath.length > 0) {
-      stack.onPush(<PlaylistList prev="Library" forcePath={playlistPath} {...props} />);
-    }
-  // eslint-disable-next-line
-  }, []);
-  */
   if (children) {
     return children;
   }
@@ -67,30 +56,14 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
     <div className="home">
       <ScreenHeader name="Library" />
       <div className="items">
-        <HomeItem name="Playlists" icon={CassetteIcon} onOpen={stack.onPush}>
-          <PlaylistFolder prev="Library" {...props} />
-        </HomeItem>
-        <HomeItem name="Artists" icon={GuitarPlayerIcon} onOpen={stack.onPush}>
-          <ArtistList prev="Library" {...props} />
-        </HomeItem>
-        <HomeItem name="Albums" icon={RecordIcon} onOpen={stack.onPush}>
-          <AlbumList prev="Library" {...props} />
-        </HomeItem>
-        <HomeItem name="Genres" icon={DrumKitIcon} onOpen={stack.onPush}>
-          <GenreList prev="Library" {...props} />
-        </HomeItem>
-        <HomeItem name="Podcasts" icon={BroadcastMicrophoneIcon} onOpen={stack.onPush}>
-          <PodcastList prev="Library" {...props} />
-        </HomeItem>
-        <HomeItem name="Audiobooks" icon={AudiobookIcon} onOpen={stack.onPush}>
-          <AudiobookList prev="Library" {...props} />
-        </HomeItem>
-        <HomeItem name="Recently Added" icon={TimerIcon} onOpen={stack.onPush}>
-          <RecentAdditions prev="Library" {...props} />
-        </HomeItem>
-        <HomeItem name="Purchases" icon={ShoppingCartIcon} onOpen={stack.onPush}>
-          <Purchases prev="Library" {...props} />
-        </HomeItem>
+        <HomeItem path="/playlists" name="Playlists" icon={CassetteIcon} />
+        <HomeItem path="/artists" name="Artists" icon={GuitarPlayerIcon} />
+        <HomeItem path="/albums" name="Albums" icon={RecordIcon} />
+        <HomeItem path="/genres" name="Genres" icon={DrumKitIcon} />
+        <HomeItem path="/podcasts" name="Podcasts" icon={BroadcastMicrophoneIcon} />
+        <HomeItem path="/audiobooks" name="Audiobooks" icon={AudiobookIcon} />
+        <HomeItem path="/recents" name="Recently Added" icon={TimerIcon} />
+        <HomeItem path="/purchases" name="Purchases" icon={ShoppingCartIcon} />
         {/*
         <SonosDevicePlaylist   device={null}  onOpen={stack.onPush} {...props} />
         <AirplayDevicePlaylist device={null}  onOpen={stack.onPush} {...props} />
@@ -99,12 +72,8 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
         <AndroidDevicePlaylist device={null}  onOpen={stack.onPush} {...props} />
         <PlexDevicePlaylist    device={null}  onOpen={stack.onPush} {...props} />
         */}
-        <HomeItem name="Search" icon={SearchIcon} onOpen={stack.onPush}>
-          <Search prev="Library" {...props} />
-        </HomeItem>
-        <HomeItem name="Settings" icon={GearIcon} onOpen={stack.onPush}>
-          <Settings prev="Library" {...props} />
-        </HomeItem>
+        <HomeItem path="/search" name="Search" icon={SearchIcon} />
+        <HomeItem path="/settings" name="Settings" icon={GearIcon} />
       </div>
       <style jsx>{`
         .header {

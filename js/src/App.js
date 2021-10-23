@@ -7,6 +7,8 @@ import { TouchBackend } from 'react-dnd-touch-backend';
 //import MultiBackend from 'react-dnd-multi-backend';
 //import HTML5toTouch from 'react-dnd-multi-backend/lib/HTML5toTouch';
 import '@fortawesome/fontawesome-free/css/all.css';
+
+import { wrapHistory } from './lib/history';
 import './themes/animations.css';
 import { Main } from './components/Main';
 import { isMobile, getUserAgent } from './lib/useMedia';
@@ -18,6 +20,8 @@ import './styles/desktop.css';
 import './styles/mobile.css';
 
 //const backend = MultiBackend(HTML5toTouch);
+
+wrapHistory();
 
 export const App = () => {
   const [configStatus, setConfigStatus] = useState(null);

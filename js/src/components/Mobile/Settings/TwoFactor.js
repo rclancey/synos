@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import _JSXStyle from 'styled-jsx/style';
 
 import { API } from '../../../lib/api';
+import Button from '../../Input/Button';
 
 const RecoveryKeys = ({ keys, copied, setCopied }) => {
   const onCopy = useCallback(() => {
@@ -126,14 +127,14 @@ export const TwoFactor = ({ onClose }) => {
               onInput={onInput}
             />
           </p>
-          <button
+          <Button
             className="default"
             disabled={code.length != 6 || !copied}
             onClick={onConfirm}
           >
             Confirm
-          </button>
-          <button onClick={onClose}>Cancel</button>
+          </Button>
+          <Button type="secondary" onClick={onClose}>Cancel</Button>
         </div>
       </div>
   );

@@ -69,7 +69,6 @@ export const Controls = ({
         setTiming={setTiming}
         setControlAPI={setControlAPI}
       />
-      { expanded ? (
         <ExpandedControls
           timing={timing}
           player={player}
@@ -77,11 +76,14 @@ export const Controls = ({
           onCollapse={onCollapse}
           onList={onList}
         />
+      {/*
+      { expanded ? (
       ) : (
         <MiniControls
           onExpand={onExpand}
         />
       ) }
+      */}
     </>
   );
 };
@@ -98,6 +100,7 @@ export const MiniControls = ({
     <div className="nowplaying">
       <Expander onExpand={onExpand} />
       <CoverArt track={track} size={48} radius={4} />
+
       <TrackInfo track={track} className="mobile controls" />
       <Center orientation="vertical">
         <PlayPauseSkip
@@ -110,7 +113,9 @@ export const MiniControls = ({
           onSeekBy={controlAPI.onSeekBy}
         />
       </Center>
+
       <style jsx>{`
+
         .nowplaying {
           padding: 10px;
           position: fixed;
@@ -128,6 +133,7 @@ export const MiniControls = ({
           color: var(--highlight);
           padding: 1em 1em 1em 0;
         }
+
       `}</style>
     </div>
   );
@@ -142,6 +148,7 @@ export const ExpandedControls = ({
 }) => {
   const playbackInfo = usePlaybackInfo();
   const controlAPI = useControlAPI();
+  const [expanded, setExpanded] = useState(false);
   const track = useMemo(() => currentTrack(playbackInfo), [playbackInfo]);
   const sonos = useMemo(() => playbackInfo.player === 'sonos', [playbackInfo]);
   const onEnableSonos = useCallback(() => setPlayer('sonos'), [setPlayer]);
@@ -153,8 +160,14 @@ export const ExpandedControls = ({
     onCollapse();
     onList(args);
   }, [onCollapse, onList]);
+  const onExpand = useCallback(() => setExpanded(true), []);
+  const onShrink = useCallback(() => {
+    setShowQueue(false);
+    setExpanded(false);
+  }, []);
 
-  if (showQueue) {
+  /*
+  if (expanded && showQueue) {
     return (
       <Queue
         playMode={playbackInfo.playMode}
@@ -167,52 +180,127 @@ export const ExpandedControls = ({
       />
     );
   }
-  return (
-    <div className="nowplaying big">
-      <Header onCollapse={onCollapse} onShowQueue={() => setShowQueue(true)} />
-      <div className="content">
-        <CoverArt track={track} size={280} radius={10} />
-        <Progress
-          style={{
-            flex: 1,
-            marginTop: '5px',
-            marginBottom: '10px',
-          }}
-          currentTime={timing.currentTime}
-          duration={timing.duration}
-          onSeekTo={controlAPI.onSeekTo}
-        />
-        <Timers
-          style={{ fontSize: '9px' }}
-          currentTime={timing.currentTime}
-          duration={timing.duration}
-        />
-        <TrackInfo track={track} className="mobile controls" onList={onListAndCollapse} />
-        <PlayPauseSkip
-          style={{
-            padding: '0 5em',
-            margin: '1em 0',
-            boxSizing: 'border-box',
-          }}
-          height={24}
-          paused={playbackInfo.playStatus !== 'PLAYING'}
-          onPlay={controlAPI.onPlay}
-          onPause={controlAPI.onPause}
-          onSkipBy={controlAPI.onSkipBy}
-          onSeekBy={controlAPI.onSeekBy}
-        />
-        <Volume
-          volume={playbackInfo.volume}
-          style={{width: '100%'}}
-          onChange={controlAPI.onSetVolumeTo}
-        />
-        <SonosSwitch state={sonos} on={onEnableSonos} off={onDisableSonos} />
-        <DarkMode />
-        <ThemeChooser />
+  */
 
+  return (
+    <div className={`nowplaying ${expanded ? 'big' : ''}`}>
+      <Queue
+        playMode={playbackInfo.playMode}
+        tracks={playbackInfo.queue}
+        index={playbackInfo.index}
+        expanded={expanded && showQueue}
+        onShuffle={controlAPI.onShuffle}
+        onRepeat={controlAPI.onRepeat}
+        onSelect={onSelect}
+        onClose={onClose}
+      />
+      <Header onCollapse={onShrink} onShowQueue={() => setShowQueue(true)} />
+      <div className="content">
+        <Expander onExpand={onExpand} />
+        <CoverArt track={track} size={expanded ? 280 : 48} radius={expanded ? 10 : 4} />
+
+        <div className="small">
+          <TrackInfo track={track} className="mobile controls" />
+          <Center orientation="vertical">
+            <PlayPauseSkip
+              width={100}
+              height={18}
+              paused={playbackInfo.playStatus !== 'PLAYING'}
+              onPlay={controlAPI.onPlay}
+              onPause={controlAPI.onPause}
+              onSkipBy={controlAPI.onSkipBy}
+              onSeekBy={controlAPI.onSeekBy}
+            />
+          </Center>
+        </div>
+        <div className="big">
+          <Progress
+            style={{
+              flex: 1,
+              marginTop: '5px',
+              marginBottom: '10px',
+            }}
+            currentTime={timing.currentTime}
+            duration={timing.duration}
+            onSeekTo={controlAPI.onSeekTo}
+          />
+          <Timers
+            style={{ fontSize: '9px' }}
+            currentTime={timing.currentTime}
+            duration={timing.duration}
+          />
+          <TrackInfo track={track} className="mobile controls" onList={onListAndCollapse} />
+          <PlayPauseSkip
+            style={{
+              padding: '0 5em',
+              margin: '1em 0',
+              boxSizing: 'border-box',
+            }}
+            height={24}
+            paused={playbackInfo.playStatus !== 'PLAYING'}
+            onPlay={controlAPI.onPlay}
+            onPause={controlAPI.onPause}
+            onSkipBy={controlAPI.onSkipBy}
+            onSeekBy={controlAPI.onSeekBy}
+          />
+          <Volume
+            volume={playbackInfo.volume}
+            style={{width: '100%'}}
+            onChange={controlAPI.onSetVolumeTo}
+          />
+          <SonosSwitch state={sonos} on={onEnableSonos} off={onDisableSonos} />
+          <DarkMode />
+          <ThemeChooser />
+        </div>
       </div>
       <style jsx>{`
+
         .nowplaying {
+          transition-duration: 0.15s;
+          transition-timing-function: ease;
+          transition-property: height;
+          padding: 10px;
+          position: fixed;
+          z-index: 3;
+          bottom: 0px;
+          width: 100vw;
+          height: 70px;
+          box-sizing: border-box;
+          border-top-style: solid;
+          border-top-width: 1px;
+          background-color: var(--contrast5);
+        }
+        .fa-angle-up {
+          color: var(--highlight);
+          padding: 1em 1em 1em 0;
+        }
+        .nowplaying :global(.header) {
+          height: 0px;
+          overflow: hidden;
+          transition: height 0.15s linear;
+        }
+        .nowplaying .content {
+          display: flex;
+          flex-direction: row;
+        }
+        .nowplaying :global(.coverart) {
+          transition-duration: 0.15s;
+          transition-timing-function: ease;
+          transition-property: width, min-width, max-width, height, min-height, max-height, border-radius;
+        }
+        .nowplaying .big, .nowplaying.big .small {
+          display: none;
+        }
+        .nowplaying.big .big {
+          display: block;
+        }
+        .nowplaying .small {
+          display: flex;
+          overflow: hidden;
+          height: min-content;
+        }
+
+        .nowplaying.big {
           position: fixed;
           z-index: 3;
           bottom: 0px;
@@ -230,7 +318,14 @@ export const ExpandedControls = ({
         .nowplaying.big {
           background: var(--gradient);
         }
-        .content {
+        .nowplaying.big :global(.header) {
+          height: 26px;
+        }
+        .nowplaying.big :global(.fa-angle-up) {
+          display: none;
+        }
+        .nowplaying.big .content {
+          display: block;
           flex: 10;
           width: 280px;
           min-width: 280px;

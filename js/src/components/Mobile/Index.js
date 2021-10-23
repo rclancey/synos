@@ -53,7 +53,7 @@ const extendIndex = (index) => {
   return index;
 };
 
-export const AlbumIndex = ({ albums, artist, height, list }) => {
+export const AlbumIndex = ({ albums, artistName, height, list }) => {
   const index = useMemo(() => {
     const index = [];
     if (!albums || albums.length === 0) {
@@ -61,7 +61,7 @@ export const AlbumIndex = ({ albums, artist, height, list }) => {
     }
     let prev = null;
     albums.forEach((album, i) => {
-      let first = (artist ? album : album.artist).sort.substr(0, 1);
+      let first = (artistName ? album.sort : album.artist.sort).substr(0, 1);
       if (!first.match(/^[a-z]/)) {
         first = '#';
       }
@@ -82,7 +82,7 @@ export const AlbumIndex = ({ albums, artist, height, list }) => {
       }
     });
     return extendIndex(index);
-  }, [albums, artist, height]);
+  }, [albums, artistName, height]);
   return (<Index index={index} list={list} />);
 };
 

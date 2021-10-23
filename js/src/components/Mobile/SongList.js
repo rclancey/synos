@@ -11,6 +11,7 @@ import { MixCover } from '../MixCover';
 import { Sources } from './Sources';
 import { SongRow } from './SongRow';
 import { Home } from './Home';
+import Link from './Link';
 import ShareIcon from '../icons/Share';
 import UnshareIcon from '../icons/Unshare';
 
@@ -210,7 +211,7 @@ export const SongList = ({
       editing,
       onTrackMenu: menu.onTrackMenu,
       onBeginAdd: onBeginAdd,
-      onAdd: stack.onAdd,
+      onAdd: null, //stack.onAdd,
       onMove,
       onDelete,
     };
@@ -366,9 +367,11 @@ const AlbumTitle = React.memo(({
     <div className="title">
       <div className="info">
         <div className="album">{first.album}</div>
-        <div className="artist">{first.album_artist || first.artist}</div>
+        <div className="artist">
+          <Link title={first.album_artist || first.artist} to={`/artists/${first.sort_album_artist || first.sort_artist}`}>{first.album_artist || first.artist}</Link>
+        </div>
         <div className="genre">
-          {first.genre}
+          <Link title={first.genre} to={`/genres/${first.sort_genre}`}>{first.genre}</Link>
           {first.year ? `\u00a0\u2219\u00a0${first.year}` : ''}
         </div>
         <div className="genre">
@@ -396,6 +399,10 @@ const AlbumTitle = React.memo(({
         }
         .title .info {
           flex: 10;
+        }
+        .title .info :global(a) {
+          text-decoration: none;
+          color: inherit;
         }
         .title .album, .title .artist {
           display: -webkit-box;

@@ -1,17 +1,22 @@
 import React from 'react';
 import _JSXStyle from 'styled-jsx/style';
+
+import Link from './Link';
 import SVGIcon from '../SVGIcon';
 
 export const HomeItem = ({
+  path,
   name,
   icon,
   iconSrc,
   onOpen,
   children,
 }) => (
-  <div className="item" onClick={() => onOpen(name, children)}>
-    <SVGIcon icn={icon} size={36} />
-    <div className="title">{name}</div>
+  <div className="item">
+    <Link title={name} to={path} className="item">
+      <SVGIcon icn={icon} size={36} />
+      <div className="title">{name}</div>
+    </Link>
     <style jsx>{`
       .item {
         display: flex;

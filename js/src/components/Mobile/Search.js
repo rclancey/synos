@@ -1,14 +1,20 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import _JSXStyle from 'styled-jsx/style';
+import { Link, useRouteMatch } from 'react-router-dom';
+
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
+import { useHistoryState } from '../../lib/history';
 import { SongList } from './SongList';
+import { LinkButton } from '../Input/Button';
 
 export const Search = ({
   prev,
   onClose,
   onTrackMenu,
 }) => {
+  const match = useRouteMatch();
+  const { search = {} } = useHistoryState();
   const [query, setQuery] = useState('');
   const [expand, setExpand] = useState(false);
   const [genre, setGenre] = useState('');
@@ -20,18 +26,32 @@ export const Search = ({
   // eslint-disable-next-line
   const [albums, setAlbums] = useState([]);
   const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
   const debounce = useRef(null);
   const onExpand = useCallback(() => setExpand(true), []);
   const onCollapse = useCallback(() => setExpand(false), []);
   const api = useAPI(API);
 
   useEffect(() => {
+    const q = new URLSearchParams(search);
     let params = {};
-    if (expand) {
-      params = { genre, song, album, artist };
-    } else {
-      params = { query };
+    if (q.has('query')) {
+      params.query = q.get('query');
+      setQuery(params.query);
+      setExpand(false);
+    } else if (Array.from(q.keys()).length > 0) {
+      ['genre', 'song', 'album', 'artist'].forEach((k) => {
+        if (params.has(k)) {
+          params[k] = params.get(k);
+        }
+      });
+      setGenre(params.genre);
+      setSong(params.song);
+      setAlbum(params.album);
+      setArtist(params.artist);
+      setExpand(true);
     }
+    /*
     if (debounce.current !== null) {
       clearTimeout(debounce.current);
       debounce.current = null;
@@ -48,8 +68,27 @@ export const Search = ({
           setResults(res ? res.tracks : []);
         });
     }, 250);
-  }, [api, query, expand, genre, song, album, artist]);
+    */
+    setLoading(true);
+    const abort = { aborted: false };
+    const artP = api.searchArtists(params);
+    const albP = api.searchAlbums(params);
+    const resP = api.search(params);
+    Promise.all([artP, albP, resP])
+      .then(([art, alb, res]) => {
+        if (!abort.aborted) {
+          setArtists(art);
+          setAlbums(alb);
+          setResults(res ? res.tracks : []);
+          setLoading(false);
+        }
+      });
+    return () => {
+      abort.aborted = true;
+    };
+  }, [api, search]);
 
+  console.debug('searching %o', search);
   const child = useMemo(() => {
     if (expand) {
       return (
@@ -62,6 +101,7 @@ export const Search = ({
           setAlbum={setAlbum}
           artist={artist}
           setArtist={setArtist}
+          loading={loading}
           onCollapse={onCollapse}
         />
       );
@@ -70,15 +110,16 @@ export const Search = ({
       <SimpleQuery
         query={query}
         setQuery={setQuery}
+        loading={loading}
         onExpand={onExpand}
       />
     );
-  }, [expand, query, genre, song, album, artist, onCollapse, onExpand]);
+  }, [expand, query, genre, song, album, artist, loading, onCollapse, onExpand]);
   return (
     <SongList
       api={api}
       prev={prev}
-      tracks={results}
+      tracks={loading ? [] : results}
       withTrackNum={false}
       withCover={true}
       withArtist={true}
@@ -116,8 +157,28 @@ const ComplexQuery = ({
   setAlbum,
   artist,
   setArtist,
+  loading,
   onCollapse,
 }) => {
+  const to = useMemo(() => {
+    const q = new URLSearchParams();
+    if (genre) {
+      q.set("genre", genre);
+    }
+    if (song) {
+      q.set("song", song);
+    }
+    if (album) {
+      q.set("album", album);
+    }
+    if (artist) {
+      q.set("artist", artist);
+    }
+    return {
+      pathname: '/search',
+      search: q.toString(),
+    };
+  }, [genre, song, album, artist]);
   return (
     <div className="query">
       <div className="grid">
@@ -130,6 +191,12 @@ const ComplexQuery = ({
         <span className="fas fa-search-minus" />
         {'\u00a0 Simple Search'}
       </span>
+      <div className="center">
+        <Link className="button" to={to} component={LinkButton}>Search</Link>
+      </div>
+      {loading ? (
+        <p className="loading">Loading...</p>
+      ) : null}
       <style jsx>{`
         .query {
           height: 142px;
@@ -149,6 +216,13 @@ const ComplexQuery = ({
         .grid :global(input) {
           width: 90%;
         }
+        .query .center {
+          text-align: center;
+          margin-top: 10px;
+        }
+        .query .loading {
+          margin-top: 12px;
+        }
       `}</style>
     </div>
   );
@@ -157,8 +231,19 @@ const ComplexQuery = ({
 const SimpleQuery = ({
   query,
   setQuery,
+  loading,
   onExpand,
 }) => {
+  const to = useMemo(() => {
+    const q = new URLSearchParams();
+    if (query) {
+      q.set("query", query);
+    }
+    return {
+      pathname: '/search/elsewhere',
+      search: q.toString(),
+    };
+  }, [query]);
   const onChange = useCallback((evt) => setQuery(evt.target.value), [setQuery]);
   return (
     <div className="query">
@@ -169,6 +254,12 @@ const SimpleQuery = ({
         <span className="fas fa-search-plus" />
         {'\u00a0 Advanced Search'}
       </span>
+      <div className="center">
+        <Link className="button" to={to} component={LinkButton}>Search</Link>
+      </div>
+      {loading ? (
+        <p className="loading">Loading...</p>
+      ) : null }
       <style jsx>{`
         .query {
           height: 142px;
@@ -181,6 +272,13 @@ const SimpleQuery = ({
         }
         .input input {
           width: 100%;
+        }
+        .query .center {
+          text-align: center;
+          margin-top: 10px;
+        }
+        .query .loading {
+          margin-top: 72px;
         }
       `}</style>
     </div>

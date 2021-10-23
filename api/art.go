@@ -6,6 +6,7 @@ import (
 	"mime"
 	"net/http"
 	"strings"
+	"time"
 
 	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/synos/musicdb"
@@ -26,8 +27,10 @@ func TrackArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	}
 	fn, err := GetAlbumArtFilename(tr)
 	if err != nil {
+		cacheFor(w, time.Minute * 10)
 		return H.Redirect("/assets/nocover.jpg"), nil
 	}
+	cacheFor(w, time.Hour * 48)
 	return H.StaticFile(fn), nil
 }
 
@@ -86,6 +89,7 @@ func ArtistArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		if err != nil {
 			return nil, DatabaseError.Wrap(err, "")
 		}
+		cacheFor(w, time.Minute * 10)
 		if len(genres) == 0 {
 			return nil, H.NotFound.Wrap(err, "no genre for single track artist")
 		}
@@ -98,10 +102,12 @@ func ArtistArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	for _, aname := range art.Sorted() {
 		fn, err := GetArtistImageFilename(aname)
 		if err == nil {
+			cacheFor(w, time.Hour * 48)
 			return H.StaticFile(fn), nil
 		}
 		log.Println("error getting artist image from track:", err)
 	}
+	cacheFor(w, time.Minute * 10)
 	return nil, H.NotFound.Wrap(nil, "no artist image found")
 }
 
@@ -123,15 +129,18 @@ func AlbumArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	}
 	if tracks == nil || len(tracks) == 0 {
 		log.Printf("no tracks for genre='%s', artist='%s', album='%s'", genre, artist, album)
+		cacheFor(w, time.Minute * 10)
 		return nil, H.NotFound.Wrap(nil, "No such album")
 	}
 	for _, tr := range tracks {
 		fn, err := GetAlbumArtFilename(tr)
 		if err == nil {
+			cacheFor(w, time.Hour * 48)
 			return H.StaticFile(fn), nil
 		}
 		log.Println("error getting album art:", err)
 	}
+	cacheFor(w, time.Minute * 10)
 	return H.Redirect("/assets/nocover.jpg"), nil
 }
 
@@ -142,5 +151,6 @@ func GenreArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, H.InternalServerError.Wrap(err, "system error")
 	}
+	cacheFor(w, time.Hour * 48)
 	return H.Redirect(u), nil
 }

@@ -1,18 +1,23 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { useStack } from './Router/StackContext';
+import { useRouteMatch } from 'react-router-dom';
+
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
+import cmp from '../../lib/cmp';
+import displayName from '../../lib/displayName';
+import { useHistoryState } from '../../lib/history';
 import { AlbumIndex } from './Index';
 import { CoverArt } from '../CoverArt';
 import { CoverList } from './CoverList';
 import { Album } from './SongList';
+import Link from './Link';
 
-const albumImageUrl = (album, artist) => {
+const albumImageUrl = (album, artistName) => {
   let url = '/api/art/album?';
   if (album.artist) {
     url += `artist=${escape(album.artist.sort)}`;
-  } else if (artist) {
-    url += `artist=${escape(artist.sort)}`;
+  } else if (artistName) {
+    url += `artist=${escape(artistName)}`;
   }
   url += `&album=${escape(album.sort)}`;
   return url;
@@ -25,49 +30,67 @@ const AlbumImage = ({ album, artist, size }) => {
   );
 };
 
+export const AlbumContainer = () => {
+  const match = useRouteMatch();
+  const { albumName, artistName } = match.params || {};
+  const album = useMemo(() => ({
+    sort: albumName,
+    artist: {
+      sort: artistName,
+    },
+  }), [albumName, artistName]);
+  return (
+    <Album album={album} />
+  );
+};
+
 export const AlbumList = ({
-  artist,
   controlAPI,
   adding,
   onAdd,
 }) => {
-  const stack = useStack();
+  const match = useRouteMatch();
+  const { artistName } = match.params;
+  const { title } = useHistoryState();
+  const [realTitle, setRealTitle] = useState(title || 'Albums');
   const [albums, setAlbums] = useState(null);
   const api = useAPI(API);
 
   useEffect(() => {
-    api.albumIndex(artist)
+    if (!artistName) {
+      setRealTitle('Albums');
+    } else if (title) {
+      setRealTitle(title);
+    } else {
+      api.getArtist(artistName).then((artist) => setRealTitle(displayName(artist)));
+    }
+  }, [api, artistName, title]);
+  useEffect(() => {
+    api.albumIndex(artistName)
       .then(albums => {
         albums.forEach(album => {
-          album.name = Object.entries(album.names)
-            .sort((a, b) => a[1] > b[1] ? 1 : a[1] < b[1] ? -1 : 0)[0][0];
-          album.artist.name = Object.entries(album.artist.names)
-            .sort((a, b) => a[1] > b[1] ? 1 : a[1] < b[1] ? -1 : 0)[0][0];
+          displayName(album);
+          displayName(album.artist);
         });
-        if (artist) {
-          albums.sort((a, b) => a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : 0)
+        if (artistName) {
+          albums.sort((a, b) => cmp(a.sort, b.sort));
         }
         setAlbums(albums);
       });
-  }, [api, artist]);
+  }, [api, artistName]);
 
-  const onPush = stack.onPush;
-  const onOpen = useCallback((album) => {
-    console.debug('open album %o', album);
-    onPush(album.name, <Album album={album} />);
-  }, [onPush]);
   const itemRenderer = useCallback(({ index }) => {
     const album = albums[index];
     if (!album) {
       return (<div className="item" />);
     }
     return (
-      <div className="item" onClick={() => onOpen(album)}>
-        <AlbumImage album={album} artist={artist} size={155} />
+      <Link className="item" title={album.name} to={`/albums/${album.artist.sort}/${album.sort}`}>
+        <AlbumImage album={album} artist={album.artist} size={155} />
         <div className="title">{album.name}</div>
-      </div>
+      </Link>
     );
-  }, [albums, artist, onOpen]);
+  }, [albums, artistName]);
 
   if (albums === null) {
     return null;
@@ -75,10 +98,10 @@ export const AlbumList = ({
 
   return (
     <CoverList
-      name={artist ? artist.name : "Albums"}
+      name={realTitle}
       items={albums}
       Indexer={AlbumIndex}
-      indexerArgs={{ albums, artist }}
+      indexerArgs={{ albums, artistName }}
       itemRenderer={itemRenderer}
       controlAPI={controlAPI}
       adding={adding}

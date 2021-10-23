@@ -71,6 +71,7 @@ export const CoverList = ({
           min-width: 5px;
         }
         .coverList :global(.item) {
+          display: block;
           flex: 10;
           width: 155px;
           min-width: 155px;

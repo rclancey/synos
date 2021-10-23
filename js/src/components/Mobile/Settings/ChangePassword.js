@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect, useCallback, useMemo } from 're
 import zxcvbn from 'zxcvbn';
 
 import LoginContext from '../../../context/LoginContext';
+import Button from '../../Input/Button';
 import Check from '../../Check';
 import PasswordStrength from '../../Login/PasswordStrength';
 
@@ -97,12 +98,12 @@ export const ChangePassword = () => {
       ) : null }
       <div />
       <div>
-        <button
+        <Button
           disabled={password === '' || newPassword === '' || strength.score < 3 || newPassword !== confirmPassword}
           onClick={onChange}
         >
           Update Password
-        </button>
+        </Button>
       </div>
     </>
   );

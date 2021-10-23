@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
 
-import { useStack } from './Router/StackContext';
 import { useAPI } from '../../lib/useAPI';
 import { API } from '../../lib/api';
 import { CoverList } from './CoverList';
 import { CoverArt } from '../CoverArt';
 import { MixCover } from '../MixCover';
 import { Album, Playlist } from './SongList';
+import Link from './Link';
 
 export const RecentAdditions = ({
   controlAPI,
   adding,
   onAdd,
 }) => {
-  const stack = useStack();
   const api = useAPI(API);
   const [recents, setRecents] = useState([]);
   useEffect(() => {
@@ -31,13 +30,6 @@ export const RecentAdditions = ({
     */
   }, [api, setRecents]);
 
-  const onPush = stack.onPush;
-  const onOpenAlbum = useCallback((album) => {
-    onPush(album.name, <Album album={album} />);
-  }, [onPush]);
-  const onOpenPlaylist = useCallback((playlist) => {
-    onPush(playlist.name, <Playlist playlist={playlist} />);
-  }, [onPush]);
   const itemRenderer = useCallback(({ index }) => {
     const item = recents[index];
     if (!item) {
@@ -47,25 +39,25 @@ export const RecentAdditions = ({
       case 'album':
         const album = item.album;
         return (
-          <div className="item" onClick={() => onOpenAlbum(album)}>
+          <Link className="item" title={album.name} to={`/albums/${album.artist}/${album.album}`}>
             <CoverArt track={item.album.tracks[0]} size={155} radius={10} />
             <div className="title">{album.tracks.length === 1 ? album.tracks[0].name : album.album}</div>
             <div className="artist">{album.tracks.length === 1 ? album.tracks[0].artist : album.artist}</div>
-          </div>
+          </Link>
         );
       case 'playlist':
         const playlist = item.playlist;
         return (
-          <div className="item" onClick={() => onOpenPlaylist(playlist)}>
+          <Link className="item" title={playlist.name} to={`/playlists/${playlist.persistent_id}`}>
             <MixCover tracks={playlist.items} size={155} radius={10} />
             <div className="title">{playlist.name}</div>
             <div className="artist">{'\u00a0'}</div>
-          </div>
+          </Link>
         );
       default:
         return null;
     }
-  }, [recents, onOpenAlbum, onOpenPlaylist]);
+  }, [recents]);
   
   return (
     <CoverList

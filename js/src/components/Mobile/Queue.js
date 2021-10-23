@@ -3,7 +3,7 @@ import _JSXStyle from 'styled-jsx/style';
 import { AutoSizeList } from '../AutoSizeList';
 import { QueueHeader, QueueItem } from '../Queue';
 
-export const Queue = React.memo(({ playMode, tracks, index, onSelect, onShuffle, onRepeat, onClose }) => {
+export const Queue = React.memo(({ playMode, tracks, index, expanded, onSelect, onShuffle, onRepeat, onClose }) => {
   const selIdx = index;
   const curIdx = index;
   const rowRenderer = useCallback(({ index, style }) => (
@@ -18,8 +18,11 @@ export const Queue = React.memo(({ playMode, tracks, index, onSelect, onShuffle,
       />
     </div>
   ), [tracks, selIdx, curIdx, onSelect]);
+  if (!tracks) {
+    return null;
+  }
   return (
-    <div className="queue">
+    <div className={`queue ${expanded ? 'open' : ''}`}>
       <QueueHeader
         playMode={playMode}
         tracks={tracks}
@@ -44,9 +47,15 @@ export const Queue = React.memo(({ playMode, tracks, index, onSelect, onShuffle,
           left: 0;
           z-index: 3;
           width: 100vw;
-          height: 100%;
+          height: 0;
           overflow: auto;
           background: var(--gradient);
+          transition-duration: 0.25s;
+          transition-timing-function: ease;
+          transition-property: height;
+        }
+        .queue.open {
+          height: 100%;
         }
         .queue .items {
           height: calc(100vh - 33px);

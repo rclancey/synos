@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useCallback, useContext } from 're
 import _JSXStyle from 'styled-jsx/style';
 
 import { API } from '../../../lib/api';
+import Button from '../../Input/Button';
 
 const parsePhone = (phone) => {
   console.debug('parsePhone(%o %o)', typeof phone, phone);
@@ -133,7 +134,7 @@ export const ChangeProfileInfo = () => {
       </div>
       <div />
       <div>
-        <button disabled={!dirty} onClick={onSave}>Update</button>
+        <Button disabled={!dirty} onClick={onSave}>Update</Button>
       </div>
     </>
   );

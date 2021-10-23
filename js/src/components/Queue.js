@@ -5,7 +5,7 @@ import { CoverArt } from './CoverArt';
 import { TrackInfo, TrackTime } from './TrackInfo';
 
 export const QueueHeader = ({ playMode, tracks, onShuffle, onRepeat, onClose }) => {
-  const toggleStyle = { flex: 1, marginRight: '0.5em' };
+  const toggleStyle = { flex: 1, marginLeft: '0.5em' };
   return (
     <div className="header">
       <div className="title">Queue</div>

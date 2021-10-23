@@ -1,10 +1,12 @@
 package api
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	//"path"
 	"strings"
+	"time"
 
 	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/httpserver/v2/auth"
@@ -31,6 +33,12 @@ func getPathId(req *http.Request) (pid.PersistentID, error) {
 	return pid.PersistentID(0), H.BadRequest.Wrap(nil, "no id in url")
 }
 */
+
+func cacheFor(w http.ResponseWriter, dur time.Duration) {
+	cc := fmt.Sprintf("private,max-age=%d", int(dur.Seconds()))
+	w.Header().Set("Cache-Control", cc)
+	w.Header().Set("Last-Modified", time.Now().In(time.UTC).Format(time.RFC1123))
+}
 
 func pathVar(r *http.Request, name string) string {
 	return H.ContextRequestVars(r.Context())[name]
