@@ -1,51 +1,50 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useStack } from './Router/StackContext';
+import { useRouteMatch } from 'react-router-dom';
+
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
+import displayName from '../../lib/displayName';
+import { useHistoryState } from '../../lib/history';
 import { ArtistIndex } from './Index';
 import { ArtistImage } from './ArtistImage';
 import { AlbumList } from './AlbumList';
 import { RowList } from './RowList';
+import Link from './Link';
 
 export const ArtistList = ({
-  genre,
   controlAPI,
   adding,
   onAdd,
 }) => {
-  const stack = useStack();
+  const match = useRouteMatch();
+  const { genreName } = match.params;
+  const { title } = useHistoryState();
   const [artists, setArtists] = useState(null);
   const api = useAPI(API);
   useEffect(() => {
-    api.artistIndex(genre)
+    api.artistIndex(genreName)
       .then(artists => {
-        artists.forEach(art => {
-          art.name = Object.keys(art.names).sort((a, b) => art.names[a] < art.names[b] ? 1 : art.names[a] > art.names[b] ? -1 : 0)[0];
-        });
+        artists.forEach(displayName);
         setArtists(artists);
       });
-  }, [api, setArtists, genre]);
+  }, [api, setArtists, genreName]);
 
-  const onPush = stack.onPush;
-  const onOpen = useCallback((artist) => {
-    onPush(artist.name, <AlbumList artist={artist} />);
-  }, [onPush]);
   const rowRenderer = useCallback(({ key, index, style }) => {
     const artist = artists[index];
     return (
-      <div key={key} className="item" style={style} onClick={() => onOpen(artist)}>
+      <Link key={key} className="item" style={style} to={`/artists/${artist.sort}`} title={artist.name}>
         <ArtistImage artist={artist} size={36} />
         <div className="title">{artist.name}</div>
-      </div>
+      </Link>
     );
-  }, [artists, onOpen]);
+  }, [artists]);
 
   if (artists === null) {
     return null;
   }
   return (
     <RowList
-      name={genre ? genre.name : "Artists"}
+      name={title || "Artists"}
       items={artists}
       Indexer={ArtistIndex}
       indexerArgs={{ artists }}

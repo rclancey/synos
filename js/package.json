@@ -51,6 +51,8 @@
     "react-dnd-multi-backend": "^6.0.2",
     "react-dnd-touch-backend": "^14.0.0",
     "react-draggable": "^4.4.3",
+    "react-router": "^5.2.1",
+    "react-router-dom": "^5.3.0",
     "react-sortable-tree": "^2.8.0",
     "react-sortable-tree-theme-file-explorer": "^2.0.0",
     "react-virtualized": "^9.22.3",

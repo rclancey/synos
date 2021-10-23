@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import _JSXStyle from 'styled-jsx/style';
 
+import Button from '../../Input/Button';
 import DarkMode from './DarkMode';
 import ThemeChooser from './ThemeChooser';
 import ChangePassword from './ChangePassword';
@@ -81,7 +82,7 @@ export const Settings = ({
         <TwoFactor onClose={() => setTwoFactor(false)} />
       ) : (
         <div className="colspan2">
-          <button onClick={() => setTwoFactor(true)}>Setup Two Factor Authentication</button>
+          <Button type="secondary" onClick={() => setTwoFactor(true)}>Setup Two Factor Authentication</Button>
         </div>
       )}
       <hr />

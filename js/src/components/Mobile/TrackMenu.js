@@ -1,10 +1,11 @@
-import React, { useState, useContext, useCallback } from 'react';
+import React, { useMemo, useState, useContext, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
 import { useStack } from './Router/StackContext';
 import { QueueInfo } from '../Queue';
 import { MixCover } from '../MixCover';
 import { AlbumList } from './AlbumList';
 import { Album } from './SongList';
+import Link from './Link';
 
 export const MenuContext = React.createContext({
   onTrackMenu: (track) => null,
@@ -19,15 +20,23 @@ export const useMenus = () => {
   const [playlistMenuTitle, setPlaylistMenuTitle] = useState(null);
   const onTrackMenu = setTrackMenuTrack;
   const onPlaylistMenu = useCallback((title, tracks) => {
+    console.debug('onPlaylistMenu(%o, %o)', title, tracks);
     setPlaylistMenuTitle(title);
     setPlaylistMenuTracks(tracks);
   }, [setPlaylistMenuTitle, setPlaylistMenuTracks]);
-  return { onTrackMenu, onPlaylistMenu, trackMenuTrack, playlistMenuTitle, playlistMenuTracks };
+  return useMemo(() => ({
+    onTrackMenu,
+    onPlaylistMenu,
+    trackMenuTrack,
+    playlistMenuTitle,
+    playlistMenuTracks,
+  }), [onTrackMenu, onPlaylistMenu, trackMenuTrack, playlistMenuTitle, playlistMenuTracks]);
 };
 
 const QueueButton = ({ title, onClick }) => (
   <div className="item" onClick={onClick}>
     <div className="title">{title}</div>
+
     <style jsx>{`
       .item {
         padding: 0;
@@ -37,29 +46,19 @@ const QueueButton = ({ title, onClick }) => (
         padding: 1em;
       }
     `}</style>
+
   </div>
 );
 
 const ArtistLink = ({ track, onClose }) => {
-  const stack = useStack();
-  const artist = {
-    name: track.artist,
-    sort: track.sort_artist,
-  };
   return (
-    <QueueButton
-      title="Show Artist Page"
-      onClick={() => {
-        
-        stack.onPush(artist.name, <AlbumList artist={artist} />);
-        onClose();
-      }}
-    />
+    <Link className="item" title={track.artist} to={`/artists/${track.sort_artist}`} onClick={onClose}>
+      <div className="title">Show Artist Page</div>
+    </Link>
   );
 };
 
 const AlbumLink = ({ track, onClose }) => {
-  const stack = useStack();
   const album = {
     artist: {
       sort: track.sort_album_artist || track.sort_artist,
@@ -67,13 +66,9 @@ const AlbumLink = ({ track, onClose }) => {
     sort: track.sort_album,
   };
   return (
-    <QueueButton
-      title="Show Album Page"
-      onClick={() => {
-        stack.onPush(track.album, <Album album={album} />);
-        onClose();
-      }}
-    />
+    <Link className="item" title={track.album} to={`/albums/${track.sort_album_artist || track.sort_artist}/${track.sort_album}`} onClick={onClose}>
+      <div className="title">Show Album Page</div>
+    </Link>
   );
 };
 
@@ -281,6 +276,14 @@ export const TrackMenu = ({
         .items {
           height: auto;
           color: var(--highlight);
+        }
+        .items :global(.item) {
+          padding: 0;
+          display: block;
+        }
+        .items :global(.item .title) {
+          margin: 0;
+          padding: 1em;
         }
       `}</style>
     </div>

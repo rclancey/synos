@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 
 export const TextInput = ({ type = 'text', value, valid = true, onInput, ...props }) => {
   const myOnInput = useCallback((evt) => onInput(evt.target.value), [onInput]);
-  if (!onInput) {
+  if (!onInput && !props.hidden) {
     if (value === null || value === undefined || value === '') {
       return '\u00a0';
     }

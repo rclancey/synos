@@ -11,7 +11,9 @@ import (
 func IndexAPI(router H.Router, authmw H.Middleware) {
 	router.GET("/index/genres", authmw(H.HandlerFunc(ListGenres)))
 	router.GET("/index/artists", authmw(H.HandlerFunc(ListArtists)))
+	router.GET("/index/artists/:artist", authmw(H.HandlerFunc(GetArtist)))
 	router.GET("/index/albums", authmw(H.HandlerFunc(ListAlbums)))
+	router.GET("/index/albums/:artist/:album", authmw(H.HandlerFunc(GetAlbum)))
 	router.GET("/index/album-artist", authmw(H.HandlerFunc(ListAlbumsByArtist)))
 	router.GET("/index/songs", authmw(H.HandlerFunc(ListSongs)))
 	router.GET("/search/albums", authmw(H.HandlerFunc(SearchAlbums)))
@@ -67,6 +69,25 @@ func ListArtists(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 	return artists, nil
 }
 
+func GetArtist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	user := getUser(req)
+	if user == nil {
+		return nil, H.Unauthorized
+	}
+	artistName := pathVar(req, "artist")
+	artists, err := db.SearchArtists(musicdb.Search{
+		LooseArtist: &artistName,
+		OwnerID: &user.PersistentID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(artists) == 0 {
+		return nil, H.NotFound
+	}
+	return artists[0], nil
+}
+
 func ListAlbums(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	user := getUser(req)
 	if user == nil {
@@ -79,6 +100,27 @@ func ListAlbums(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 		return nil, DatabaseError.Wrap(err, "")
 	}
 	return albums, nil
+}
+
+func GetAlbum(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	user := getUser(req)
+	if user == nil {
+		return nil, H.Unauthorized
+	}
+	artistName := pathVar(req, "artist")
+	albumName := pathVar(req, "album")
+	albums, err := db.SearchAlbums(musicdb.Search{
+		LooseArtist: &artistName,
+		LooseAlbum: &albumName,
+		OwnerID: &user.PersistentID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(albums) == 0 {
+		return nil, H.NotFound
+	}
+	return albums[0], nil
 }
 
 func ListAlbumsByArtist(w http.ResponseWriter, req *http.Request) (interface{}, error) {

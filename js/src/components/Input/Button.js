@@ -1,8 +1,12 @@
 import React from 'react';
 import _JSXStyle from 'styled-jsx/style';
 
-export const Button = ({ type = 'primary', children, ...props }) => (
-  <button type={type} {...props}>
+export const LinkButton = React.forwardRef(({ navigate, ...props }, ref) => (
+  <Button ref={ref} {...props} onClick={navigate} />
+));
+
+export const Button = React.forwardRef(({ type = 'primary', children, ...props }, ref) => (
+  <button ref={ref} type={type} {...props}>
     <style jsx>{`
       button {
         font-size: var(--font-size-normal);
@@ -41,6 +45,6 @@ export const Button = ({ type = 'primary', children, ...props }) => (
     `}</style>
     {children}
   </button>
-);
+));
 
 export default Button;

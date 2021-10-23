@@ -1,10 +1,17 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useStack } from './Router/StackContext';
+import {
+  BrowserRouter as Router,
+  Route,
+  useRouteMatch,
+  generatePath,
+} from 'react-router-dom';
+
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import { PLAYLIST_ORDER } from '../../lib/distinguished_kinds';
 import { AutoSizeList } from '../AutoSizeList';
+import Link from './Link';
 import { Playlist } from './SongList';
 import { ScreenHeader } from './ScreenHeader';
 import { SVGIcon } from '../SVGIcon';
@@ -31,83 +38,82 @@ const Icon = ({ name, size }) => {
   }
 };
 
-export const PlaylistFolder = ({ persistent_id }) => {
-  const stack = useStack();
-  const [playlist, setPlaylist] = useState({ name: 'Playlists' });
+export const PlaylistContainer = () => {
+  const match = useRouteMatch();
+  const base = useMemo(() => generatePath(match.path, match.params), [match]);
+  const { id: persistent_id } = (match.params || {})
+  const [playlist, setPlaylist] = useState(null);
   const [playlists, setPlaylists] = useState([]);
   const api = useAPI(API);
 
   useEffect(() => {
-    console.debug('history.pushState');
-    window.history.pushState({ persistent_id }, 'playlist folder', `/${persistent_id}`);
+    //console.debug('history.pushState');
+    //window.history.pushState({ persistent_id }, 'playlist folder', `/${persistent_id}`);
     if (persistent_id) {
       api.loadPlaylist(persistent_id).then(setPlaylist);
     } else {
-      setPlaylist({ name: 'Playlists' });
+      setPlaylist({ name: 'Playlists', folder: true });
     }
   }, [api, persistent_id]);
   useEffect(() => {
     api.loadPlaylists(persistent_id)
-      .then(playlists => playlists.filter(pl => {
-        const o = PLAYLIST_ORDER[pl.kind];
-        if (o === null || o === undefined) {
-          return true;
-        }
-        if (o >= 100) {
-          return true;
-        }
-        return false;
-      }))
-      .then(pls => {
-        setPlaylists(pls);
-        /*
-        let l = pls;
-        if (forcePath) {
-          forcePath.every(id => {
-            if (!l) {
-              return false;
+      .then(playlists => {
+        if (playlists === null) {
+          setPlaylists(null);
+        } else {
+          setPlaylists(playlists.filter(pl => {
+            const o = PLAYLIST_ORDER[pl.kind];
+            if (o === null || o === undefined) {
+              return true;
             }
-            const pl = l.find(x => x.persistent_id === id);
-            if (pl) {
-              onOpen(pl);
-              l = pl.children;
+            if (o >= 100) {
               return true;
             }
             return false;
-          });
+          }));
         }
-        */
       });
-  }, [api, persistent_id]);//, forcePath, onOpen]);
-  /*
-  useEffect(() => {
-    loadPlaylists();
-  }, [loadPlaylists]);
-  */
+  }, [api, persistent_id]);
 
-  const onPush = stack.onPush;
-  const onOpen = useCallback((pl) => {
-    console.debug('onOpen(%o)', pl);
-    if (pl.folder) {
-      onPush(pl.name, <PlaylistFolder persistent_id={pl.persistent_id} />);
-    } else {
-      onPush(pl.name, <Playlist playlist={pl} />);
-    }
-  }, [onPush]);
+  if (playlist === null || playlist === undefined) {
+    return null;
+  }
+  if (!playlist.folder) {
+    return (
+      <Playlist playlist={playlist} />
+    );
+  }
 
+  return (
+    <Router>
+      <Route path={`${base}/:id`}>
+        <PlaylistContainer />
+      </Route>
+      <Route exact path={base}>
+        <PlaylistFolder path={base} folder={playlist} contents={playlists} />
+      </Route>
+    </Router>
+  );
+};
+
+export const PlaylistFolder = ({ path, folder, contents }) => {
+  const api = useAPI(API);
   const onNewPlaylist = useCallback(() => {
     const playlist = {
-      parent_persistent_id: persistent_id,
+      parent_persistent_id: folder.persistent_id,
       kind: 'standard',
       name: 'Untitled Playilst',
       track_ids: [],
     };
     console.debug('createPlaylist(%o)', playlist);
-    api.createPlaylist(playlist).then(onOpen);
-  }, [api, persistent_id, onOpen]);
+    api.createPlaylist(playlist)
+      .then((pl) => {
+        window.history.pushState({}, pl.name, `${path}/${pl.persistent_id}`);
+      });
+  }, [api, folder, path]);
 
   const rowRenderer = useCallback(({ key, index, style }) => {
-    if (index >= playlists.length) {
+    if (index >= contents.length) {
       return (
         <div
           key="new"
@@ -120,31 +126,29 @@ export const PlaylistFolder = ({ persistent_id }) => {
         </div>
       );
     }
-    const pl = playlists[index];
+    const pl = contents[index];
     return (
       <div
         key={pl.persistent_id}
-        className="item"
         style={style}
-        onClick={() => onOpen(pl)}
       >
-        <Icon name={pl.kind} size={36} />
-        <div className="title">{pl.name}</div>
+        <Link title={pl.name} to={`${path}/${pl.persistent_id}`} className="item">
+          <Icon name={pl.kind} size={36} />
+          <div className="title">{pl.name}</div>
+        </Link>
       </div>
     );
-  }, [playlists, onOpen, onNewPlaylist]);
+  }, [contents, onNewPlaylist]);
 
   return (
     <div className="playlistList">
-      <ScreenHeader name={playlist.name} />
+      <ScreenHeader name={folder.name} />
       <div className="items">
         <AutoSizeList
-          xkey={playlist.persistent_id}
-          itemCount={playlists.length + 1}
+          xkey={folder.persistent_id}
+          itemCount={contents.length + 1}
           itemSize={45}
           offset={0}
-          initialScrollOffset={stack.pages[stack.pages.length - 1].scrollOffset}
-          onScroll={stack.onScroll}
         >
           {rowRenderer}
         </AutoSizeList>

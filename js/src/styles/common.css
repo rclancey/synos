@@ -87,6 +87,7 @@ button[disabled], input[type="button"][disabled] {
   width: 100%;
   padding: 0.5em;
   color: var(--highlight);
+  box-sizing: border-box;
 }
 .queue .header .title {
   flex: 1;
@@ -100,7 +101,6 @@ button[disabled], input[type="button"][disabled] {
   display: flex;
   flex-direction: row;
   white-space: nowrap;
-  margin-right: 0.5em;
 }
 
 .queue .item {

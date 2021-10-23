@@ -211,6 +211,16 @@ export class API extends APIBase {
     return this.get(url);
   }
 
+  getArtist(name) {
+    const url = `/api/index/artists/${name}`;
+    return this.get(url);
+  }
+
+  getAlbum(artist, album) {
+    const url = `/api/index/albums/${artist}/${album}`;
+    return this.get(url);
+  }
+
   constructSearchQuery({ query, genre, song, album, artist, count = 100, page = 0 }) {
     let q = `?count=${count}&page=${page}`;
 
@@ -289,7 +299,7 @@ export class API extends APIBase {
   artistIndex(genre) {
     let url = '/api/index/artists';
     if (genre) {
-      url += `?genre=${escape(genre.sort)}`;
+      url += `?genre=${escape(genre)}`;
     }
     return this.get(url);
   }
@@ -297,7 +307,7 @@ export class API extends APIBase {
   albumIndex(artist) {
     let url = '/api/index/';
     if (artist) {
-      url += `albums?artist=${escape(artist.sort)}`;
+      url += `albums?artist=${escape(artist)}`;
     } else {
       url += 'album-artist';
     }

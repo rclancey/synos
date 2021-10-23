@@ -1,18 +1,19 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useStack } from './Router/StackContext';
+import { useRouteMatch } from 'react-router-dom';
+
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import { GenreIndex } from './Index';
 import { RowList } from './RowList';
 import { ArtistList } from './ArtistList';
 import { GenreImage } from './GenreImage';
+import Link from './Link';
 
 export const GenreList = ({
   controlAPI,
   adding,
   onAdd,
 }) => {
-  const stack = useStack();
   const [genres, setGenres] = useState(null);
   const api = useAPI(API);
   useEffect(() => {
@@ -25,19 +26,15 @@ export const GenreList = ({
       });
   }, [api, setGenres]);
 
-  const onPush = stack.onPush;
-  const onOpen = useCallback((genre) => {
-    onPush(genre.name, <ArtistList genre={genre} />);
-  }, [onPush]);
   const rowRenderer = useCallback(({ key, index, style }) => {
     const genre = genres[index];
     return (
-      <div key={key} className="item" style={style} onClick={() => onOpen(genre)}>
+      <Link key={key} className="item" style={style} title={genre.name} to={`/genres/${genre.sort}`}>
         <GenreImage genre={genre} size={36} />
         <div className="title">{genre.name}</div>
-      </div>
+      </Link>
     );
-  }, [genres, onOpen]);
+  }, [genres]);
 
   if (genres === null) {
     return null;
