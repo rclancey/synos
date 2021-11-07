@@ -1,10 +1,10 @@
 import React, { useRef } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { useStack } from './Router/StackContext';
 import { AutoSizeList } from '../AutoSizeList';
 import { ScreenHeader } from './ScreenHeader';
 
 export const RowList = ({
+  id,
   name,
   items,
   Indexer,
@@ -14,9 +14,6 @@ export const RowList = ({
   adding,
   onAdd,
 }) => {
-  const stack = useStack();
-  const page = stack.pages[stack.pages.length - 1];
-  const scrollTop = page ? page.scrollOffset : 0;
   const ref = useRef(null);
 
   return (
@@ -25,12 +22,11 @@ export const RowList = ({
       <Indexer {...indexerArgs} height={45} list={ref} />
       <div className="items">
         <AutoSizeList
+          id={id}
           xref={ref}
           itemCount={items.length}
           itemSize={45}
           offset={0}
-          initialScrollOffset={scrollTop}
-          onScroll={stack.onScroll}
         >
           {rowRenderer}
         </AutoSizeList>

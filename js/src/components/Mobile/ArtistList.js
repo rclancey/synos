@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useRouteMatch } from 'react-router-dom';
 
 import { API } from '../../lib/api';
@@ -28,6 +28,7 @@ export const ArtistList = ({
         setArtists(artists);
       });
   }, [api, setArtists, genreName]);
+  const id = useMemo(() => `artists-${genreName || 'allgenres'}`, [genreName]);
 
   const rowRenderer = useCallback(({ key, index, style }) => {
     const artist = artists[index];
@@ -44,6 +45,7 @@ export const ArtistList = ({
   }
   return (
     <RowList
+      id={id}
       name={title || "Artists"}
       items={artists}
       Indexer={ArtistIndex}

@@ -58,9 +58,13 @@ export const RecentAdditions = ({
         return null;
     }
   }, [recents]);
-  
+  if (!recents || recents.length === 0) {
+    return null;
+  }
+
   return (
     <CoverList
+      id="recently-added"
       name="Recently Added"
       height={215}
       items={recents}

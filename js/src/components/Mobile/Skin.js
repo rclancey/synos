@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useEffect } from 'react';
 import _JSXStyle from 'styled-jsx/style';
+import history from 'history/browser';
 import {
   BrowserRouter as Router,
   Route,
@@ -26,6 +27,7 @@ import { AudiobookList } from './AudiobookList';
 import { Purchases } from './Purchases';
 import { Search } from './Search';
 import { Settings} from '../Settings';
+import { AddMusic } from './AddMusic';
 
 export const MobileSkin = ({
   theme,
@@ -97,6 +99,9 @@ export const MobileSkin = ({
           </Route>
           <Route path="/settings">
             <Settings />
+          </Route>
+          <Route path="/addTo/:playlistId">
+            <AddMusic />
           </Route>
 
           <Controls

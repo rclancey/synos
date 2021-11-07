@@ -78,6 +78,7 @@ export const AlbumList = ({
         setAlbums(albums);
       });
   }, [api, artistName]);
+  const id = useMemo(() => `albums-${artistName || 'allalbums'}`, [artistName]);
 
   const itemRenderer = useCallback(({ index }) => {
     const album = albums[index];
@@ -98,6 +99,7 @@ export const AlbumList = ({
 
   return (
     <CoverList
+      id={id}
       name={realTitle}
       items={albums}
       Indexer={AlbumIndex}
