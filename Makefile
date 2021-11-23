@@ -10,7 +10,7 @@ TARGET     ?= local
 BUILDDIR   = build
 TARFILE    = $(PKGNAME)-$(VERSION).tar.gz
 
-CGO_ENABLED = 0
+CGO_ENABLED = 1
 ifeq "$(TARGET)" "macos"
 GOOS = darwin
 GOARCH = amd64

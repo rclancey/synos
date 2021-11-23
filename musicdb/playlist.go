@@ -24,14 +24,14 @@ type Playlist struct {
 	ParentPersistentID   *pid.PersistentID  `json:"parent_persistent_id,omitempty" db:"parent_id"`
 	Kind                 PlaylistKind   `json:"kind" db:"kind"`
 	Folder               bool           `json:"folder,omitempty" db:"folder"`
-	Name                 string         `json:"name,omitempty" db:"name"`
+	Name                 string         `json:"name" db:"name"`
 	DateAdded            *Time          `json:"date_added" db:"date_added"`
 	DateModified         *Time          `json:"date_modified" db:"date_modified"`
 	Smart                *Smart         `json:"smart,omitempty" db:"smart"`
 	GeniusTrackID        *pid.PersistentID  `json:"genius_track_id,omitempty" db:"genius_track_id"`
 	TrackIDs             []pid.PersistentID `json:"track_ids" db:"-"`
 	Children             []*Playlist    `json:"children,omitempty" db:"-"`
-	PlaylistItems        []*Track       `json:"items,omitempty" db:"-"`
+	PlaylistItems        []*Track       `json:"items" db:"-"`
 	SortField            string         `json:"sort_field,omitempty" db:"sort_field"`
 	db *DB
 }
