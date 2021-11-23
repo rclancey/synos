@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import _JSXStyle from "styled-jsx/style";
+
+import { useJooki } from '../../lib/jooki';
 import { PlaylistMenu } from './PlaylistMenu';
 
 export const jookiTokenImgUrl = (starId) => {
@@ -23,6 +25,8 @@ export const JookiToken = ({ starId, size, className }) => {
 };
 
 export const TokenList = () => {
+  const { playlists } = useJooki();
+  /*
   const [playlists, setPlaylists] = useState([]);
   useEffect(() => {
     fetch('/api/jooki/playlists', { method: 'GET' })
@@ -32,6 +36,7 @@ export const TokenList = () => {
         setPlaylists(pls);
       });
   }, []);
+  */
   const onSetToken = (tokenId, playlistId) => {
     const obj = { playlist_id: playlistId, token: tokenId }
     fetch('/api/jooki/playlist/token', {

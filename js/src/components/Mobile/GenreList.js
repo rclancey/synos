@@ -42,6 +42,7 @@ export const GenreList = ({
 
   return (
     <RowList
+      id="allgenres"
       name="Genres"
       items={genres}
       Indexer={GenreIndex}

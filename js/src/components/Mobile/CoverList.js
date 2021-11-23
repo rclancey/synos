@@ -1,11 +1,11 @@
 import React, { useCallback, useRef } from 'react';
 import _JSXStyle from 'styled-jsx/style';
 
-import { useStack } from './Router/StackContext';
 import { AutoSizeList } from '../AutoSizeList';
 import { ScreenHeader } from './ScreenHeader';
 
 export const CoverList = ({
+  id,
   name,
   items,
   height = 195,
@@ -16,9 +16,6 @@ export const CoverList = ({
   adding,
   onAdd,
 }) => {
-  const stack = useStack();
-  const page = stack.pages[stack.pages.length - 1];
-  const scrollTop = page ? page.scrollOffset : 0;
   const ref = useRef(null);
   const rowRenderer = useCallback(({ key, index, style }) => {
     return (
@@ -40,12 +37,11 @@ export const CoverList = ({
       ) : null }
       <div className="items">
         <AutoSizeList
+          id={id}
           xref={ref}
           offset={0}
           itemCount={Math.ceil(items.length / 2)}
           itemSize={height}
-          initialScrollOffset={scrollTop}
-          onScroll={stack.onScroll}
         >
           {rowRenderer}
         </AutoSizeList>

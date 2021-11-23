@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import _JSXStyle from 'styled-jsx/style';
+import { useHistory } from 'react-router-dom';
+
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
-import { useStack } from './Router/StackContext';
 import { useMenuContext } from './TrackMenu';
 import { AutoSizeList } from '../AutoSizeList';
 import { CoverArt } from '../CoverArt';
@@ -67,6 +68,7 @@ export const PlaylistTitle = ({
   onPlaylistMenu,
   onEditPlaylist,
 }) => {
+  const history = useHistory();
   const api = useAPI(API);
   const menu = useMenuContext();
   const dur = useDuration(tracks);
@@ -79,6 +81,13 @@ export const PlaylistTitle = ({
       api.sharePlaylist(playlist.persistent_id).then(() => setShared(true));
     }
   }, [api, playlist, shared]);
+  const onEdit = useCallback(() => {
+    if (editing) {
+      history.back();
+    } else {
+      history.push(`/addTo/${playlist.persistent_id}`, { playlist });
+    }
+  }, [editing, playlist, history]);
   return (
     <div className="title">
       <div className="album">{playlist.name}</div>
@@ -94,7 +103,7 @@ export const PlaylistTitle = ({
           />
           <Share shared={shared} onToggle={onToggleShare} />
           <div className="spacer" />
-          <div className="edit" onClick={() => onEditPlaylist(!editing)}>{editing ? "Done" : "Edit"}</div>
+          <div className="edit" onClick={onEdit}>{editing ? "Done" : "Edit"}</div>
         </div>
       ) }
       <style jsx>{`
@@ -142,6 +151,7 @@ export const PlaylistTitle = ({
 export const SongList = ({
   api,
   prev,
+  id,
   playlist,
   tracks,
   withTrackNum = false,
@@ -155,18 +165,10 @@ export const SongList = ({
   onUpdatePlaylist = () => {},
   children,
 }) => {
-  const stack = useStack();
   const menu = useMenuContext();
   const [chooser, setChooser] = useState(false);
   const [chooserSource, setChooserSource] = useState(null);
-  const page = stack.pages[stack.pages.length - 1];
-  const scrollTop = page ? page.scrollOffset : 0;
-  const scrollTopRef = useRef(scrollTop);
   const ref = useRef(null);
-
-  useEffect(() => {
-    scrollTopRef.current = scrollTop;
-  }, [scrollTop]);
 
   /*
   const onAddMe = useCallback((track) => {
@@ -241,13 +243,12 @@ export const SongList = ({
       </Header>
       <div className="items">
         <AutoSizeList
+          id={id}
           xref={ref}
           itemData={itemData}
           itemCount={tracks.length + (editing ? 1 : 0)}
           itemSize={63}
           offset={0}
-          initialScrollOffset={scrollTop}
-          onScroll={stack.onScroll}
         >
           {SongRow}
         </AutoSizeList>
@@ -289,9 +290,9 @@ export const Playlist = ({
   onTrackMenu,
   onPlaylistMenu,
 }) => {
-  const stack = useStack();
-  const setTitle = stack.setTitle;
+  //const setTitle = stack.setTitle;
   const [editing, setEditing] = useState(false);
+  /*
   useEffect(() => {
     if (editing) {
       setTitle(`Edit ${playlist.name}...`);
@@ -299,18 +300,23 @@ export const Playlist = ({
       setTitle(playlist.name);
     }
   }, [setTitle, playlist, editing]);
+  */
   const onBeginEdit = useCallback(() => {
     setEditing(true);
   }, []);
-  const onFinishAddX = stack.onFinishAdd;
+  //const onFinishAddX = stack.onFinishAdd;
+  /*
   const onFinishEdit = useCallback(() => {
     onFinishAddX();
     setEditing(false);
   }, [onFinishAddX]);
-  const onBeginAddX = stack.onBeginAdd;
+  */
+  //const onBeginAddX = stack.onBeginAdd;
+  /*
   const onBeginAddY = useCallback(() => {
     onBeginAddX(playlist, 'Library', <Home />);
   }, [onBeginAddX, playlist]);
+  */
   const [tracks, setTracks] = useState(null);
   const api = useAPI(API);
   const plid = playlist.persistent_id;
@@ -330,6 +336,7 @@ export const Playlist = ({
   return (
     <SongList
       api={api}
+      id={playlist.persistent_id}
       tracks={tracks}
       playlist={playlist}
       withTrackNum={false}
@@ -337,7 +344,7 @@ export const Playlist = ({
       withArtist={true}
       withAlbum={true}
       editing={editing}
-      onBeginAdd={editing ? onBeginAddY : null}
+      //onBeginAdd={editing ? onBeginAddY : null}
       onUpdatePlaylist={onUpdatePlaylist}
     >
       <MixCover tracks={tracks} radius={5} />
@@ -435,6 +442,7 @@ export const Album = ({
 }) => {
   const [tracks, setTracks] = useState(null);
   const api = useAPI(API);
+  const id = useMemo(() => `${album.artist.sort}|${album.sort}`, [album]);
   useEffect(() => {
     if (album.tracks) {
       setTracks(album.tracks);
@@ -451,6 +459,7 @@ export const Album = ({
     <SongList
       api={api}
       prev={prev ? prev.name : 'blah'}
+      id={id}
       tracks={tracks}
       adding={adding}
       withTrackNum={true}

@@ -51,65 +51,119 @@ const filterNames = {
 
 export class TrackHierarchy {
   constructor(tracks) {
+    this._listeners = {};
     this.update(tracks);
+  }
+
+  on(evt, callback) {
+    this._listeners[evt] ||= [];
+    this._listeners[evt].push(callback);
+  }
+
+  off(evt, callback) {
+    if (this._listeners[evt]) {
+      this._listeners[evt].filter((cb) => cb !== callback);
+    }
+  }
+
+  emit(evt, ...args) {
+    const cbs = this._listeners[evt];
+    if (!cbs) {
+      return;
+    }
+    cbs.forEach((cb) => cb(...args));
+  }
+
+  ensureArtist(name, key, artistIndex) {
+    let idx = artistIndex[key];
+    if (idx === undefined) {
+      idx = this.artists.length;
+      this.artists.push({
+        index: idx,
+        key,
+        names: {},
+        albums: [],
+        albumIndex: {},
+      });
+      artistIndex[key] = idx;
+    }
+    return this.artists[idx];
+  }
+
+  getArtists(tr, artistIndex) {
+    const artists = [];
+    const seen = {};
+    if (tr.album_artist) {
+      const name = tr.album_artist;
+      const key = tr.sort_album_artist || tr.album_artist;
+      seen[key] = true;
+      const artist = this.ensureArtist(name, key, artistIndex);
+      artists.push({ name, key, artist });
+      if (key !== 'various artists') {
+        return artists;
+      }
+    }
+    if (tr.artist) {
+      const name = tr.artist;
+      const key = tr.sort_artist || tr.artist;
+      if (!seen[key] && (!tr.album_artist || !tr.artist.includes(tr.album_artist))) {
+        seen[key] = true;
+        const artist = this.ensureArtist(name, key, artistIndex);
+        artists.push({ name, key, artist });
+        return artists;
+      }
+    }
+    if (tr.composer) {
+      const name = tr.composer;
+      const key = tr.sort_composer || tr.composer;
+      if (!seen[key] && !name.match(/(,|\band\b|&)/)) {
+        seen[key] = true;
+        const artist = this.ensureArtist(name, key, artistIndex);
+        artists.push({ name, key, artist });
+        return artists;
+      }
+    }
+    if (artists.length === 0) {
+      const name = '';
+      const key = '_';
+      const artist = this.ensureArtist(name, key, artistIndex);
+      artists.push({ name, key, artist });
+    }
+    return artists;
   }
 
   update(tracks) {
     this.artists = [];
     let artistIndex = {};
     tracks.forEach((tr) => {
-      let artist
-      let key;
-      if (tr.album_artist) {
-        artist = tr.album_artist;
-        key = tr.sort_album_artist || tr.album_artist;
-      } else if(tr.artist) {
-        artist = tr.artist;
-        key = tr.sort_artist || tr.artist;
-      } else {
-        artist = '';
-        key = '';
-      }
-      let idx = artistIndex[key];
-      if (idx === undefined) {
-        idx = this.artists.length;
-        this.artists.push({
-          index: idx,
-          key,
-          names: {},
-          albums: [],
-          albumIndex: {},
-        });
-        artistIndex[key] = idx;
-      }
-      const art = this.artists[idx];
-      let n = art.names[artist];
-      if (n === undefined) {
-        art.names[artist] = 1;
-      } else {
-        art.names[artist] = n + 1;
-      }
-      const album = tr.album || '';
-      key = tr.sort_album || '';
-      idx = art.albumIndex[key];
-      if (idx === undefined) {
-        idx = art.albums.length;
-        art.albums.push({
-          index: idx,
-          key,
-          names: {},
-          tracks: [],
-        });
-        art.albumIndex[key] = idx;
-      }
-      const alb = art.albums[idx];
-      n = alb.names[album];
-      if (n === undefined) {
-        alb.names[album] = 1;
-      } else {
+      const artists = this.getArtists(tr, artistIndex);
+      artists.forEach(({ name, artist }) => {
+        let n = artist.names[name];
+        if (n === undefined) {
+          n = 0;
+        }
+        artist.names[name] = n + 1;
+        const album = tr.album || '';
+        const key = tr.sort_album || '_';
+        let idx = artist.albumIndex[key];
+        if (idx === undefined) {
+          idx = artist.albums.length;
+          artist.albums.push({
+            index: idx,
+            key: key,
+            names: {},
+            tracks: [],
+          });
+          artist.albumIndex[key] = idx;
+        }
+        const alb = artist.albums[idx];
+        n = alb.names[album];
+        if (n === undefined) {
+          n = 0;
+        }
         alb.names[album] = n + 1;
-      }
-      alb.tracks.push(tr);
+        alb.tracks.push(tr);
+      });
     });
     artistIndex = {};
     this.artists.sort((a, b) => a.key < b.key ? -1 : 1);
@@ -162,6 +216,7 @@ export class TrackHierarchy {
       });
     });
     this.index = artistIndex;
+    this.emit('update');
   }
 };
 

@@ -147,9 +147,9 @@ const ButtonMenu = ({
       <div className="button" onClick={onOpen}>
         <SVGIcon icn={icon} size={18} />
       </div>
+      <Cover active={open && children} zIndex={9} onClear={() => setOpen(false)} />
       { (open && children) ? (
         <>
-          <Cover zIndex={9} onClear={() => setOpen(false)} />
           <div className="menu">
             {children}
           </div>

@@ -2,7 +2,7 @@ import React, { useReducer, useMemo, useRef, useEffect, useContext } from 'react
 import LoginContext from '../../context/LoginContext';
 import { WS } from '../../lib/ws';
 import { SHUFFLE, REPEAT } from '../../lib/api';
-import { JookiAPI } from '../../lib/jooki';
+import { useJooki } from '../../lib/jooki';
 
 const initState = () => {
   return {
@@ -88,9 +88,13 @@ const reducer = (state, action) => {
       const pl = out.playlists[out.playlistId];
       out.queue = jookiPlToQueue(pl, out);
     }
+    console.debug('jooki update state: %o => %o', msg, out);
     return out;
   case 'refresh':
     out = initState();
+    if (!action.state) {
+      return out;
+    }
     if (action.state.audio) {
       if (action.state.audio.config) {
         out.volume = action.state.audio.config.volume;
@@ -128,6 +132,7 @@ const reducer = (state, action) => {
     if (pl) {
       out.queue = jookiPlToQueue(pl, out);
     }
+    console.debug('jooki refresh state: %o => %o', action, out);
     return out;
   case 'tick':
     if (state.playStatus !== 'PLAYING') {
@@ -149,25 +154,23 @@ export const JookiPlayer = ({
   setPlaybackInfo,
   setControlAPI,
 }) => {
-  const { onLoginRequired } = useContext(LoginContext);
+  //const { onLoginRequired } = useContext(LoginContext);
   const [state, dispatch] = useReducer(reducer, null, initState);
-  const api = useMemo(() => new JookiAPI(onLoginRequired), [onLoginRequired]);
+  const { api, manager } = useJooki();
+  //const api = useMemo(() => new JookiAPI(onLoginRequired), [onLoginRequired]);
   const timeKeeper = useRef(null);
 
   useEffect(() => {
-    const wsHandler = msg => {
+    const off = manager.handle((msg) => {
       if (msg.type === 'jooki') {
         dispatch({ type: 'ws', deltas: msg.deltas });
       }
-    };
-    api.loadState().then(jstate => {
-      dispatch({ type: 'refresh', state: jstate });
-      WS.on('message', wsHandler);
     });
+    dispatch({ type: 'refresh', state: manager.state.state });
     timeKeeper.current = setInterval(() => dispatch({ type: 'tick' }), 250);
     return () => {
       clearInterval(timeKeeper.current);
-      WS.off('message', wsHandler);
+      off();
     };
   }, [api]);
 

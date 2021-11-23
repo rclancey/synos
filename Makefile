@@ -10,6 +10,7 @@ TARGET     ?= local
 BUILDDIR   = build
 TARFILE    = $(PKGNAME)-$(VERSION).tar.gz
 
+CGO_ENABLED = 1
 ifeq "$(TARGET)" "macos"
 GOOS = darwin
 GOARCH = amd64
@@ -23,6 +24,10 @@ GOARCH = amd64
 GOARM = 5
 BUILDDIR = build-synology
 TARFILE = $(PKGNAME)-$(TARGET)-$(VERSION).tar.gz
+CC = x86_64-linux-musl-gcc
+CXX = x86_64-linux-musl-g++
+CGO_ENABLED = 1
+LDFLAGS = -linkmode external -extldflags -static
 endif
 
 GOSRC := $(shell find * -type f -name "*.go")
@@ -35,7 +40,7 @@ all: compile
 $(BUILDDIR)/$(PKGNAME)/bin/%: $(GOSRC) go.mod go.sum
 	echo $(TAGNAME) > api/version.txt
 	mkdir -p $(BUILDDIR)/$(PKGNAME)/bin
-	env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) go build -o $@ cmd/$*.go
+	env CC=$(CC) CXX=$(CXX) GOARCH=$(GOARCH) GOOS=$(GOOS) CGO_ENABLED=$(CGO_ENABLED) go build -ldflags "$(LDFLAGS)" -o $@ cmd/$*.go
 
 $(BUILDDIR)/$(PKGNAME)/htdocs/index.html: $(JSSRC)
 	cd js && yarn install && env NODE_ENV=$(NODE_ENV) yarn build

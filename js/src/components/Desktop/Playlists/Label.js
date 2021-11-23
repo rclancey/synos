@@ -1,7 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import _JSXStyle from "styled-jsx/style";
+import { NavLink } from 'react-router-dom';
+
 import { SVGIcon } from '../../SVGIcon';
 import { Icon } from '../../Icon';
+//import Link from '../../Mobile/Link';
 
 import CassetteIcon from '../../icons/Cassette';
 import BrainIcon from '../../icons/Brain';
@@ -14,6 +17,17 @@ import GuitarPlayerIcon from '../../icons/GuitarPlayer';
 import RecordIcon from '../../icons/Record';
 import TimerIcon from '../../icons/Timer';
 import ShoppingCartIcon from '../../icons/ShoppingCart';
+
+const Link = ({ to, children, ...props }) => {
+  if (!to) {
+    return children;
+  }
+  return (
+    <NavLink to={to} {...props}>
+      {children}
+    </NavLink>
+  );
+};
 
 const XIcon = ({ name, size, ...props }) => {
   switch (name) {
@@ -92,6 +106,8 @@ export const Label = ({
   indentPixels = 1,
   icon,
   name,
+  to,
+  exact,
   folder,
   open,
   highlight,
@@ -125,6 +141,7 @@ export const Label = ({
     cls.push('editing');
   }
   return (
+    <Link to={to} exact={exact}>
     <div className={cls.join(' ')} style={indent}>
       <FolderToggle folder={folder} open={open} onToggle={onToggle} />
       <XIcon
@@ -188,5 +205,6 @@ export const Label = ({
         }
       `}</style>
     </div>
+    </Link>
   );
 };

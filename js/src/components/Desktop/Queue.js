@@ -1,9 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import { AutoSizeList } from '../AutoSizeList';
 import { QueueHeader, QueueItem } from '../Queue';
 
 export const Queue = ({ playMode, tracks, index, onSelect, onShuffle, onRepeat }) => {
+  const [className, setClassName] = useState('init');
+  useEffect(() => setClassName('open'), []);
   const selIdx = index;
   const curIdx = index;
   const rowRenderer = useMemo(() => {
@@ -21,7 +23,7 @@ export const Queue = ({ playMode, tracks, index, onSelect, onShuffle, onRepeat }
     );
   }, [tracks, selIdx, curIdx, onSelect]);
   return (
-    <div className="queue">
+    <div className={`queue ${className}`}>
       <QueueHeader
         playMode={playMode}
         tracks={tracks}
@@ -40,10 +42,18 @@ export const Queue = ({ playMode, tracks, index, onSelect, onShuffle, onRepeat }
       </div>
       <style jsx>{`
         .queue {
-          max-height: 80vh;
           overflow: auto;
           cursor: default;
           background: var(--gradient);
+          transition: opacity 0.2s linear, max-height 0.1s ease;
+        }
+        .queue.init {
+          opacity: 0;
+          max-height: 0vh;
+        }
+        .queue.open {
+          opacity: 1;
+          max-height: 80vh;
         }
         .queue .items {
           height: calc(80vh - 33px);

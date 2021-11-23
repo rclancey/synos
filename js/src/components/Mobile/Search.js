@@ -4,7 +4,7 @@ import { Link, useRouteMatch } from 'react-router-dom';
 
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
-import { useHistoryState } from '../../lib/history';
+//import { useHistoryState } from '../../lib/history';
 import { SongList } from './SongList';
 import { LinkButton } from '../Input/Button';
 
@@ -14,7 +14,8 @@ export const Search = ({
   onTrackMenu,
 }) => {
   const match = useRouteMatch();
-  const { search = {} } = useHistoryState();
+  //const { search = {} } = useHistoryState();
+  const search = {};
   const [query, setQuery] = useState('');
   const [expand, setExpand] = useState(false);
   const [genre, setGenre] = useState('');

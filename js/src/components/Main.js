@@ -65,7 +65,7 @@ export const Main = () => {
   const [controlAPI, setControlAPI] = useState({});
   const mobile = useMobile();
   const dark = useDarkMode();
-  console.debug('useDarkMode() = %o', dark);
+  //console.debug('useDarkMode() = %o', dark);
   const [installPrompt, setInstallPrompt] = useState(null);
   const setThemeLocal = useMemo(() => {
     return (value) => dispatch({ type: 'setTheme', value });
@@ -119,7 +119,7 @@ export const Main = () => {
     setDarkMode,
   }), [dark, state, setThemeLocal, setDarkMode]);
 
-  console.debug('dark = %o; state.dark = %o, theme.dark = %o', dark, state.dark, themeCtx.dark);
+  //console.debug('dark = %o; state.dark = %o, theme.dark = %o', dark, state.dark, themeCtx.dark);
   const transitionId = useRef(null);
   useEffect(() => {
     if (transitionId.current === null) {

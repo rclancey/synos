@@ -100,6 +100,7 @@ export const TrackBrowser = ({
   controlAPI,
   onShowInfo,
   onShowMultiInfo,
+  onToggleView,
 }) => {
   const prevTracks = useRef(null);
   const [displayTracks, setDisplayTracks] = useState(tsl.tracks);
@@ -144,9 +145,9 @@ export const TrackBrowser = ({
   }, [setDisplayTracks, setSelected]);
 
   useEffect(() => {
-    console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
-    console.debug('tracks updated: %o', playlist);
-    console.debug('update = %o', update);
+    //console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
+    //console.debug('tracks updated: %o', playlist);
+    //console.debug('update = %o', update);
     prevTracks.current = tracks;
     tsl.setTracks(tracks);
     const sortKey = getDefaultSortKey(playlist);
@@ -282,7 +283,7 @@ export const TrackBrowser = ({
   }
   return (
     <div className="trackBrowser">
-      { playlist && (<PlaylistHeader playlist={playlist} controlAPI={controlAPI} />) }
+      { playlist && (<PlaylistHeader playlist={playlist} controlAPI={controlAPI} onToggleView={onToggleView} />) }
       { columnBrowser && !playlist ? (
         <div ref={setCBNode} className="columnBrowserContainer">
           { colBrowsers.map((cb, i) => (

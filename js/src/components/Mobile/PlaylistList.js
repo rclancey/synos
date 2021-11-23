@@ -5,6 +5,7 @@ import {
   Route,
   useRouteMatch,
   generatePath,
+  useHistory,
 } from 'react-router-dom';
 
 import { API } from '../../lib/api';
@@ -40,6 +41,8 @@ const Icon = ({ name, size }) => {
 
 export const PlaylistContainer = () => {
   const match = useRouteMatch();
+  const hist = useHistory();
+  console.debug('history = %o', hist);
   const base = useMemo(() => generatePath(match.path, match.params), [match]);
   const { id: persistent_id } = (match.params || {})
   const [playlist, setPlaylist] = useState(null);
@@ -145,6 +148,7 @@ export const PlaylistFolder = ({ path, folder, contents }) => {
       <ScreenHeader name={folder.name} />
       <div className="items">
         <AutoSizeList
+          id={folder.persistent_id || 'allplaylists'}
           xkey={folder.persistent_id}
           itemCount={contents.length + 1}
           itemSize={45}

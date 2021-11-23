@@ -1,5 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
+import history from 'history';
+import {
+  BrowserRouter as Router,
+  Route,
+  useRouteMatch,
+  useHistory,
+} from 'react-router-dom';
+
 import { trackDB } from '../../lib/trackdb';
 import { TH } from '../../lib/trackList';
 import { WS } from '../../lib/ws';
@@ -9,6 +17,14 @@ import { useControlAPI } from '../Player/Context';
 import { PlaylistBrowser } from './Playlists/PlaylistBrowser';
 import { TrackBrowser } from './Tracks/TrackBrowser';
 import { ProgressBar } from './ProgressBar';
+import Recents from './Recents';
+import ArtistList from './ArtistList';
+import AlbumList from './AlbumList';
+//import AlbumView from './Tracks/AlbumView';
+import AlbumContainer from './AlbumContainer';
+import GeniusPlaylist from './GeniusPlaylist';
+import PlaylistContainer from './Playlists/PlaylistContainer';
+import JookiDeviceContainer from './Device/Jooki/Container';
 
 const loadTracks = (api, page, size, since, onProgress) => {
   //console.debug('loading tracks from database, page %o', page);
@@ -121,10 +137,10 @@ export const Library = ({
 
     const msgHandler = msg => {
       if (msg.type !== 'library update') {
-        console.debug('ignoring message %o', msg.type)
+        //console.debug('ignoring message %o', msg.type)
         return;
       }
-      console.debug('got library update message');
+      //console.debug('got library update message');
       setLibraryUpdate(Date.now());
       /*
       if (msg.playlists && msg.playlists.length > 0) {
@@ -247,15 +263,84 @@ export const Library = ({
   return (
     <>
       <div key="library" className="library">
-        <PlaylistBrowser
-          playlists={playlists}
-          selected={playlist ? playlist.persistent_id : null}
-          onSelect={onSelectPlaylist}
-          onMovePlaylist={onMovePlaylist}
-          onAddToPlaylist={onAddToPlaylist}
-          controlAPI={controlAPI}
-          setPlayer={setPlayer}
-        />
+        <Router>
+          <PlaylistBrowser
+            playlists={playlists}
+            selected={playlist ? playlist.persistent_id : null}
+            onSelect={onSelectPlaylist}
+            onMovePlaylist={onMovePlaylist}
+            onAddToPlaylist={onAddToPlaylist}
+            controlAPI={controlAPI}
+            setPlayer={setPlayer}
+          />
+          <Route exact path="/">
+            <TrackBrowser
+              columnBrowser={true}
+              tracks={tracks}
+              search={search}
+              controlAPI={controlAPI}
+              onShowInfo={onShowInfo}
+              onShowMultiInfo={onShowMultiInfo}
+            />
+          </Route>
+          <Route path="/recents">
+            <Recents />
+          </Route>
+          <Route exact path="/artists">
+            <ArtistList />
+          </Route>
+          <Route path="/artists/:artistName">
+            <ArtistList />
+          </Route>
+          <Route exact path="/albums">
+            <AlbumList />
+          </Route>
+          <Route path="/albums/:artistName/:albumName">
+            <AlbumContainer />
+          </Route>
+          <Route exact path="/genius">
+            <GeniusPlaylist />
+          </Route>
+          <Route path="/genius/:genre">
+            <GeniusPlaylist />
+          </Route>
+          {/*
+          <Route path="/device/airplay">
+            <AirplayDeviceContainer />
+          </Route>
+          <Route path="/device/android">
+            <AndroidDeviceContainer />
+          </Route>
+          <Route path="/device/apple">
+            <AppleDeviceContainer />
+          </Route>
+          */}
+          <Route path="/device/jooki" exact>
+            <JookiDeviceContainer setPlayer={setPlayer} />
+          </Route>
+          <Route path="/device/jooki/:playlistId">
+            <JookiDeviceContainer setPlayer={setPlayer} />
+          </Route>
+          {/*
+          <Route path="/device/plex">
+            <PlexDeviceContainer />
+          </Route>
+          <Route path="/device/sonos">
+            <SonosDeviceContainer />
+          </Route>
+          */}
+          <Route path="/playlists/:playlistId">
+            <PlaylistContainer
+              search={search}
+              onReorder={onReorderTracks}
+              onDelete={onDeleteTracks}
+              controlAPI={controlAPI}
+              onShowInfo={onShowInfo}
+              onShowMultiInfo={onShowMultiInfo}
+            />
+          </Route>
+        </Router>
+        {/*
         { device || (
           <TrackBrowser
             columnBrowser={true}
@@ -269,6 +354,7 @@ export const Library = ({
             onShowMultiInfo={onShowMultiInfo}
           />
         ) }
+        */}
         <style jsx>{`
           .library {
             flex: 100;
