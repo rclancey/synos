@@ -1,216 +1,129 @@
-import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import _JSXStyle from 'styled-jsx/style';
+import {
+  NavLink,
+  useRouteMatch,
+} from 'react-router-dom';
 
-import { usePlaybackInfo, useControlAPI } from '../Player/Context';
 import { TH } from '../../lib/trackList';
+import { AutoSizeList } from '../AutoSizeList';
 import { CoverArt } from '../CoverArt';
-import { Controls, Songs } from './Tracks/CollectionView';
+import ArtistView from './Tracks/ArtistView';
 
-const releaseYear = (track) => {
-  if (track.year) {
-    return track.year;
-  }
-  if (track.release_date) {
-    return new Date(track.release_date).getFullYear();
-  }
-};
-
-const pluralize = (n, sing, plur) => {
-  if (n === 1) {
-    return `1 ${sing}`;
-  }
-  const p = plur || `${sing}s`;
-  return `${n} ${p}`;
-};
-
-const Header = ({ artist, playback, controlAPI }) => {
-  const tracks = useMemo(() => artist.albums.map((album) => album.tracks).flat(), [artist]);
+const ArtistIndexItem = ({ name, xref }) => {
+  const onClick = useCallback(() => {
+    if (!xref || !xref.current) {
+      return;
+    }
+    let idx = 0;
+    if (name === '#') {
+      const re = new RegExp('^[^a-z]');
+      idx = TH.artists.findIndex((artist) => artist.key.match(re));
+    } else {
+      const l = name.toLowerCase();
+      idx = TH.artists.findIndex((artist) => artist.key.startsWith(l));
+    }
+    xref.current.scrollToItem(idx, 'smart');
+  }, [name, xref, TH.artists]);
   return (
-    <div className="header">
+    <div className="indexItem">
+      <div className="anchor" onClick={onClick}>{name}</div>
+    </div>
+  );
+};
+
+const ArtistIndex = ({ xref }) => {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('');
+  return (
+    <div className="artistIndex">
       <style jsx>{`
-        .header {
-          padding: 20px;
-        }
-        .header .wrapper {
-          display: flex;
-          border-bottom: solid var(--border) 1px;
-          align-items: flex-end;
-          padding-bottom: 12px;
-        }
-        .header .artistName {
-          flex: 10;
-          font-size: 20px;
-          font-weight: 700;
-        }
-        .header .wrapper :global(.controls) {
+        .artistIndex {
+          /*
+          position: relative;
+          z-index: 10;
+          margin-left: auto;
+          */
+          height: 100%;
+          min-width: 20px;
+          max-width: 20px;
           flex: 0;
-          width: min-content;
-          white-space: nowrap;
-          margin-bottom: 0px !important;
-          text-align: right;
-        }
-        .header .meta {
-          padding-top: 8px;
+          display: flex;
+          flex-direction: column;
           font-size: 12px;
-          font-weight: 600;
-          text-transform: uppercase;
-          color: var(--muted-text);
+          align-items: center;
+        }
+        .artistIndex :global(.indexItem) {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          flex: 1;
+        }
+        .artistIndex :global(.anchor) {
+          cursor: pointer;
+          color: var(--highlight);
         }
       `}</style>
-      <div className="wrapper">
-        <div className="artistName">{artist.name}</div>
-        <Controls tracks={tracks} playback={playback} controlAPI={controlAPI} />
-      </div>
-      <div className="meta">
-        {`${pluralize(artist.albums.length, 'album')}, `}
-        {`${pluralize(tracks.length, 'track')}`}
-      </div>
+      {letters.map((name) => (<ArtistIndexItem key={name} name={name} xref={xref} />))}
     </div>
   );
 };
 
-const AlbumView = ({ artist, album, playback, controlAPI }) => (
-  <div className="albumView">
-    <style jsx>{`
-      .albumView {
-        display: flex;
-        /*
-        width: 100%;
-        */
-        padding: 20px;
-        overflow-x: hidden;
-      }
-      .albumView .artwork {
-        flex: 0;
-        min-width: 256px;
-        max-width: 256px;
-      }
-      .albumView .artwork :global(.coverart) {
-        box-shadow: 3px 3px 5px 0px var(--shadow);
-      }
-      .albumView .contents {
-        flex: 10;
-        padding-left: 20px;
-        overflow-x: hidden;
-      }
-      .albumView .header {
-        display: flex;
-        align-items: flex-end;
-        padding-bottom: 12px;
-      }
-      .albumView .wrapper {
-        flex: 10;
-      }
-      .albumView :global(.controls) {
-        flex: 0;
-        width: min-content;
-        white-space: nowrap;
-        margin-bottom: 0px !important;
-        text-align: right;
-      }
-      .albumView .albumName {
-        flex: 10;
-        font-size: 20px;
-        font-weight: 700;
-        margin-bottom: 8px;
-        overflow-x: hidden;
-      }
-      .albumView .meta {
-        padding-top: 8px;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-bottom: 8px;
-        color: var(--muted-text);
-      }
-    `}</style>
-    <div className="artwork">
-      <CoverArt track={album.tracks[0]} size={256} lazy />
-    </div>
-    <div className="contents">
-      <div className="header">
-        <div className="wrapper">
-          <div className="albumName">{album.name}</div>
-          <div className="meta">
-            {album.tracks[0].genre}
-            {' \u2022 '}
-            {releaseYear(album.tracks[0])}
-          </div>
-        </div>
-        <Controls tracks={album.tracks} playback={playback} controlAPI={controlAPI} />
-      </div>
-      <Songs tracks={album.tracks} playback={playback} controlAPI={controlAPI} />
-    </div>
-  </div>
-);
-
-const ArtistView = ({ artist }) => {
-  const playback = usePlaybackInfo();
-  const controlAPI = useControlAPI();
-  return (
-    <div className="artistView">
-      <Header artist={artist} playback={playback} controlAPI={controlAPI} />
-      { artist.albums.map((album) => (
-        <AlbumView key={album.key} album={album} playback={playback} controlAPI={controlAPI} />
-      )) }
-    </div>
-  );
-};
-
-const ArtistItem = ({ artist, selected, onOpen }) => {
-  const highlighted = useMemo(() => {
-    if (selected === null) {
-      return '';
-    }
-    return artist.key === selected.key ? 'highlighted' : '';
-  }, [artist, selected]);
-  const onClick = useCallback(() => onOpen(artist), [artist, onOpen]);
+const ArtistItem = ({ artist, style }) => {
+  const { params } = useRouteMatch();
+  const { artistName } = params;
+  const highlighted = artistName === artist.key;
 
   return (
-    <div className={`artist ${highlighted}`} onClick={onClick}>
-      <CoverArt
-        url={`/api/art/artist?artist=${artist.key.replace(/ /g, '%20')}`}
-        size={32}
-        radius={32}
-        lazy
-      />
-      <div className="name">{artist.name}</div>
+    <div className={`artist ${highlighted}`} style={style}>
+      <NavLink to={`/artists/${artist.key}`}>
+        <CoverArt
+          url={`/api/art/artist?artist=${artist.key.replace(/ /g, '%20')}`}
+          size={32}
+          radius={32}
+          lazy
+        />
+        <div className="name">{artist.name}</div>
+      </NavLink>
     </div>
   );
 };
 
 export const ArtistList = () => {
-  const [artist, setArtist] = useState(null);
-  const onClose = useCallback(() => setArtist(null), []);
-  const artRef = useRef(null);
-  const albRef = useRef(null);
+  const { params } = useRouteMatch();
+  const { artistName } = params;
+  const xref = useRef(null);
+  const rowRenderer = useCallback(({ index, style }) => (
+    <ArtistItem
+      artist={TH.artists[index]}
+      style={style}
+    />
+  ), [TH.artists]);
+  const initialScrollOffset = useMemo(() => {
+    if (!artistName) {
+      return null;
+    }
+    const idx = TH.index[artistName];
+    if (idx === null || idx === undefined) {
+      return null;
+    }
+    return Math.max(0, idx - 4) * 53;
+  }, [artistName, TH.index, TH.artists]);
   useEffect(() => {
-    const key = window.localStorage.getItem('artistListArtist');
-    if (key) {
-      const idx = TH.index[key];
-      if (idx !== undefined) {
-        const art = TH.artists[idx];
-        if (art) {
-          setArtist(art);
-          const y = 53 * (idx - 5);
-          console.debug('artist %o at index %o, y = %o', art, idx, y);
-          if (y > 0) {
-            artRef.current.scrollTo(0, y);
-          }
-        }
+    if (artistName && xref.current) {
+      const idx = TH.index[artistName];
+      if (idx !== null && idx !== undefined) {
+        xref.current.scrollToItem(idx, 'smart');
       }
     }
-  }, []);
-  useEffect(() => {
-    if (artist !== null) {
-      window.localStorage.setItem('artistListArtist', artist.key);
-    }
-    if (albRef.current) {
-      albRef.current.scrollTo(0, 0);
-    } else {
-      console.debug('artist changed, but albRef missing');
-    }
-  }, [artist]);
+  }, [artistName]);
+  if (TH.artists.length === 0) {
+    return null;
+  }
   return (
     <div className="artists">
       <style jsx>{`
@@ -228,10 +141,13 @@ export const ArtistList = () => {
           border-right: solid var(--border) 1px;
         }
         .artists .artistList :global(.artist) {
+          /*
           display: flex;
           align-items: center;
           padding: 10px;
+          */
           border-bottom: solid var(--border) 1px;
+          box-sizing: border-box;
         }
         .artists .artistList :global(.artist .name) {
           margin-left: 10px;
@@ -242,7 +158,12 @@ export const ArtistList = () => {
           text-overflow: ellipsis;
           cursor: pointer;
         }
-        .artists .artistList :global(.artist.highlighted) {
+        .artists .artistList :global(.artist a) {
+          display: flex;
+          align-items: center;
+          padding: 10px;
+        }
+        .artists .artistList :global(.artist a.active) {
           background: var(--highlight);
           color: var(--inverse);
         }
@@ -253,13 +174,21 @@ export const ArtistList = () => {
           overflow-x: hidden;
         }
       `}</style>
-      <div ref={artRef} className="artistList">
-        { TH.artists.map((art) => (
-          <ArtistItem key={art.key} artist={art} selected={artist} onOpen={setArtist} />
-        )) }
+      <div className="artistList">
+        <AutoSizeList
+          id="artists"
+          xref={xref}
+          itemCount={TH.artists.length}
+          itemSize={53}
+          offset={0}
+          initialScrollOffset={initialScrollOffset}
+        >
+          {rowRenderer}
+        </AutoSizeList>
       </div>
-      <div ref={albRef} className="albumViews">
-        { artist ? <ArtistView artist={artist} /> : null }
+      <ArtistIndex xref={xref} />
+      <div className="albumViews">
+        { artistName ? (<ArtistView />) : null }
       </div>
     </div>
   );

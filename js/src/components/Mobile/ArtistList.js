@@ -4,7 +4,7 @@ import { useRouteMatch } from 'react-router-dom';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import displayName from '../../lib/displayName';
-import { useHistoryState } from '../../lib/history';
+//import { useHistoryState } from '../../lib/history';
 import { ArtistIndex } from './Index';
 import { ArtistImage } from './ArtistImage';
 import { AlbumList } from './AlbumList';
@@ -18,7 +18,8 @@ export const ArtistList = ({
 }) => {
   const match = useRouteMatch();
   const { genreName } = match.params;
-  const { title } = useHistoryState();
+  //const { title } = useHistoryState();
+  const title = '';
   const [artists, setArtists] = useState(null);
   const api = useAPI(API);
   useEffect(() => {

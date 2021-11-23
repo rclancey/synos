@@ -38,7 +38,7 @@ const playlistTime = (tracks) => {
   return parts.join(', ');
 };
 
-const Header = ({ playlist, playback, controlAPI, onClose }) => (
+const Header = ({ playlist, playback, controlAPI, onToggleView }) => (
   <div className="header">
     <style jsx>{`
       .header {
@@ -48,10 +48,12 @@ const Header = ({ playlist, playback, controlAPI, onClose }) => (
       .header .info {
         flex: 10;
       }
-      .header .close {
+      .header .toggle {
         flex: 0;
-        min-width: 20px;
-        max-width: 20px;
+        white-space: nowrap;
+        font-size: 12px;
+        cursor: pointer;
+        color: var(--highlight);
       }
       .header .title {
         font-size: 20px;
@@ -79,13 +81,11 @@ const Header = ({ playlist, playback, controlAPI, onClose }) => (
       </div>
       <Controls tracks={playlist.items} playback={playback} controlAPI={controlAPI} />
     </div>
-    <div className="close">
-      <CloseButton onClose={onClose} />
-    </div>
+    <div className="toggle" onClick={onToggleView}>View as Tracks</div>
   </div>
 );
 
-export const PlaylistView = ({ playlist, onClose }) => {
+export const PlaylistView = ({ playlist, onToggleView }) => {
   const playback = usePlaybackInfo();
   const controlAPI = useControlAPI();
   return (
@@ -119,7 +119,7 @@ export const PlaylistView = ({ playlist, onClose }) => {
           playlist={playlist}
           playback={playback}
           controlAPI={controlAPI}
-          onClose={onClose}
+          onToggleView={onToggleView}
         />
         <Songs
           tracks={playlist.items}

@@ -1,60 +1,65 @@
-import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
+import useMeasure from 'react-use-measure';
+import { Link, useHistory } from 'react-router-dom';
 
 import { TH } from '../../lib/trackList';
+import { AutoSizeList } from '../AutoSizeList';
 import { CoverArt } from '../CoverArt';
-import AlbumView from './Tracks/AlbumView';
-import { ProgressBar } from './ProgressBar';
 
 window.thier = TH;
 
-const AlbumItem = ({ artist, album, onOpen, onClose }) => (
-  <div className="album" onClick={() => onOpen(album)}>
-    <CoverArt track={album.tracks[0]} size={160} radius={10} lazy />
-    <div className="title">{album.name}</div>
-    <div className="artist">{artist.name}</div>
+const AlbumItem = ({ artist, album }) => (
+  <div className="album">
+    <Link to={`/albums/${artist.key}/${album.key}`}>
+      <CoverArt track={album.tracks[0]} size={160} radius={10} lazy />
+      <div className="title">{album.name}</div>
+      <div className="artist">{artist.name}</div>
+    </Link>
   </div>
 );
 
-const ArtistItem = ({ artist, onOpen, onClose }) => artist.albums.map((album) => (
-  <AlbumItem key={album.key} artist={artist} album={album} onOpen={onOpen} onClose={onClose} />
-));
-
-export const AlbumList = () => {
-  const [artists, setArtists] = useState([]);
-  const [album, setAlbum] = useState(null);
-  const scroll = useRef(0);
-  const onClose = useCallback(() => setAlbum(null), []);
-  const onScroll = useCallback((evt) => {
-    scroll.current = evt.target.scrollTop;
-  }, []);
-  const onRef = useCallback((node) => {
-    if (node) {
-      node.scrollTo(0, scroll.current);
+export const AlbumList = ({ albums }) => {
+  const list = useMemo(() => {
+    if (albums) {
+      return albums;
     }
-  }, []);
-  useEffect(() => {
-    if (album === null) {
-      setTimeout(() => setArtists(TH.artists), 40);
-    } else {
-      setArtists([]);
+    return TH.artists
+      .map((artist) => artist.albums.map((album) => ({ ...album, artist })))
+      .flat();
+  }, [albums, TH.artists]);
+  const listId = useMemo(() => {
+    if (albums && albums.length > 0) {
+      return `artistAlbums-${albums[0].artist.key}`;
     }
-  }, [album]);
-  if (album) {
-    return <AlbumView album={album} onClose={onClose} />;
-  }
-  if (artists.length === 0) {
-    return <ProgressBar total={100} complete={100} />;
-  }
+    return 'albums';
+  }, [albums]);
+  const [ref, bounds] = useMeasure();
+  const n = useMemo(() => Math.max(1, Math.floor((bounds.width - 20) / 170)), [bounds.width]);
+  const rowRenderer = useCallback(({ index, style }) => (
+    <div className="row" style={style}>
+      {list.slice(index * n, (index + 1) * n).map((album) => (
+        <AlbumItem
+          key={`${album.artist.key}/${album.key}`}
+          artist={album.artist}
+          album={album}
+        />
+      ))}
+    </div>
+  ), [list, n]);
   return (
-    <div ref={onRef} className="albums" onScroll={onScroll}>
+    <div ref={ref} className="albums">
       <style jsx>{`
         .albums {
-          display: flex;
-          flex-wrap: wrap;
           padding-left: 10px;
           padding-top: 10px;
           overflow: auto;
+          width: 100%;
+          height: 100%;
+          box-sizing: border-box;
+        }
+        .albums :global(.row) {
+          display: flex;
         }
         .albums :global(.album) {
           width: 160px;
@@ -75,9 +80,14 @@ export const AlbumList = () => {
           text-overflow: ellipsis;
         }
       `}</style>
-      { artists.map((artist) => (
-        <ArtistItem key={artist.key} artist={artist} onOpen={setAlbum} onClose={onClose} />
-      )) }
+      <AutoSizeList
+        id={listId}
+        itemCount={Math.ceil(list.length / n)}
+        itemSize={200}
+        offset={0}
+      >
+        {rowRenderer}
+      </AutoSizeList>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useEffect } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import history from 'history/browser';
+import history from 'history';
 import {
   BrowserRouter as Router,
   Route,
@@ -14,9 +14,9 @@ import { TrackMenu, PlaylistMenu, MenuContext, useMenus } from './TrackMenu';
 import { Controls } from './NowPlaying';
 import { useControlAPI } from '../Player/Context';
 import { setTheme } from '../../lib/theme';
-import { BackButton } from './BackButton';
+//import { BackButton } from './BackButton';
 import { Back } from './ScreenHeader';
-import { Screen } from './Screen';
+//import { Screen } from './Screen';
 import { PlaylistContainer } from './PlaylistList';
 import { ArtistList } from './ArtistList';
 import { AlbumList, AlbumContainer } from './AlbumList';

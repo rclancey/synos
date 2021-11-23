@@ -128,7 +128,7 @@ export const TrackList = ({
           />
         )) }
       </div>
-      <AutoSizeList itemCount={tracks.length} itemSize={20}>
+      <AutoSizeList id={playlist ? playlist.persistent_id : 'tracks'} itemCount={tracks.length} itemSize={20}>
         {rowRenderer}
       </AutoSizeList>
       <style jsx>{`

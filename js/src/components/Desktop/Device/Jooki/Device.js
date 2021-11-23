@@ -1,62 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import _JSXStyle from "styled-jsx/style";
-import { WS } from '../../../../lib/ws';
+
+import { useJooki } from '../../../../lib/jooki';
 import { Calendar } from '../../../Jooki/Calendar';
 import { TokenList } from '../../../Jooki/Token';
 import { DeviceInfo } from '../../../Jooki/DeviceInfo';
 
-const merge = (orig, delta) => {
-  if (delta === null) {
-    return orig;
+export const JookiDevice = ({ setPlayer }) => {
+  const { state } = useJooki();
+  if (!state) {
+    return null;
   }
-  if (orig === null || orig === undefined) {
-    return delta;
-  }
-  if (Array.isArray(orig)) {
-    if (Array.isArray(delta)) {
-      return delta;
-    }
-    return orig.concat([delta]);
-  }
-  if (typeof delta === 'object') {
-    if (typeof orig === 'object') {
-      const out = Object.assign({}, orig);
-      Object.entries(delta).forEach(entry => out[entry[0]] = merge(orig[entry[0]], entry[1]));
-      return out;
-    }
-  }
-  return delta;
-};
-
-export const JookiDevice = ({ device, setPlayer }) => {
-  const [jooki, setJooki] = useState(device.state);
-  const api = device.api;
-  useEffect(() => {
-    setPlayer('jooki');
-    return () => {
-      setPlayer(null);
-    };
-  }, [setPlayer]);
-  useEffect(() => {
-    const msgHandler = msg => {
-      if (msg.type === 'jooki') {
-        setJooki(state => {
-          let out = state;
-          msg.deltas.forEach(delta => {
-            out = merge(out, delta);
-          });
-          console.debug('set jooki device to %o', out);
-          return out;
-        });
-      }
-    };
-    WS.on('message', msgHandler);
-    api.loadState().then(setJooki);
-    return () => {
-      WS.off('message', msgHandler);
-    };
-  }, [api]);
-
   return (
     <div className="jooki device">
       {/*
@@ -70,7 +24,7 @@ export const JookiDevice = ({ device, setPlayer }) => {
         {/*
         <JookiControls playbackInfo={playbackInfo} controlAPI={controlAPI} />
         */}
-        <DeviceInfo state={jooki} />
+        <DeviceInfo state={state} />
       </div>
       <Calendar />
       <TokenList />

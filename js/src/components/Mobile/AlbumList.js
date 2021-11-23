@@ -5,7 +5,7 @@ import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 import cmp from '../../lib/cmp';
 import displayName from '../../lib/displayName';
-import { useHistoryState } from '../../lib/history';
+//import { useHistoryState } from '../../lib/history';
 import { AlbumIndex } from './Index';
 import { CoverArt } from '../CoverArt';
 import { CoverList } from './CoverList';
@@ -51,7 +51,8 @@ export const AlbumList = ({
 }) => {
   const match = useRouteMatch();
   const { artistName } = match.params;
-  const { title } = useHistoryState();
+  //const { title } = useHistoryState();
+  const title = '';
   const [realTitle, setRealTitle] = useState(title || 'Albums');
   const [albums, setAlbums] = useState(null);
   const api = useAPI(API);

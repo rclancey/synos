@@ -1,4 +1,75 @@
+import { useEffect, useMemo, useState } from 'react';
 import { APIBase } from './api';
+import { WS } from './ws';
+import { useAPI } from './useAPI';
+
+class JookiStateManagerCls {
+  constructor() {
+    this.listeners = [];
+    this.handlers = [];
+    this.state = {};
+    this.api = null;
+    const msgHandler = (msg) => {
+      if (msg.type === 'jooki') {
+        this.setState((orig) => {
+          const out = { ...orig };
+          out.state = out.state ? { ...out.state } : {};
+          msg.deltas.forEach((delta) => {
+            Object.entries(delta).forEach(([key, value]) => {
+              if (value !== null) {
+                out.state = { ...out.state, [key]: value };
+              }
+            });
+          });
+          return out;
+        });
+        this.handlers.forEach((h) => h(msg));
+      }
+    };
+    WS.on('message', msgHandler);
+  }
+
+  setState(arg) {
+    if (typeof arg === 'function') {
+      this.state = arg(this.state);
+    } else {
+      this.state = arg;
+    }
+    this.listeners.forEach((l) => l(this.state));
+  }
+
+  handle(handler) {
+    this.handlers.push(handler);
+    return () => {
+      this.handlers = this.handlers.filter((h) => h !== handler);
+    };
+  }
+
+  listen(listener) {
+    this.listeners.push(listener);
+    listener(this.state);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== listener);
+    };
+  }
+
+  setApi(api) {
+    if (api !== null && api !== undefined) {
+      if (api !== this.api) {
+        this.api = api;
+        console.debug('jooki api changed');
+        Promise.all([
+          api.loadState(),
+          api.loadPlaylists(),
+        ]).then(([state, playlists]) => {
+          this.setState({ api, state, playlists });
+        });
+      }
+    }
+  }
+};
+
+export const JookiStateManager = new JookiStateManagerCls();
 
 export class JookiAPI extends APIBase {
   constructor(onLoginRequired) {
@@ -205,3 +276,14 @@ export class JookiAPI extends APIBase {
   }
 
 }
+
+export const useJooki = () => {
+  const api = useAPI(JookiAPI);
+  const [state, setState] = useState(JookiStateManager.state);
+  useEffect(() => {
+    return JookiStateManager.listen(setState);
+  }, []);
+  useEffect(() => JookiStateManager.setApi(api), [api]);
+  const obj = useMemo(() => ({ ...state, manager: JookiStateManager }), [state]);
+  return obj;
+};

@@ -1,15 +1,17 @@
 import React, { useEffect} from 'react';
+
+import { useJooki } from '../../../../lib/jooki';
 import { Folder } from '../../Playlists/Folder';
 import { JookiTrackBrowser } from './TrackBrowser';
 import { JookiDevice } from './Device';
 import { jookiTokenImgUrl } from '../../../Jooki/Token';
 
 export const JookiDevicePlaylist = ({
-  device,
   selected,
   onSelect,
   setPlayer,
 }) => {
+  const device = useJooki();
   const dpls = device ? device.playlists : null;
   const api = device ? device.api : null;
   useEffect(() => {
@@ -49,8 +51,14 @@ export const JookiDevicePlaylist = ({
       device.api.addToPlaylist(target.playlist, source.tracks.map(tr => tr.track));
     }
   };
+  if (!device || !device.state) {
+    return null;
+  }
   return (
     <Folder
+      to="/device/jooki"
+      exact
+      link
       depth={0}
       indentPixels={12}
       device="jooki"

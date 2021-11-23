@@ -10,6 +10,7 @@ import Insert from '../../../assets/icons/insert.svg';
 import Append from '../../../assets/icons/append.svg';
 import ShareIcon from '../../icons/Share';
 import UnshareIcon from '../../icons/Unshare';
+import CassetteIcon from '../../icons/Cassette';
 
 const plural = (n, singular, plural) => {
   return `${n} ${n === 1 ? singular : (plural || singular+'s')}`;
@@ -218,9 +219,41 @@ export const Share = ({ persistent_id, shared, onToggle }) => (
   </div>
 );
 
+const ToggleView = ({ onToggle }) => (
+  <div className="item" onClick={onToggle}>
+    <div className="icon">
+      <CassetteIcon />
+    </div>
+    <div className="title">View as Playlist</div>
+    <style jsx>{`
+      .item {
+        padding: 0;
+        margin-bottom: 3px;
+        display: flex;
+        color: var(--highlight);
+        cursor: pointer;
+      }
+      .item .icon {
+        width: 18px;
+        height: 18px;
+      }
+      .item .icon :global(svg) {
+        width: 18px;
+        height: 18px;
+      }
+      .title {
+        margin: 0;
+        padding: 0;
+        margin-left: 0.5em;
+      }
+    `}</style>
+  </div>
+);
+
 export const PlaylistHeader = ({
   playlist,
   controlAPI,
+  onToggleView,
 }) => {
   const api = useAPI(API);
   const [shared, setShared] = useState(playlist.shared);
@@ -244,6 +277,7 @@ export const PlaylistHeader = ({
       <MixCover tracks={playlist.items || playlist.tracks} size={120} />
       <PlaylistInfo name={playlist.name} tracks={playlist.items || playlist.tracks} smart={playlist.smart} onEdit={onEdit} />
       <div className="queueOptions">
+        <ToggleView onToggle={onToggleView} />
         <PlayNow persistent_id={playlist.persistent_id} tracks={playlist.items || playlist.tracks} controlAPI={controlAPI} />
         <Shuffle persistent_id={playlist.persistent_id} tracks={playlist.items || playlist.tracks} controlAPI={controlAPI} />
         <PlayNext tracks={playlist.items || playlist.tracks} controlAPI={controlAPI} />

@@ -9,7 +9,7 @@ export const scrollPreserver = (key) => {
     return undefined;
   }
   return ({ scrollOffset, ...props }) => {
-    console.debug('scrollPos[%o] = %o (%o)', key, scrollOffset, props);
+    //console.debug('scrollPos[%o] = %o (%o)', key, scrollOffset, props);
     scrollPos[key] = scrollOffset;
   };
 };
@@ -18,12 +18,11 @@ export const fetchScroll = (key) => {
   if (key === undefined || key === null) {
     return undefined;
   }
-  console.debug('fetchScroll(%o) = %o', key, scrollPos[key]);
   return scrollPos[key];
 };
 
-export const AutoSizeList = ({ id, offset = null, xref, itemSize, ...props }) => {
-  const initialScroll = useMemo(() => fetchScroll(id), [id]);
+export const AutoSizeList = ({ id, initialScrollOffset = null, offset = null, xref, itemSize, ...props }) => {
+  const initialScroll = useMemo(() => (initialScrollOffset === null ? fetchScroll(id) : initialScrollOffset), [id, initialScrollOffset]);
   const onScroll = useMemo(() => scrollPreserver(id), [id]);
   return (
     <AutoSizer>

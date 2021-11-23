@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import _JSXStyle from "styled-jsx/style";
+
+import { useJooki } from '../../lib/jooki';
 import { PlaylistMenu } from './PlaylistMenu';
 
 const zeroPad = (v, n) => {
@@ -228,18 +230,21 @@ const CalendarDay = ({
 
 export const Calendar = ({ wide = true }) => {
   const [cal, setCal] = useState([null, null, null, null, null, null, null]);
-  const [playlists, setPlaylists] = useState([]);
+  const { playlists } = useJooki();
+  //const [playlists, setPlaylists] = useState([]);
   const days = useRef([0, 1, 2, 3, 4, 5, 6]);
   useEffect(() => {
     fetch('/api/cron', { method: 'GET' })
       .then(resp => resp.json())
       .then(setCal);
+    /*
     fetch('/api/jooki/playlists', { method: 'GET' })
       .then(resp => resp.json())
       .then(pls => {
         pls.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
         setPlaylists(pls);
       });
+    */
     const dow = new Date().getDay();
     days.current = [dow, dow + 1, dow + 2, dow + 3, dow + 4, dow + 5, dow + 6];
   }, []);

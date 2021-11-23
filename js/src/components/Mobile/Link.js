@@ -1,11 +1,18 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
-import { useHistoryState } from '../../lib/history';
+//import { useHistoryState } from '../../lib/history';
 
-export const Link = ({ title, to, ...props }) => {
-  const state = useHistoryState();
+export const Link = ({ title, to, ...props }) => (
+  <Link to={to} {...props} />
+);
+
+export const xLink = ({ title, to, ...props }) => {
+  const state = {}; //useHistoryState();
   const myTo = useMemo(() => {
+    if (to === undefined || to === null) {
+      return null;
+    }
     if (typeof to === 'string') {
       let u;
       if (to.startsWith('http://') || to.startsWith('https://')) {
@@ -54,6 +61,9 @@ export const Link = ({ title, to, ...props }) => {
       },
     };
   }, [title, to, state]);
+  if (!myTo) {
+    return props.children;
+  }
   return (
     <RouterLink to={myTo} {...props} />
   );

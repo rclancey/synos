@@ -1,18 +1,11 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import _JSXStyle from 'styled-jsx/style';
+import useMeasure from 'react-use-measure';
+import { Link } from 'react-router-dom';
 
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
-/*
-import Button from '../../Input/Button';
-import MenuInput from '../../Input/MenuInput';
-import TextInput from '../../Input/TextInput';
-import DateInput from '../../Input/DateInput';
-import TimeInput from '../../Input/TimeInput';
-import IntegerInput from '../../Input/IntegerInput';
-import StarInput from '../../Input/StarInput';
-//import DurationInput from '../../Input/DurationInput';
-*/
+import { AutoSizeList } from '../AutoSizeList';
 import { CoverArt } from '../CoverArt';
 import { MixCover } from '../MixCover';
 import AlbumView from './Tracks/AlbumView';
@@ -31,26 +24,30 @@ const recentItemKey = (item) => {
   }
 };
 
-const RecentPlaylist = ({ playlist, onOpen }) => (
-  <div className="playlist item" onClick={() => onOpen(playlist)}>
-    <MixCover tracks={playlist.items} size={160} radius={10} lazy />
-    <div className="title">{playlist.name}</div>
+const RecentPlaylist = ({ playlist }) => (
+  <div className="playlist item">
+    <Link to={`/playlists/${playlist.persistent_id}`}>
+      <MixCover tracks={playlist.items} size={160} radius={10} />
+      <div className="title">{playlist.name}</div>
+    </Link>
   </div>
 );
 
 const RecentTrack = ({ track }) => (
   <div className="track item">
-    <CoverArt track={track} size={160} radius={10} lazy />
+    <CoverArt track={track} size={160} radius={10} />
     <div className="title">{track.name}</div>
     <div className="artist">{track.artist}</div>
   </div>
 );
     
-const RecentAlbum = ({ album, onOpen }) => (
-  <div className="album item" onClick={() => onOpen(album)}>
-    <CoverArt track={album.tracks[0]} size={160} radius={10} lazy />
-    <div className="title">{album.tracks.length === 1 ? album.tracks[0].name : album.album}</div>
-    <div className="artist">{album.tracks.length === 1 ? album.tracks[0].artist : album.artist}</div>
+const RecentAlbum = ({ album }) => (
+  <div className="album item">
+    <Link to={`/albums/${album.tracks[0].sort_artist}/${album.tracks[0].sort_album}`}>
+      <CoverArt track={album.tracks[0]} size={160} radius={10} />
+      <div className="title">{album.tracks.length === 1 ? album.tracks[0].name : album.album}</div>
+      <div className="artist">{album.tracks.length === 1 ? album.tracks[0].artist : album.artist}</div>
+    </Link>
   </div>
 );
 
@@ -68,42 +65,65 @@ const RecentItem = ({ item, onOpenAlbum, onOpenPlaylist }) => {
   }
 };
 
+const cache = [null];
+
 export const Recents = ({}) => {
-  const [recent, setRecent] = useState([]);
+  const [recent, setRecent] = useState(cache[0]);
+  /*
   const [album, setAlbum] = useState(null);
   const [playlist, setPlaylist] = useState(null);
-  const scroll = useRef(0);
-  const onScroll = useCallback((evt) => {
-    scroll.current = evt.target.scrollTop;
-  }, []);
-  const onRef = useCallback((node) => {
-    if (node) {
-      node.scrollTo(0, scroll.current);
-    }
-  }, []);
   const onClose = useCallback(() => {
     setAlbum(null);
     setPlaylist(null);
   }, []);
+  */
   const api = useAPI(API);
   useEffect(() => {
     api.loadRecent().then(setRecent);
   }, [api]);
+  useEffect(() => {
+    cache[0] = recent;
+  }, [recent]);
+  const [ref, bounds] = useMeasure();
+  const n = useMemo(() => Math.max(1, Math.floor((bounds.width - 20) / 170)), [bounds.width]);
+  const rowRenderer = useCallback(({ index, style }) => (
+    <div className="row" style={style}>
+      {recent.slice(index * n, (index + 1) * n).map((item) => (
+        <RecentItem
+          key={recentItemKey(item)}
+          item={item}
+        />
+      ))}
+    </div>
+  ), [recent, n]);
+    
+  /*
   if (album) {
     return <AlbumView album={album} onClose={onClose} />;
   }
   if (playlist) {
     return <PlaylistView playlist={playlist} onClose={onClose} />;
   }
+  */
+  if (recent === null) {
+    return null;
+  }
   return (
-    <div ref={onRef} className="recents" onScroll={onScroll}>
+    <div ref={ref} className="recents">
       <style jsx>{`
         .recents {
+          /*
           display: flex;
           flex-wrap: wrap;
+          */
           padding-left: 10px;
           padding-top: 10px;
           overflow: auto;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .recents :global(.row) {
+          display: flex;
         }
         .recents :global(.item) {
           width: 160px;
@@ -130,6 +150,15 @@ export const Recents = ({}) => {
           -webkit-box-orient: vertical;
         }
       `}</style>
+      <AutoSizeList
+        id="recents"
+        itemCount={Math.ceil(recent.length / n)}
+        itemSize={200}
+        offset={0}
+      >
+        {rowRenderer}
+      </AutoSizeList>
+      {/*
       { recent.map((item) => (
         <RecentItem
           key={recentItemKey(item)}
@@ -137,6 +166,7 @@ export const Recents = ({}) => {
           onOpenAlbum={setAlbum}
           onOpenPlaylist={setPlaylist}
         />)) }
+      */}
     </div>
   );
 };

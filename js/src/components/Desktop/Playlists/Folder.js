@@ -4,6 +4,9 @@ import { Label } from './Label';
 import { Playlist } from './Playlist';
 
 export const Folder = ({
+  to,
+  exact,
+  link,
   device,
   playlist,
   depth = 0,
@@ -53,6 +56,8 @@ export const Folder = ({
     <div className="folder">
       <Label
         depth={depth}
+        to={link ? to : undefined}
+        exact={exact}
         indentPixels={indentPixels}
         icon={icon || 'folder'}
         name={name}
@@ -69,6 +74,7 @@ export const Folder = ({
           { playlist.children.map(child => child.folder ? (
             <Folder
               key={child.persistent_id}
+              to={`${to}`}
               device={device}
               playlist={child}
               depth={depth+1}
@@ -85,6 +91,7 @@ export const Folder = ({
           ) : (
             <Playlist
               key={child.persistent_id}
+              to={`${to}/${child.persistent_id}`}
               device={device}
               playlist={child}
               depth={depth+1}

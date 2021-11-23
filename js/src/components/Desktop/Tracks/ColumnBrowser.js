@@ -81,6 +81,7 @@ export const ColumnBrowser = ({
     >
       <div className="header">{title}</div>
       <AutoSizeList
+        id={`columnBrowser-${title}`}
         xref={listRef}
         itemCount={items.length}
         itemSize={18}

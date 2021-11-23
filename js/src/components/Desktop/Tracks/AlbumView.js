@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import _JSXStyle from 'styled-jsx/style';
+import { useRouteMatch } from 'react-router-dom';
 
+import { TH } from '../../../lib/trackList';
 import { API } from '../../../lib/api';
 import { useAPI } from '../../../lib/useAPI';
 import { usePlaybackInfo, useControlAPI } from '../../Player/Context';
@@ -60,15 +62,15 @@ const Header = ({ tracks, playback, controlAPI, onClose }) => (
       </div>
       <Controls tracks={tracks} playback={playback} controlAPI={controlAPI} />
     </div>
+    {/*
     <div className="close">
       <CloseButton onClose={onClose} />
     </div>
+    */}
   </div>
 );
 
-export const AlbumView = ({ album, onClose }) => {
-  const playback = usePlaybackInfo();
-  const controlAPI = useControlAPI();
+export const AlbumView = ({ artist, album, playback, controlAPI }) => {
   return (
     <div className="albumView">
       <style jsx>{`
@@ -81,6 +83,7 @@ export const AlbumView = ({ album, onClose }) => {
           width: 256px;
           padding-top: 2em;
           padding-left: 2em;
+          padding-bottom: 2em;
         }
         .albumView .contents {
           flex: 10;
@@ -99,7 +102,6 @@ export const AlbumView = ({ album, onClose }) => {
           tracks={album.tracks}
           playback={playback}
           controlAPI={controlAPI}
-          onClose={onClose}
         />
         <Songs
           tracks={album.tracks}

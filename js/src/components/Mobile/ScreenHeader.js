@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import _JSXStyle from 'styled-jsx/style';
 import { Link } from 'react-router-dom';
 
-import { useHistoryState } from '../../lib/history';
+//import { useHistoryState } from '../../lib/history';
 
 const backToHome = {
   pathname: '/',
@@ -10,7 +10,8 @@ const backToHome = {
 };
 
 export const Back = () => {
-  const { prev } = useHistoryState();
+  //const { prev } = useHistoryState();
+  const prev = {};
   const onBack = useMemo(() => {
     if (prev) {
       return (evt) => {

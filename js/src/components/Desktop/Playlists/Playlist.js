@@ -5,6 +5,7 @@ import { API } from '../../../lib/api';
 import { Label } from './Label';
 
 export const Playlist = ({
+  to,
   device,
   playlist,
   depth = 0,
@@ -64,6 +65,7 @@ export const Playlist = ({
       }}
     >
       <Label
+        to={to}
         depth={depth}
         indentPixels={indentPixels}
         icon={icon || playlist.kind || 'standard'}

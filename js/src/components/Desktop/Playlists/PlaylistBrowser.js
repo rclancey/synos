@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import _JSXStyle from "styled-jsx/style";
+
 import { useFocus } from '../../../lib/useFocus';
 import { TSL } from '../../../lib/trackList';
 import { PLAYLIST_ORDER } from '../../../lib/distinguished_kinds';
@@ -24,6 +25,7 @@ export const PlaylistBrowser = ({
   controlAPI,
   setPlayer,
 }) => {
+  //console.debug('rendering playlist browser');
   const { focused, node, focus, onFocus, onBlur } = useFocus();
   const [loading, setLoading] = useState(false);
 
@@ -82,6 +84,8 @@ export const PlaylistBrowser = ({
       <h1>Library</h1>
       <div className="groups">
         <Label
+          to="/"
+          exact
           icon="songs"
           name="Everything"
           selected={selected === null}
@@ -89,6 +93,8 @@ export const PlaylistBrowser = ({
           onSelect={() => wrappedOnSelect(null)}
         />
         <Label
+          to="/recents"
+          exact
           icon="recent"
           name="Recently Added"
           selected={selected === 'recent'}
@@ -96,6 +102,7 @@ export const PlaylistBrowser = ({
           onSelect={() => wrappedOnSelect({ persistent_id: 'recent' })}
         />
         <Label
+          to="/artists"
           icon="artists"
           name="Artists"
           selected={selected === 'artists'}
@@ -103,6 +110,7 @@ export const PlaylistBrowser = ({
           onSelect={() => wrappedOnSelect({ persistent_id: 'artists' })}
         />
         <Label
+          to="/albums"
           icon="albums"
           name="Albums"
           selected={selected === 'albums'}
@@ -110,6 +118,8 @@ export const PlaylistBrowser = ({
           onSelect={() => wrappedOnSelect({ persistent_id: 'albums' })}
         />
         <Label
+          to="/genius"
+          exact
           icon="genius"
           name="Genius"
           selected={selected === 'genius'}
@@ -140,6 +150,8 @@ export const PlaylistBrowser = ({
           }).map(pl => (
             <Label
               key={pl.persistent_id}
+              to={`/playlists/${pl.persistent_id}`}
+              exact
               icon={pl.kind}
               name={pl.name}
               selected={selected === pl.persistent_id}
@@ -167,6 +179,8 @@ export const PlaylistBrowser = ({
         }).map(pl => pl.folder ? (
           <Folder
             key={pl.persistent_id}
+            to={`/playlists`}
+            exact
             device="itunes"
             playlist={pl}
             depth={0}
@@ -183,6 +197,8 @@ export const PlaylistBrowser = ({
         ) : (
           <Playlist
             key={pl.persistent_id}
+            to={`/playlists/${pl.persistent_id}`}
+            exact
             device="itunes"
             playlist={pl}
             depth={0}
@@ -222,10 +238,24 @@ export const PlaylistBrowser = ({
           margin-bottom: 10px;
           margin-left: 1em;
         }
+        /*
         .playlistBrowser :global(.selected) {
           background-color: var(--dark);
         }
         .playlistBrowser:focus-within :global(.selected) {
+          background-color: var(--highlight);
+          color: var(--inverse);
+        }
+        */
+        .playlistBrowser :global(a) {
+          display: block;
+        }
+        .playlistBrowser :global(a.active) {
+        /*
+          background-color: var(--dark);
+        }
+        .playlistBrowser:focus-within :global(a.active) {
+        */
           background-color: var(--highlight);
           color: var(--inverse);
         }

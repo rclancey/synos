@@ -79,7 +79,7 @@ export const setTheme = (theme, dark, time) => {
     const startTime = Date.now();
     const trid = Math.random();
     state.current = trid;
-    console.debug('transition %o => %o', startValues, targetValues)
+    //console.debug('transition %o => %o', startValues, targetValues)
     const callback = () => {
       window.debugColor = Color;
       if (trid !== state.current) {
