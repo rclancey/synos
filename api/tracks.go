@@ -473,6 +473,7 @@ func SearchTracks(w http.ResponseWriter, req *http.Request) (interface{}, error)
 		More: offset + len(tracks) < n,
 		Tracks: tracks,
 	}
+	cacheFor(w, time.Minute * 15)
 	return res, nil
 }
 

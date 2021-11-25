@@ -3,9 +3,12 @@ import _JSXStyle from 'styled-jsx/style';
 //import { useDrag, useDrop } from 'react-dnd';
 import { areEqual } from 'react-window';
 import { DotsMenu } from './TrackMenu';
+import { AlbumImage } from './AlbumList';
+import { ArtistImage } from './ArtistImage';
 import { CoverArt } from '../CoverArt';
 import { Icon } from '../Icon';
 import { AddIcon, DeleteIcon } from './ActionIcon';
+import { Link } from './Link';
 
 export const SongRow = React.memo(({
   data,
@@ -24,26 +27,155 @@ export const SongRow = React.memo(({
     );
   }
 
+  if (track.persistent_id) {
+    return (
+      <div className="item" style={style}>
+        <InteriorRow
+          index={index}
+          len={data.len}
+          playlist={data.playlist}
+          track={track}
+          withTrackNum={data.withTrackNum}
+          withCover={data.withCover}
+          withArtist={data.withArtist}
+          withAlbum={data.withAlbum}
+          editing={data.editing}
+          onTrackMenu={data.onTrackMenu}
+          onAdd={data.onAdd}
+          onMove={data.onMove}
+          onDelete={data.onDelete}
+        />
+      </div>
+    );
+  }
+  if (track.artist) {
+    return (
+      <div className="item" style={style}>
+        <AlbumRow album={track} />
+      </div>
+    );
+  }
   return (
     <div className="item" style={style}>
-      <InteriorRow
-        index={index}
-        len={data.len}
-        playlist={data.playlist}
-        track={track}
-        withTrackNum={data.withTrackNum}
-        withCover={data.withCover}
-        withArtist={data.withArtist}
-        withAlbum={data.withAlbum}
-        editing={data.editing}
-        onTrackMenu={data.onTrackMenu}
-        onAdd={data.onAdd}
-        onMove={data.onMove}
-        onDelete={data.onDelete}
-      />
+      <ArtistRow artist={track} />
     </div>
   );
 }, areEqual);
+
+const ArtistRow = ({ artist }) => {
+  const name = useMemo(() => {
+    return Object.entries(artist.names).sort((a, b) => cmp(b[1], a[1]))[0][0];
+  }, [artist]);
+  return (
+    <div className="item">
+      <style jsx>{`
+        .item :global(a) {
+          text-decoration: none;
+          color: inherit;
+          display: flex;
+          padding: 9px 9px 0px 9px;
+          box-sizing: border-box;
+          white-space: nowrap;
+          overflow: hidden;
+        }
+        .item.editing {
+          border-bottom: solid var(--border) 1px;
+        }
+        .item :global(.fa-bars) {
+          line-height: 44px;
+        }
+        .item :global(.icon) {
+          margin-top: 4px;
+        }
+        .item :global(.title) {
+          flex: 10;
+          display: flex;
+          font-size: 18px;
+          padding: 5px 0px 0px 0px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          margin-left: 9px;
+          margin-right: 0.5em;
+        }
+        .item :global(.title .song) {
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      `}</style>
+      <Link to={`/artists/${artist.sort}`} title={name}>
+        <ArtistImage artist={artist} size={48} />
+        <div className="title">
+          <div className="song">{name}</div>
+        </div>
+      </Link>
+    </div>
+  );
+};
+
+const AlbumRow = ({ album }) => {
+  const name = useMemo(() => {
+    return Object.entries(album.names).sort((a, b) => cmp(b[1], a[1]))[0][0];
+  }, [album]);
+  const artist = useMemo(() => {
+    return Object.entries(album.artist.names).sort((a, b) => cmp(b[1], a[1]))[0][0];
+  }, [album]);
+  return (
+    <div className="item">
+      <style jsx>{`
+        .item :global(a) {
+          text-decoration: none;
+          color: inherit;
+          display: flex;
+          padding: 9px 9px 0px 9px;
+          box-sizing: border-box;
+          white-space: nowrap;
+          overflow: hidden;
+        }
+        .item.editing {
+          border-bottom: solid var(--border) 1px;
+        }
+        .item :global(.fa-bars) {
+          line-height: 44px;
+        }
+        .item :global(.icon) {
+          margin-top: 4px;
+        }
+        .item :global(.title) {
+          flex: 10;
+          display: flex;
+          font-size: 18px;
+          padding: 5px 0px 0px 0px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          margin-left: 9px;
+          margin-right: 0.5em;
+        }
+        .item :global(.title .song) {
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .item :global(.title .artist) {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          font-size: 14px;
+        }
+        .item :global(.songArtistAlbum) {
+          flex: 10;
+          overflow: hidden;
+        }
+      `}</style>
+      <Link to={`/albums/${album.artist.sort}/${album.sort}`} title={name}>
+        <AlbumImage album={album} size={48} />
+        <div className="title">
+          <div className="songArtistAlbum">
+            <div className="song">{name}</div>
+            <div className="artist">{artist}</div>
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
+};
 
 const InteriorRow = React.memo(({
   index,

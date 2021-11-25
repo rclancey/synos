@@ -1,17 +1,30 @@
-import React, { useMemo, useEffect, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import React, { useCallback } from 'react';
+import { useHistory } from 'react-router-dom';
 
-//import { useHistoryState } from '../../lib/history';
-
-export const Link = ({ title, to, ...props }) => (
-  <Link to={to} {...props} />
-);
-
-export const xLink = ({ title, to, ...props }) => {
-  const state = {}; //useHistoryState();
-  const myTo = useMemo(() => {
-    if (to === undefined || to === null) {
-      return null;
+export const Link = ({ title, to, replace, back, onClick, children, component, ...props }) => {
+  const history = useHistory();
+  const myOnClick = useCallback((evt) => {
+    if (onClick) {
+      onClick(evt);
+    }
+    if (evt.defaultPrevented) {
+      return;
+    }
+    evt.preventDefault();
+    if (back) {
+      history.goBack();
+      return;
+    }
+    const { location } = history;
+    let { state } = location;
+    if (!state) {
+      state = {
+        title: document.title,
+        path: location.pathname,
+        search: location.search,
+        hash: location.hash,
+        prev: null,
+      };
     }
     if (typeof to === 'string') {
       let u;
@@ -20,52 +33,83 @@ export const xLink = ({ title, to, ...props }) => {
       } else if (to.startsWith('/')) {
         u = new URL(`http://localhost${to}`);
       } else {
-        let path = state.path;
-        if (!path.endsWith('/')) {
-          path = path.replace(/\/[^/]*$/, '/');
+        let { pathname } = location;
+        if (!pathname.endsWith('/')) {
+          pathname = pathname.replace(/\/[^/]*$/, '/');
         }
         u = new URL(`http://localhost${path}${to}`);
       }
-      return {
-        pathname: to,
-        state: {
-          title,
-          path: u.pathname,
-          search: u.search,
-          hash: u.hash,
-          prev: state,
-        },
-      };
-    }
-    if (to.state) {
-      return {
-        ...to,
-        state: {
-          ...to.state,
-          title,
-          path: to.path,
-          search: to.search,
-          hash: to.hash,
-          prev: state,
-        },
-      };
-    }
-    return {
-      ...to, 
-      state: {
+      const href = `${u.pathname}${u.search}${u.hash}`;
+      const newState = {
         title,
-        path: to.path,
-        search: to.search,
-        hash: to.hash,
+        path: u.pathname,
+        search: u.search,
+        hash: u.hash,
         prev: state,
-      },
+      };
+      console.debug('Link %o / %o', href, newState);
+      if (replace) {
+        newState.prev = state.prev;
+        history.replace(href, newState);
+      } else {
+        history.push(href, newState);
+      }
+      return;
+    }
+    let href = '';
+    const newState = {
+      ...to,
+      title,
+      prev: state,
     };
-  }, [title, to, state]);
-  if (!myTo) {
-    return props.children;
+    if (to.pathname) {
+      if (to.pathname.startsWith('http://') || to.pathname.startsWith('https://')) {
+        href = to.pathname;
+      } else if (to.pathname.startsWith('/')) {
+        href = to.pathname;
+      } else {
+        let { pathname } = location;
+        if (!pathname.endsWith('/')) {
+          pathname = pathname.replace(/\/[^/]*$/, '/');
+        }
+        href = `${pathname}${to.pathname}`;
+      }
+    } else {
+      href = location.pathname;
+    }
+    if (to.search) {
+      if (to.search.startsWith('?')) {
+        href += to.search;
+      } else {
+        href += `?${to.search}`;
+      }
+    }
+    if (to.hash) {
+      if (to.hash.startsWith('#')) {
+        href += to.hash;
+      } else {
+        href += `#${to.hash}`;
+      }
+    }
+    console.debug('Link %o / %o', href, newState);
+    if (replace) {
+      newState.prev = state.prev;
+      history.replace(href, newState)
+    } else {
+      history.push(href, newState);
+    }
+  }, [title, to, back, replace, history, onClick]);
+  if (!to) {
+    return children;
+  }
+  if (component) {
+    const Comp = component;
+    return (
+      <Comp navigate={myOnClick} {...props}>{children}</Comp>
+    );
   }
   return (
-    <RouterLink to={myTo} {...props} />
+    <a href="#" onClick={myOnClick} {...props}>{children}</a>
   );
 };
 

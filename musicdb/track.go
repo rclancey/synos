@@ -676,6 +676,13 @@ func (t *Track) Update(orig, cur *Track) {
 	}
 }
 
+func (t *Track) GetSortName() string {
+	if t.SortName != nil {
+		return *t.SortName
+	}
+	return MakeSort(*t.Name)
+}
+
 func (t *Track) Validate() error {
 	t.GetName()
 	t.GetGenre()

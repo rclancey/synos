@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"math/rand"
 	"mime"
 	"os"
 	"path/filepath"
@@ -188,7 +189,7 @@ func (db *DB) SearchTracks(s Search, limit int, offset int) ([]*Track, error) {
 	if len(filters) == 0 {
 		return nil, errors.New("no search params")
 	}
-	qs := `SELECT * FROM track WHERE ` + filters + ` ORDER BY COALESCE(rating, 1) * COALESCE(play_count, 1) / EXTRACT(EPOCH FROM AGE(COALESCE(date_added, '1970-01-01 00:00:00Z'))) DESC, sort_album_artist, sort_album, disc_number, track_number, sort_name`;
+	qs := `SELECT track.*, xuser.homedir FROM track, xuser WHERE track.owner_id = xuser.id AND ` + filters + ` ORDER BY COALESCE(rating, 1) * COALESCE(play_count, 1) / EXTRACT(EPOCH FROM AGE(COALESCE(track.date_added, '1970-01-01 00:00:00Z'))) DESC, sort_album_artist, sort_album, disc_number, track_number, sort_name`;
 	if limit > 0 {
 		qs += ` LIMIT ?`
 		vals = append(vals, limit)
@@ -2236,4 +2237,56 @@ func (db *DB) FindSpotifyTrack(st *spotify.Track) (*Track, error) {
 		return nil, err
 	}
 	return tr, nil
+}
+
+func (db *DB) MixArtistTracks(artist string, ownerId *pid.PersistentID, minRating int, n int) ([]*Track, error) {
+	query := `SELECT * FROM track WHERE (LOWER(artist) LIKE ? OR SIMILARITY(artist, ?) > 0.6)`
+	args := []interface{}{
+		"%" + strings.ToLower(artist) + "%",
+		artist,
+	}
+	if minRating > 0 {
+		query += ` AND rating IS NOT NULL AND rating >= ?`
+		args = append(args, minRating)
+	}
+	if ownerId != nil {
+		query += ` AND owner_id = ?`
+		args = append(args, ownerId)
+	}
+	query += ` ORDER BY (SIMILARITY(artist, ?) + 0.01) * rating DESC, play_count`
+	args = append(args, artist)
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	tracks := []*Track{}
+	seen := map[string]bool{}
+	for rows.Next() {
+		track := &Track{}
+		err = rows.StructScan(track)
+		if err != nil {
+			return nil, err
+		}
+		if !seen[track.GetSortName()] {
+			seen[track.GetSortName()] = true
+			tracks = append(tracks, track)
+		}
+	}
+	if len(tracks) > n {
+		out := make([]*Track, n)
+		for i := range out {
+			g := int(math.Abs(rand.NormFloat64()) * float64(len(tracks)) / 3)
+			if g >= len(tracks) {
+				g = 0
+			}
+			out[i] = tracks[g]
+			tracks = append(tracks[:g], tracks[g+1:]...)
+		}
+		tracks = out
+	}
+	rand.Shuffle(len(tracks), func(i, j int) {
+		tracks[i], tracks[j] = tracks[j], tracks[i]
+	})
+	return tracks, nil
 }

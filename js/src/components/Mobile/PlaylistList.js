@@ -41,10 +41,8 @@ const Icon = ({ name, size }) => {
 
 export const PlaylistContainer = () => {
   const match = useRouteMatch();
-  const hist = useHistory();
-  console.debug('history = %o', hist);
-  const base = useMemo(() => generatePath(match.path, match.params), [match]);
-  const { id: persistent_id } = (match.params || {})
+  //const base = useMemo(() => generatePath(match.path, match.params), [match]);
+  const { playlistId: persistent_id } = (match.params || {})
   const [playlist, setPlaylist] = useState(null);
   const [playlists, setPlaylists] = useState([]);
   const api = useAPI(API);
@@ -86,7 +84,10 @@ export const PlaylistContainer = () => {
       <Playlist playlist={playlist} />
     );
   }
-
+  return (
+    <PlaylistFolder folder={playlist} contents={playlists} />
+  );
+  /*
   return (
     <Router>
       <Route path={`${base}/:id`}>
@@ -97,9 +98,10 @@ export const PlaylistContainer = () => {
       </Route>
     </Router>
   );
+  */
 };
 
-export const PlaylistFolder = ({ path, folder, contents }) => {
+export const PlaylistFolder = ({ folder, contents }) => {
   const api = useAPI(API);
   const onNewPlaylist = useCallback(() => {
     const playlist = {
@@ -111,9 +113,9 @@ export const PlaylistFolder = ({ path, folder, contents }) => {
     console.debug('createPlaylist(%o)', playlist);
     api.createPlaylist(playlist)
       .then((pl) => {
-        window.history.pushState({}, pl.name, `${path}/${pl.persistent_id}`);
+        window.history.pushState({}, pl.name, `/playlists/${pl.persistent_id}`);
       });
-  }, [api, folder, path]);
+  }, [api, folder]);
 
   const rowRenderer = useCallback(({ key, index, style }) => {
     if (index >= contents.length) {
@@ -135,7 +137,7 @@ export const PlaylistFolder = ({ path, folder, contents }) => {
         key={pl.persistent_id}
         style={style}
       >
-        <Link title={pl.name} to={`${path}/${pl.persistent_id}`} className="item">
+        <Link title={pl.name} to={`/playlists/${pl.persistent_id}`} className="item">
           <Icon name={pl.kind} size={36} />
           <div className="title">{pl.name}</div>
         </Link>
@@ -143,6 +145,9 @@ export const PlaylistFolder = ({ path, folder, contents }) => {
     );
   }, [contents, onNewPlaylist]);
 
+  if (contents === null || contents === undefined) {
+    return null;
+  }
   return (
     <div className="playlistList">
       <ScreenHeader name={folder.name} />

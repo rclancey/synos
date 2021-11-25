@@ -10,6 +10,7 @@ let defaultView = typeof window === 'undefined' ? 'tracks' : (window.localStorag
 
 export const PlaylistContainer = ({
   search,
+  getPlaylist,
   onReorder,
   onDelete,
   controlAPI,
@@ -32,12 +33,16 @@ export const PlaylistContainer = ({
   }, [view]);
   const api = useAPI(API);
   useEffect(() => {
-    if (!api || !playlistId) {
-      setPlaylist(null);
+    if (!getPlaylist) {
+      if (!api || !playlistId) {
+        setPlaylist(null);
+      } else {
+        api.loadPlaylist(playlistId).then(setPlaylist);
+      }
     } else {
-      api.loadPlaylist(playlistId).then(setPlaylist);
+      getPlaylist().then(setPlaylist);
     }
-  }, [playlistId, api]);
+  }, [playlistId, api, getPlaylist]);
   if (playlist) {
     switch (view) {
       case 'playlist':

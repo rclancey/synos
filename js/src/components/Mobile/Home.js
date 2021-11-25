@@ -34,6 +34,7 @@ import SearchIcon from '../icons/Search';
 import GearIcon from '../icons/Gear';
 
 export const Home = React.memo(({ children, onOpen, ...props }) => {
+  /*
   const [jooki, setJooki] = useState(null);
   const api = useAPI(JookiAPI);
   useEffect(() => {
@@ -49,6 +50,7 @@ export const Home = React.memo(({ children, onOpen, ...props }) => {
         console.debug('error loading jooki: %o', err);
       });
   }, [api]);
+  */
   if (children) {
     return children;
   }

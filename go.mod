@@ -24,7 +24,7 @@ require (
 	github.com/rclancey/lastfm v0.0.1
 	github.com/rclancey/logging v1.0.1
 	github.com/rclancey/sendmail v0.0.3
-	github.com/rclancey/spotify v0.2.0
+	github.com/rclancey/spotify v0.2.1
 	github.com/rclancey/twofactor v0.0.3
 	github.com/sergi/go-diff v1.2.0
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300

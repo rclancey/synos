@@ -61,7 +61,10 @@ export const MobileSkin = ({
           <Route exact path="/">
             <Home />
           </Route>
-          <Route path="/playlists">
+          <Route exact path="/playlists">
+            <PlaylistContainer />
+          </Route>
+          <Route path="/playlists/:playlistId">
             <PlaylistContainer />
           </Route>
           <Route exact path="/artists">

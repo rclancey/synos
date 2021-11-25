@@ -1,21 +1,20 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { Link, useRouteMatch } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
 //import { useHistoryState } from '../../lib/history';
 import { SongList } from './SongList';
 import { LinkButton } from '../Input/Button';
+import { Link } from './Link';
 
 export const Search = ({
   prev,
   onClose,
   onTrackMenu,
 }) => {
-  const match = useRouteMatch();
-  //const { search = {} } = useHistoryState();
-  const search = {};
+  const { search } = useLocation();
   const [query, setQuery] = useState('');
   const [expand, setExpand] = useState(false);
   const [genre, setGenre] = useState('');
@@ -42,8 +41,8 @@ export const Search = ({
       setExpand(false);
     } else if (Array.from(q.keys()).length > 0) {
       ['genre', 'song', 'album', 'artist'].forEach((k) => {
-        if (params.has(k)) {
-          params[k] = params.get(k);
+        if (q.has(k)) {
+          params[k] = q.get(k);
         }
       });
       setGenre(params.genre);
@@ -78,9 +77,23 @@ export const Search = ({
     Promise.all([artP, albP, resP])
       .then(([art, alb, res]) => {
         if (!abort.aborted) {
+          /*
           setArtists(art);
           setAlbums(alb);
           setResults(res ? res.tracks : []);
+          */
+          let out = [];
+          if (art) {
+            out = out.concat(art);
+          }
+          if (alb) {
+            out = out.concat(alb);
+          }
+          if (res && res.tracks) {
+            out = out.concat(res.tracks);
+          }
+          console.debug('setResults(%o)', out);
+          setResults(out);
           setLoading(false);
         }
       });
@@ -193,7 +206,7 @@ const ComplexQuery = ({
         {'\u00a0 Simple Search'}
       </span>
       <div className="center">
-        <Link className="button" to={to} component={LinkButton}>Search</Link>
+        <Link className="button" title="Search" replace to={to} component={LinkButton}>Search</Link>
       </div>
       {loading ? (
         <p className="loading">Loading...</p>
@@ -241,7 +254,7 @@ const SimpleQuery = ({
       q.set("query", query);
     }
     return {
-      pathname: '/search/elsewhere',
+      pathname: '/search',
       search: q.toString(),
     };
   }, [query]);
@@ -256,7 +269,7 @@ const SimpleQuery = ({
         {'\u00a0 Advanced Search'}
       </span>
       <div className="center">
-        <Link className="button" to={to} component={LinkButton}>Search</Link>
+        <Link className="button" title="Search" replace to={to} component={LinkButton}>Search</Link>
       </div>
       {loading ? (
         <p className="loading">Loading...</p>

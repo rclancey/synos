@@ -31,4 +31,3 @@ export const useAPI = (cls) => {
   */
   return api;
 };
-
