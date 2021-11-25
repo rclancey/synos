@@ -3,6 +3,8 @@ package api
 import (
 	"log"
 	"net/http"
+	"sort"
+	"time"
 
 	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/synos/musicdb"
@@ -29,6 +31,7 @@ func SearchAlbums(w http.ResponseWriter, req *http.Request) (interface{}, error)
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
+	cacheFor(w, time.Minute * 15)
 	return albums, nil
 }
 
@@ -41,6 +44,7 @@ func SearchArtists(w http.ResponseWriter, req *http.Request) (interface{}, error
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
+	cacheFor(w, time.Minute * 15)
 	return artists, nil
 }
 
@@ -53,6 +57,7 @@ func ListGenres(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
+	cacheFor(w, time.Minute * 15)
 	return genres, nil
 }
 
@@ -66,6 +71,7 @@ func ListArtists(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
+	cacheFor(w, time.Minute * 15)
 	return artists, nil
 }
 
@@ -85,6 +91,9 @@ func GetArtist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	if len(artists) == 0 {
 		return nil, H.NotFound
 	}
+	sort.Slice(artists, func(i, j int) bool {
+		return artists[j].Count() < artists[i].Count()
+	})
 	return artists[0], nil
 }
 
@@ -99,6 +108,7 @@ func ListAlbums(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
+	cacheFor(w, time.Minute * 15)
 	return albums, nil
 }
 
@@ -132,6 +142,7 @@ func ListAlbumsByArtist(w http.ResponseWriter, req *http.Request) (interface{}, 
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
+	cacheFor(w, time.Minute * 15)
 	return albums, nil
 }
 
@@ -159,5 +170,6 @@ func ListSongs(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
+	cacheFor(w, time.Minute * 15)
 	return tracks, nil
 }

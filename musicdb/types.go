@@ -45,6 +45,14 @@ func (a *Artist) Sorted() []string {
 	return sortNames(a.Names)
 }
 
+func (a *Artist) Count() int {
+	count := 0
+	for _, v := range a.Names {
+		count += v
+	}
+	return count
+}
+
 type Album struct {
 	Artist *Artist `json:"artist"`
 	SortName string `json:"sort"`
@@ -54,6 +62,14 @@ type Album struct {
 
 func (a *Album) Sorted() []string {
 	return sortNames(a.Names)
+}
+
+func (a *Album) Count() int {
+	count := 0
+	for _, v := range a.Names {
+		count += v
+	}
+	return count
 }
 
 func NewGenre(name string) *Genre {

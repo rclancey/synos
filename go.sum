@@ -209,6 +209,12 @@ github.com/rclancey/sendmail v0.0.3 h1:H/B7rDIgJJZiCJ5JsLl8wzbuWZMPawiUDzjTlTtmZ
 github.com/rclancey/sendmail v0.0.3/go.mod h1:zzIZaP2WJZWtpFfjon8nM4Cx2DMSeGrNeS+SryP4nls=
 github.com/rclancey/spotify v0.2.0 h1:M5BXzVhYbLdbJY54CX6b6SfBFPs43MvC0OwVKzjPib0=
 github.com/rclancey/spotify v0.2.0/go.mod h1:qtq9mWh/lhHPTOEsVoY3959P4W/Q7mXv2FN42mwDbpA=
+github.com/rclancey/spotify v0.2.1-0.20211124011141-01b3e23faf5b h1:5uPdqz//ira8n7/r0HR08jHZAaZOVE4zdwVw7HpY4d4=
+github.com/rclancey/spotify v0.2.1-0.20211124011141-01b3e23faf5b/go.mod h1:qtq9mWh/lhHPTOEsVoY3959P4W/Q7mXv2FN42mwDbpA=
+github.com/rclancey/spotify v0.2.1-0.20211124020741-74a192e34648 h1:S/VzxMTeRdt7i2khDQW9aet001CmxsKLWGnTQun3EWA=
+github.com/rclancey/spotify v0.2.1-0.20211124020741-74a192e34648/go.mod h1:qtq9mWh/lhHPTOEsVoY3959P4W/Q7mXv2FN42mwDbpA=
+github.com/rclancey/spotify v0.2.1 h1:3G84EJ5MCWfAn3ij07hkYrfUw0Fz9qV5DAea6PAKJEo=
+github.com/rclancey/spotify v0.2.1/go.mod h1:qtq9mWh/lhHPTOEsVoY3959P4W/Q7mXv2FN42mwDbpA=
 github.com/rclancey/twofactor v0.0.3 h1:RNBJPzqumhwNDjROPVZmmSjtXhrYAOpt87WpJR0GQQk=
 github.com/rclancey/twofactor v0.0.3/go.mod h1:5AsVFyXq+xrN84+eR/tiNXUSDPL0ZpfgBtGaF7RYRJ4=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
