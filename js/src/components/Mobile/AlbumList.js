@@ -23,7 +23,7 @@ const albumImageUrl = (album, artistName) => {
   return url;
 };
 
-const AlbumImage = ({ album, artist, size }) => {
+export const AlbumImage = ({ album, artist, size }) => {
   const url = useMemo(() => albumImageUrl(album, artist), [album, artist]);
   return (
     <CoverArt url={url} size={size} radius={10} />

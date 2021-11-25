@@ -1,36 +1,24 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import _JSXStyle from 'styled-jsx/style';
-import { Link } from 'react-router-dom';
-
-//import { useHistoryState } from '../../lib/history';
-
-const backToHome = {
-  pathname: '/',
-  state: { title: 'Synos' },
-};
+import { Link, useHistory, useLocation } from 'react-router-dom';
 
 export const Back = () => {
-  //const { prev } = useHistoryState();
-  const prev = {};
-  const onBack = useMemo(() => {
-    if (prev) {
-      return (evt) => {
-        evt.preventDefault();
-        window.history.back();
-        return false;
-      };
-    }
-    return null;
-  }, [prev]);
-  if (prev) {
+  const { state } = useLocation();
+  const history = useHistory();
+  const onBack = useCallback((evt) => {
+    evt.preventDefault();
+    history.goBack();
+    return false;
+  }, [history]);
+  if (state && state.prev) {
     return (
       <a href="/" onClick={onBack}>
-        <InnerBack title={prev.title || 'Synos'} />
+        <InnerBack title={state.prev.title || 'Synos'} />
       </a>
     );
   }
   return (
-    <Link to={backToHome}>
+    <Link to="/" title="Synos">
       <InnerBack title="Synos" />
     </Link>
   );

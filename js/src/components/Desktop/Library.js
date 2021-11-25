@@ -23,6 +23,7 @@ import AlbumList from './AlbumList';
 //import AlbumView from './Tracks/AlbumView';
 import AlbumContainer from './AlbumContainer';
 import GeniusPlaylist from './GeniusPlaylist';
+import ArtistMix from './Playlists/ArtistMix';
 import PlaylistContainer from './Playlists/PlaylistContainer';
 import JookiDeviceContainer from './Device/Jooki/Container';
 
@@ -289,8 +290,16 @@ export const Library = ({
           <Route exact path="/artists">
             <ArtistList />
           </Route>
-          <Route path="/artists/:artistName">
+          <Route exact path="/artists/:artistName">
             <ArtistList />
+          </Route>
+          <Route path="/artists/:artistName/mix">
+            <ArtistMix
+              search={search}
+              controlAPI={controlAPI}
+              onShowInfo={onShowInfo}
+              onShowMultiInfo={onShowMultiInfo}
+            />
           </Route>
           <Route exact path="/albums">
             <AlbumList />

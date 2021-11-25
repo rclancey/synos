@@ -115,6 +115,21 @@ export class API extends APIBase {
     return this.post(url, args);
   }
 
+  makeArtistMix(artist, args) {
+    const params = new URLSearchParams({ artist });
+    if (args !== null && args !== undefined) {
+      Object.entries(args).forEach(([key, val]) => {
+        if (Array.isArray(val)) {
+          val.forEach((v) => params.append(key, v));
+        } else {
+          params.set(key, val);
+        }
+      });
+    }
+    const url = `/api/genius/artists?${params.toString()}`
+    return this.get(url);
+  }
+
   listGeniusGenres() {
     const url = `/api/genius/genres`;
     return this.get(url);
