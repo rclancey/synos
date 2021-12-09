@@ -44,7 +44,7 @@ type Track struct {
 	Grouping         *string      `json:"grouping,omitempty" db:"grouping"`
 	Kind             *string      `json:"kind,omitempty" db:"kind"`
 	Location         *string      `json:"location" db:"location"`
-	Loved            *bool        `json:"loved" db:"loved"`
+	Loved            *bool        `json:"loved,omitempty" db:"loved"`
 	MovementCount    *uint8       `json:"movement_count,omitempty" db:"movement_count"`
 	MovementName     *string      `json:"movement_name,omitempty" db:"movement_name"`
 	MovementNumber   *uint8       `json:"movement_number,omitempty" db:"movement_number"`
@@ -72,10 +72,10 @@ type Track struct {
 	Work             *string      `json:"work,omitempty" db:"work"`
 	MediaKind        MediaKind    `json:"media_kind,omitempty" db:"media_kind"`
 	ArtworkURL       *string      `json:"artwork_url,omitempty" db:"-"`
-	SpotifyAlbumArtistID *string      `json:"spotify_album_artist_id" db:"spotify_album_artist_id"`
-	SpotifyAlbumID       *string      `json:"spotify_album_id" db:"spotify_album_id"`
-	SpotifyArtistID      *string      `json:"spotify_artist_id" db:"spotify_artist_id"`
-	SpotifyTrackID       *string      `json:"spotify_track_id" db:"spotify_track_id"`
+	SpotifyAlbumArtistID *string      `json:"spotify_album_artist_id,omitempty" db:"spotify_album_artist_id"`
+	SpotifyAlbumID       *string      `json:"spotify_album_id,omitempty" db:"spotify_album_id"`
+	SpotifyArtistID      *string      `json:"spotify_artist_id,omitempty" db:"spotify_artist_id"`
+	SpotifyTrackID       *string      `json:"spotify_track_id,omitempty" db:"spotify_track_id"`
 	Homedir              *string      `json:"-" db:"homedir" dbignore:"insert update"`
 	db *DB
 }
