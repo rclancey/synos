@@ -38,7 +38,7 @@ NODE_ENV ?= production
 all: compile
 
 $(BUILDDIR)/$(PKGNAME)/bin/%: $(GOSRC) go.mod go.sum
-	echo $(TAGNAME) > api/version.txt
+	echo $(TAGNAME) > api/version/version.txt
 	mkdir -p $(BUILDDIR)/$(PKGNAME)/bin
 	env CC=$(CC) CXX=$(CXX) GOARCH=$(GOARCH) GOOS=$(GOOS) CGO_ENABLED=$(CGO_ENABLED) go build -ldflags "$(LDFLAGS)" -o $@ cmd/$*.go
 
