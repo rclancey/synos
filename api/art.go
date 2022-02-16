@@ -1,13 +1,18 @@
 package api
 
 import (
+	"fmt"
+	"image"
 	"io/ioutil"
 	"log"
 	"mime"
 	"net/http"
+	"os"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/lucasb-eyer/go-colorful"
 	H "github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/synos/musicdb"
 )
@@ -18,6 +23,7 @@ func ArtAPI(router H.Router, authmw H.Middleware) {
 	router.GET("/art/artist", H.HandlerFunc(ArtistArt))
 	router.GET("/art/album", H.HandlerFunc(AlbumArt))
 	router.GET("/art/genre", H.HandlerFunc(GenreArt))
+	router.GET("art/color/:id", H.HandlerFunc(TrackColor))
 }
 
 func TrackArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -153,4 +159,121 @@ func GenreArt(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	}
 	cacheFor(w, time.Hour * 48)
 	return H.Redirect(u), nil
+}
+
+func TrackColor(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	tr, err := getTrackById(req)
+	if err != nil {
+		return nil, err
+	}
+	fn, err := GetAlbumArtFilename(tr)
+	type res struct {
+		Hex string `json:"hex,omitempty"`
+		RGBA string `json:"rgba,omitempty"`
+		HSLA string `json:"hsla,omitempty"`
+		Hue int `json:"hue"`
+		Saturation int `json:"saturation"`
+		Lightness int `json:"lightness"`
+		Theme string `json:"theme,omitempty"`
+		Dark bool `json:"dark"`
+		Status string `json:"status"`
+		Error string `json:"error,omitempty"`
+	}
+	if err != nil {
+		return res{Status: "error", Error: err.Error()}, nil
+	}
+	f, err := os.Open(fn)
+	if err != nil {
+		return res{Status: "error", Error: err.Error()}, nil
+	}
+	img, _, err := image.Decode(f)
+	if err != nil {
+		return res{Status: "error", Error: err.Error()}, nil
+	}
+	bounds := img.Bounds()
+	width := bounds.Max.X - bounds.Min.X
+	height := bounds.Max.Y - bounds.Min.Y
+	hs := map[float64]int{}
+	ls := make([]float64, width * height)
+	ss := make([]float64, width * height)
+	var h float64
+	themes := map[float64]string{
+		0: "red",
+		25: "orange",
+		60: "yellow",
+		120: "green",
+		165: "seafoam",
+		180: "teal",
+		210: "slate",
+		240: "blue",
+		278: "indigo",
+		295: "purple",
+		320: "fuchsia",
+		360: "red",
+	}
+	hues := []float64{}
+	for k := range themes {
+		hues = append(hues, k)
+	}
+	sort.Float64s(hues)
+	for y := bounds.Min.Y; y < bounds.Max.Y; y += 1 {
+		for x := bounds.Min.X; x < bounds.Max.X; x += 1 {
+			i := width * (y - bounds.Min.Y) + (x - bounds.Min.X)
+			c, _ := colorful.MakeColor(img.At(x, y))
+			h, ss[i], ls[i] = c.Hsl()
+			for j := 0; j < len(hues) - 1; j += 1 {
+				if h >= hues[j] && h < hues[j+1] {
+					if h - hues[j] < hues[j+1] - h {
+						h = hues[j]
+					} else {
+						h = hues[j+1]
+					}
+					if h >= 360 {
+						h = 0
+					}
+					break
+				}
+			}
+			hs[h] += 1
+		}
+	}
+	hn := 0
+	hmode := float64(0)
+	for h, n := range hs {
+		if n > hn {
+			hmode = h
+			hn = n
+		}
+	}
+	sort.Float64s(ss)
+	sort.Float64s(ls)
+	n := len(ls) / 2
+	var s, l float64
+	var theme string
+	if ss[n] < 0.25 {
+		s = 0
+		hmode = 0
+		theme = "grey"
+	} else {
+		s = 1
+		theme = themes[hmode]
+	}
+	if ls[n] > 0.5 {
+		l = 0.6
+	} else {
+		l = 0.3
+	}
+	hsl := colorful.Hsl(hmode, s, l)
+	r, g, b := hsl.RGB255()
+	return res{
+		Hex: hsl.Hex(),
+		RGBA: fmt.Sprintf("rgba(%d, %d, %d, 1.0)", r, g, b),
+		HSLA: fmt.Sprintf("hsla(%d, %d%%, %d%%, 1.0)", int(hmode), int(s * 100), int(l * 100)),
+		Hue: int(hmode),
+		Saturation: int(s * 100),
+		Lightness: int(l * 100),
+		Status: "ok",
+		Theme: theme,
+		Dark: l < 0.5,
+	}, nil
 }
