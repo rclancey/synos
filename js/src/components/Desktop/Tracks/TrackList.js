@@ -1,59 +1,17 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import _JSXStyle from "styled-jsx/style";
 import Draggable from 'react-draggable';
 import { useColumns } from '../../../lib/colsize';
 import { useFocus } from '../../../lib/useFocus';
+import { usePlaylistColumns } from '../../../lib/playlistColumns';
 import { AutoSizeList } from '../../AutoSizeList';
 import { TrackRow } from './TrackRow';
+import { TrackListHeader } from './TrackListHeader';
 import { useCurrentTrack } from '../../Player/Context';
-
-const TrackListHeader = React.memo(({
-  columnData,
-  dataKey,
-  disableSort,
-  label,
-  sortBy,
-  sortDirection,
-  onSort,
-  onResize,
-}) => (
-  <div className="col">
-    <div
-      key={dataKey}
-      className="ReactVirtualized__Table__headerTruncatedText"
-      onClick={() => onSort(dataKey)}
-    >
-      {label}
-    </div>
-    <Draggable
-      axis="x"
-      defaultClassName="DragHandle"
-      defaultClassNameDragging="DragHandleActive"
-      onDrag={(event, { deltaX }) => onResize(dataKey, deltaX)}
-      position={{ x: 0 }}
-      zIndex={999}
-    >
-      <span className="DragHandleIcon">⋮</span>
-    </Draggable>
-    <style jsx>{`
-      .col {
-        flex: 0 0 ${columnData.width}px;
-        width: ${columnData.width}px;
-        min-width: ${columnData.width}px;
-        max-width: ${columnData.width}px;
-        display: flex;
-        flex-direction: row;
-        font-weight: bold;
-        box-sizing: border-box;
-        padding: 1px 0px 1px 5px;
-      }
-    `}</style>
-  </div>
-));
 
 export const TrackList = ({
   type,
-  columns,
+  //columns,
   tracks,
   selected,
   playlist,
@@ -66,9 +24,12 @@ export const TrackList = ({
   onShowInfo,
 }) => {
   const { focused, focus, node, onFocus, onBlur } = useFocus(onKeyPress);
-  const [cols, onResize, setColNode] = useColumns(columns);
+  const columns = usePlaylistColumns(playlist ? playlist.persistent_id : null);
+  const [cols, onResize, setColNode] = useColumns(columns.cols);
   //const [, , setTLNode] = useMeasure(100, 100);
   const currentTrack = useCurrentTrack();
+
+  const style = useMemo(() => ({ width: `${columns.width}px`, minWidth: '100%' }), [columns.width]);
 
   const setNode = useCallback((xnode) => {
     if (xnode) {
@@ -96,7 +57,7 @@ export const TrackList = ({
       rowData={tracks[index].track}
       className={`row ${index % 2 === 0 ? 'even' : 'odd'} ${tracks[index].selected ? 'selected' : ''}`}
       style={style}
-      columns={cols}
+      columns={columns.cols}
       onReorder={onReorder}
       onClick={(event, index) => {
         event.preventDefault();
@@ -116,28 +77,32 @@ export const TrackList = ({
       onFocus={onFocus}
       onBlur={onBlur}
     >
-      <div className="header">
-        { cols.map(col => (
-          <TrackListHeader
-            key={col.key}
-            columnData={col}
-            dataKey={col.key}
-            label={col.label}
-            onSort={onSort}
-            onResize={onResize}
-          />
-        )) }
-      </div>
-      <AutoSizeList id={playlist ? playlist.persistent_id : 'tracks'} itemCount={tracks.length} itemSize={20}>
+      { columns !== null && columns !== undefined ? (
+        <TrackListHeader columns={columns} onSort={onSort} />
+      ) : null }
+      <AutoSizeList
+        id={playlist ? playlist.persistent_id : 'tracks'}
+        className="autosizer"
+        itemCount={tracks.length}
+        itemSize={20}
+        style={style}
+        disableWidth
+      >
         {rowRenderer}
       </AutoSizeList>
       <style jsx>{`
         .trackList {
           flex: 10;
           width: 100%;
-          overflow: hidden;
+          overflow-y: hidden;
           font-size: 12px;
           color: var(--text);
+        }
+        .trackList::-webkit-scrollbar {
+          display: none;
+        }
+        .trackList :global(.autosizer::-webkit-scrollbar) {
+          display: none;
         }
         .trackList .header {
           border-bottom-color: var(--border);

@@ -4,6 +4,7 @@ export const PLAYLIST_POSITION = {
   key: 'origIndex',
   minWidth: 30,
   maxWidth: 50,
+  width: 50,
   label: '#',
   className: 'num',
   formatter: ({ rowData }) => (rowData.origIndex + 1).toString()
@@ -13,6 +14,7 @@ export const CHECKED = {
   key: 'disabled',
   minWidth: 10,
   maxWidth: 10,
+  width: 10,
   label: '\u2611',
   formatter: ({ rowData, dataKey }) => rowData[dataKey] ? '\u2610' : '\u2611'
 };
@@ -20,33 +22,39 @@ export const CHECKED = {
 export const TRACK_TITLE = {
   key: 'name',
   label: 'Name',
+  width: 200,
 };
 
 export const ARTIST = {
   key: 'artist',
   label: 'Artist',
+  width: 150,
 };
 
 export const COMPOSER = {
   key: 'composer',
   label: 'Composer',
+  width: 150,
 };
 
 export const ALBUM_TITLE = {
   key: 'album',
   label: 'Album',
+  width: 150,
 };
 
 export const ALBUM_ARTIST = {
   key: 'album_artist',
   label: 'Album Artist',
+  width: 150,
 };
 
 export const DISC_NUMBER = {
   key: 'disc_number',
   label: 'Disc #',
   className: 'num',
-  maxWidth: 75,
+  maxWidth: 55,
+  width: 55,
   formatter: ({ rowData }) => {
     if (rowData.disc_number) {
       if (rowData.disc_count) {
@@ -62,7 +70,8 @@ export const TRACK_NUMBER = {
   key: 'track_number',
   label: 'Track #',
   className: 'num',
-  maxWidth: 75,
+  maxWidth: 65,
+  width: 65,
   formatter: ({ rowData }) => {
     if (rowData.track_number) {
       if (rowData.track_count) {
@@ -77,16 +86,19 @@ export const TRACK_NUMBER = {
 export const GENRE = {
   key: 'genre',
   label: 'Genre',
+  width: 100,
 };
 
 export const CATEGORY = {
   key: 'category',
   label: 'Category',
+  width: 100,
 };
 
 export const GROUPING = {
   key: 'grouping',
   label: 'Grouping',
+  width: 100,
 };
 
 const stars = (rating) => {
@@ -99,6 +111,7 @@ export const RATING = {
   label: 'Rating',
   className: 'stars',
   maxWidth: 80,
+  width: 80,
   formatter: ({ rowData }) => stars(rowData.rating),
 };
 
@@ -107,6 +120,7 @@ export const ALBUM_RATING = {
   label: 'Album Rating',
   className: 'stars',
   maxWidth: 80,
+  width: 80,
   formatter: ({ rowData }) => stars(rowData.album_rating),
 };
 
@@ -115,6 +129,7 @@ export const RELEASE_YEAR = {
   label: 'Year',
   className: 'num',
   maxWidth: 75,
+  width: 75,
   formatter: ({ rowData }) => {
     if (rowData.release_date) {
       return new Date(rowData.release_date).getFullYear().toString();
@@ -169,7 +184,8 @@ export const RELEASE_DATE = {
   key: 'release_date',
   label: 'Release Date',
   className: 'date',
-  maxWidth: 120,
+  maxWidth: 100,
+  width: 100,
   formatter: ({ rowData }) => displayDate(rowData.release_date),
 };
 
@@ -177,7 +193,8 @@ export const DATE_ADDED = {
   key: 'date_added',
   label: 'Date Added',
   className: 'date',
-  maxWidth: 150,
+  maxWidth: 132,
+  width: 132,
   formatter: ({ rowData }) => displayDateTime(rowData.date_added),
 };
 
@@ -185,7 +202,8 @@ export const DATE_MODIFIED = {
   key: 'date_modified',
   label: 'Date Modified',
   className: 'date',
-  maxWidth: 150,
+  maxWidth: 132,
+  width: 132,
   formatter: ({ rowData }) => displayDateTime(rowData.date_modified),
 };
 
@@ -193,7 +211,8 @@ export const PURCHASE_DATE = {
   key: 'purchase_date',
   label: 'Purchase Date',
   className: 'date',
-  maxWidth: 150,
+  maxWidth: 132,
+  width: 132,
   formatter: ({ rowData }) => displayDateTime(rowData.purchase_date),
 };
 
@@ -201,7 +220,8 @@ export const LAST_PLAYED = {
   key: 'play_date_utc',
   label: 'Last Played',
   className: 'date',
-  maxWidth: 150,
+  maxWidth: 132,
+  width: 132,
   formatter: ({ rowData }) => displayDateTime(rowData.play_date_utc),
 };
 
@@ -209,7 +229,8 @@ export const LAST_SKIPPED = {
   key: 'skip_date',
   label: 'Last Skipped',
   className: 'date',
-  maxWidth: 150,
+  maxWidth: 132,
+  width: 132,
   formatter: ({ rowData }) => displayDateTime(rowData.skip_date),
 };
 
@@ -218,6 +239,7 @@ export const PLAY_COUNT = {
   label: 'Plays',
   className: 'num',
   maxWidth: 75,
+  width: 75,
 };
 
 export const SKIP_COUNT = {
@@ -225,6 +247,7 @@ export const SKIP_COUNT = {
   label: 'Skips',
   className: 'num',
   maxWidth: 75,
+  width: 75,
 };
 
 export const TIME = {
@@ -232,12 +255,14 @@ export const TIME = {
   label: 'Time',
   className: 'time',
   maxWidth: 60,
+  width: 60,
   formatter: ({ rowData }) => displayTime(rowData.total_time),
 };
 
 export const KIND = {
   key: 'kind',
   label: 'Kind',
+  width: 100,
 };
 
 export const BEATS_PER_MINUTE = {
@@ -245,6 +270,7 @@ export const BEATS_PER_MINUTE = {
   label: 'Beats per Minute',
   className: 'num',
   maxWidth: 75,
+  width: 75,
 };
 
 export const BIT_RATE = {
@@ -252,6 +278,7 @@ export const BIT_RATE = {
   label: 'Bit Rate',
   className: 'num',
   maxWidth: 75,
+  width: 75,
 };
 
 export const EMPTY = {

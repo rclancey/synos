@@ -13,6 +13,7 @@ import { TH } from '../../lib/trackList';
 import { WS } from '../../lib/ws';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
+import { usePlaylistColumns } from '../../lib/playlistColumns';
 import { useControlAPI } from '../Player/Context';
 import { PlaylistBrowser } from './Playlists/PlaylistBrowser';
 import { TrackBrowser } from './Tracks/TrackBrowser';
@@ -73,6 +74,7 @@ export const Library = ({
   const [tracks, setTracks] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const newest = useRef(0);
+  const columns = usePlaylistColumns(null);
 
   const [device, setDevice] = useState(null);
 
@@ -276,6 +278,7 @@ export const Library = ({
           />
           <Route exact path="/">
             <TrackBrowser
+              columns={columns}
               columnBrowser={true}
               tracks={tracks}
               search={search}

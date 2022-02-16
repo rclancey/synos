@@ -91,7 +91,7 @@ const handlePagingEvent = (event) => {
 const emptyTracks = [];
 export const TrackBrowser = ({
   columnBrowser = false,
-  columns = defaultColumns,
+  //columns = defaultColumns,
   tracks = emptyTracks,
   playlist = null,
   search = null,
@@ -302,7 +302,6 @@ export const TrackBrowser = ({
         </div>
       ) : null }
       <TrackList
-        columns={columns}
         tracks={displayTracks}
         playlist={playlist}
         selected={selected}
