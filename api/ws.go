@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 	H "github.com/rclancey/httpserver/v2"
 )
@@ -25,9 +26,16 @@ func getWebsocketHub() (H.Hub, error) {
 }
 
 func ServeWS(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	log.Println("websocket request")
 	hub, err := getWebsocketHub()
 	if err != nil {
+		log.Println("error getting websocket hub", err)
 		return nil, H.ServiceUnavailable.Wrap(err, "websocket not available")
 	}
-	return H.ServeWS(hub, w, req)
+	log.Println("serving websocket")
+	res, err := H.ServeWS(hub, w, req)
+	if err != nil {
+		log.Println("error serving websocket:", err)
+	}
+	return res, err
 }

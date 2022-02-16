@@ -274,7 +274,7 @@ func (s *Sonos) GetQueue() (queue *Queue, xerr error) {
 			artist := item.Creator()
 			album := item.Album()
 			tn := item.OriginalTrackNumber()
-			cover := item.AlbumArtURI()
+			//cover := item.AlbumArtURI()
 			if name != "" {
 				tracks[i].Name = &name
 			}
@@ -288,9 +288,11 @@ func (s *Sonos) GetQueue() (queue *Queue, xerr error) {
 				// TODO
 				tracks[i].Work = &tn
 			}
+			/*
 			if cover != "" {
 				tracks[i].ArtworkURL = &cover
 			}
+			*/
 		}
 	}
 	q, err := s.GetPlaybackStatus()
