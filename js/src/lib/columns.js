@@ -160,7 +160,7 @@ export const displayDateTime = (t) => {
       ap = 'AM';
     } else if (h < 12) {
       h = h.toString();
-      ap = 'PM';
+      ap = 'AM';
     } else if (h === 12) {
       h = '12';
       ap = 'PM';
@@ -217,12 +217,12 @@ export const PURCHASE_DATE = {
 };
 
 export const LAST_PLAYED = {
-  key: 'play_date_utc',
+  key: 'play_date',
   label: 'Last Played',
   className: 'date',
   maxWidth: 132,
   width: 132,
-  formatter: ({ rowData }) => displayDateTime(rowData.play_date_utc),
+  formatter: ({ rowData }) => displayDateTime(rowData.play_date),
 };
 
 export const LAST_SKIPPED = {

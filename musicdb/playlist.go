@@ -183,6 +183,7 @@ func (p *Playlist) Update(orig, cur *Playlist) (*pid.PersistentID, bool) {
 			}
 		}
 		if changed {
+			log.Printf("three way merge on %s (%s): %d, %d, %d", p.PersistentID, p.Name, n1, n2, n3)
 			p.TrackIDs, _ = ThreeWayMerge(orig.TrackIDs, cur.TrackIDs, p.TrackIDs)
 			log.Printf("three way merge tracks (%d, %d, %d) => %d", n1, n2, n3, len(p.TrackIDs))
 		} else {

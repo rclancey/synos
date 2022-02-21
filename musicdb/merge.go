@@ -1,6 +1,7 @@
 package musicdb
 
 import (
+	"log"
 	"strings"
 
 	"github.com/rclancey/itunes/persistentId"
@@ -15,7 +16,14 @@ func pidsToText(pids []pid.PersistentID) string {
 	return strings.Join(lines, "\n")
 }
 
-func ThreeWayMerge(base, delta_one, delta_two []pid.PersistentID) ([]pid.PersistentID, bool) {
+func ThreeWayMerge(base, delta_one, delta_two []pid.PersistentID) (out []pid.PersistentID, ok bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("recovering from", r)
+			out = delta_one
+			ok = false
+		}
+	}()
 	base_s := pidsToText(base)
 	delta_one_s := pidsToText(delta_one)
 	delta_two_s := pidsToText(delta_two)
@@ -24,7 +32,9 @@ func ThreeWayMerge(base, delta_one, delta_two []pid.PersistentID) ([]pid.Persist
 	res, applied := dmp.PatchApply(patches, delta_two_s)
 	for _, app := range applied {
 		if !app {
-			return delta_two, false
+			out = delta_two
+			ok = false
+			return
 		}
 	}
 	lines := strings.Split(res, "\n")
@@ -35,6 +45,8 @@ func ThreeWayMerge(base, delta_one, delta_two []pid.PersistentID) ([]pid.Persist
 			pids[i] = p
 		}
 	}
-	return pids, true
+	out = pids
+	ok = true
+	return
 }
 
