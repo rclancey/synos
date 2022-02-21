@@ -56,6 +56,33 @@ const addPlaylistTimestamp = (pls, timestamp) => {
   });
 };
 
+const updateCounts = (api, setTracks) => {
+  trackDB.autoUpdatePlayCounts(api).then((playCounts) => {
+    const playCountsById = {};
+    playCounts.forEach(({ persistent_id, play_count, play_date }) => {
+      playCountsById[persistent_id] = { play_count, play_date };
+    });
+    trackDB.autoUpdateSkipCounts(api).then((skipCounts) => {
+      const skipCountsById = {};
+      skipCounts.forEach(({ persistent_id, skip_count, skip_date }) => {
+        skipCountsById[persistent_id] = { skip_count, skip_date };
+      });
+      setTracks((orig) => orig.map((tr) => {
+        let out = tr;
+        const playCount = playCountsById[tr.persistent_id];
+        if (playCount) {
+          out = { ...out, ...playCount };
+        }
+        const skipCount = skipCountsById[tr.persistent_id];
+        if (skipCount) {
+          out = { ...out, ...skipCount };
+        }
+        return out;
+      }));
+    });
+  });
+};
+
 export const Library = ({
   playlist,
   track,
@@ -106,12 +133,20 @@ export const Library = ({
       .then(updatePlaylists)
       .then(() => trackDB.loadTracks(1000, () => onProgress(1000)))
       .then(tracks => setTracks(tracks))
+      .then(() => updateCounts(api, setTracks))
       .then(() => trackDB.getNewest())
       .then(t => newest.current = t)
       .then(() => { setLoadingComplete(true); loading.current = false; });
   }, [api, libraryUpdate]);
 
   useEffect(() => TH.update(tracks), [tracks]);
+
+  useEffect(() => {
+    const interval = setInterval(() => updateCounts(api, setTracks), 3600000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [api]);
 
   useEffect(() => {
     const openHandler = () => {

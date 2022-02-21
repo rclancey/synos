@@ -216,7 +216,23 @@ export class TrackHierarchy {
       });
     });
     this.index = artistIndex;
+    this.tracks = tracks;
     this.emit('update');
+  }
+
+  deltaUpdate(updates) {
+    const byId = {};
+    updates.forEach((update) => {
+      byId[update.persistent_id] = update;
+    });
+    const newTracks = this.tracks.map((tr) => {
+      const update = byId[tr.persistent_id];
+      if (update) {
+        return { ...tr, ...update };
+      }
+      return tr;
+    });
+    this.update(newTracks);
   }
 };
 
@@ -257,6 +273,21 @@ export class TrackSelectionList {
       selected: 0,
       track: Object.assign({}, track, { origIndex: index }),
     };
+  }
+
+  updateTracks(updates) {
+    const byId = {};
+    updates.forEach((update) => {
+      byId[update.persistent_id] = update;
+    });
+    const newTracks = this.allTracks.map((tr) => {
+      const update = byId[tr.track.persistent_id];
+      if (update) {
+        return { ...tr.track, ...update };
+      }
+      return tr.track;
+    });
+    this.setTracks(newTracks);
   }
 
   setTracks(tracks) {

@@ -84,7 +84,17 @@ export class API extends APIBase {
   loadTrackCount(since) {
     const url = `/api/tracks/count?since=${since}`;
     return this.get(url);
-  };
+  }
+
+  loadPlayCounts(since) {
+    const url = `/api/tracks/plays?since=${since}`;
+    return this.get(url);
+  }
+
+  loadSkipCounts(since) {
+    const url = `/api/tracks/skips?since=${since}`;
+    return this.get(url);
+  }
 
   loadPlaylists(folderId) {
     let url = `/api/playlists`;
@@ -92,7 +102,7 @@ export class API extends APIBase {
       url += `/${folderId}`;
     }
     return this.get(url);
-  };
+  }
 
   loadPlaylistTrackIds(pl) {
     const url = `/api/playlist/${pl.persistent_id}/track-ids`;

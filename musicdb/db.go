@@ -2290,3 +2290,41 @@ func (db *DB) MixArtistTracks(artist string, ownerId *pid.PersistentID, minRatin
 	})
 	return tracks, nil
 }
+
+func (db *DB) PlayCounts(since Time) ([]*Track, error) {
+	query := `SELECT id, play_count, play_date FROM track WHERE play_date >= ?`
+	rows, err := db.Query(query, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	tracks := []*Track{}
+	for rows.Next() {
+		track := &Track{}
+		err = rows.StructScan(track)
+		if err != nil {
+			return nil, err
+		}
+		tracks = append(tracks, track)
+	}
+	return tracks, nil
+}
+
+func (db *DB) SkipCounts(since Time) ([]*Track, error) {
+	query := `SELECT id, skip_count, skip_date FROM track WHERE skip_date >= ?`
+	rows, err := db.Query(query, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	tracks := []*Track{}
+	for rows.Next() {
+		track := &Track{}
+		err = rows.StructScan(track)
+		if err != nil {
+			return nil, err
+		}
+		tracks = append(tracks, track)
+	}
+	return tracks, nil
+}

@@ -38,6 +38,8 @@ func TrackAPI(router H.Router, authmw H.Middleware) {
 	router.PUT("/track/:id/skip", authmw(H.HandlerFunc(SkipTrack)))
 	router.PUT("/track/:id/rate", authmw(H.HandlerFunc(RateTrack)))
 	router.GET("/tracks/count", authmw(H.HandlerFunc(TrackCount)))
+	router.GET("/tracks/plays", authmw(H.HandlerFunc(PlayCounts)))
+	router.GET("/tracks/skips", authmw(H.HandlerFunc(SkipCounts)))
 	router.GET("/tracks/search", authmw(H.HandlerFunc(SearchTracks)))
 	router.GET("/tracks", authmw(H.HandlerFunc(ListTracks)))
 	router.PUT("/tracks", authmw(H.HandlerFunc(UpdateTracks)))
@@ -301,22 +303,48 @@ func ListTracks(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	return tracks, nil
 }
 
-func TrackCount(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+func getParamAsTime(req *http.Request, key string) (musicdb.Time, error) {
 	qs := req.URL.Query()
-	since_s := qs.Get("since")
+	since_s := qs.Get(key)
 	var since musicdb.Time
 	if since_s != "" {
 		since_i, err := strconv.ParseInt(since_s, 10, 64)
 		if err != nil {
-			return nil, H.BadRequest.Wrapf(err, "since param %s not an int", since_s)
+			return since, H.BadRequest.Wrapf(err, "%s param %s not an int", key, since_s)
 		}
 		since = musicdb.Time(since_i)
+	}
+	return since, nil
+}
+
+func TrackCount(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	since, err := getParamAsTime(req, "since")
+	if err != nil {
+		return nil, err
 	}
 	count, err := db.TracksSinceCount(musicdb.Music, since)
 	if err != nil {
 		return nil, DatabaseError.Wrap(err, "")
 	}
 	return count, nil
+}
+
+func PlayCounts(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	since, err := getParamAsTime(req, "since")
+	if err != nil {
+		return nil, err
+	}
+	tracks, err := db.PlayCounts(since)
+	return tracks, err
+}
+
+func SkipCounts(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	since, err := getParamAsTime(req, "since")
+	if err != nil {
+		return nil, err
+	}
+	tracks, err := db.SkipCounts(since)
+	return tracks, err
 }
 
 type MultiTrackUpdate struct {
