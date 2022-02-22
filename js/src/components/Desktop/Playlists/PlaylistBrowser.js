@@ -219,7 +219,7 @@ export const PlaylistBrowser = ({
           max-width: 200px;
           font-size: 13px;
           height: 100%;
-          overflow: auto;
+          overflow: overlay;
           background-color: var(--dark);
           color: var(--text);
           border-right: solid var(--border) 1px;

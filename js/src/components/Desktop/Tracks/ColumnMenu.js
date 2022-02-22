@@ -23,7 +23,7 @@ export const ColumnMenu = ({ avail, onToggle, pos }) => (
         border-radius: 5px;
         max-height: 60vh;
         min-width: 150px;
-        overflow: auto;
+        overflow: overlay;
       }
       .options .option {
         width: min-content;

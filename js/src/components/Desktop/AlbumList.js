@@ -9,6 +9,8 @@ import { CoverArt } from '../CoverArt';
 
 window.thier = TH;
 
+const autoSizerStyle = { overflow: 'overlay' };
+
 const AlbumItem = ({ artist, album }) => (
   <div className="album">
     <Link to={`/albums/${artist.key}/${album.key}`}>
@@ -53,7 +55,7 @@ export const AlbumList = ({ albums }) => {
         .albums {
           padding-left: 10px;
           padding-top: 10px;
-          overflow: auto;
+          overflow: overlay;
           width: 100%;
           height: 100%;
           box-sizing: border-box;
@@ -85,6 +87,7 @@ export const AlbumList = ({ albums }) => {
         itemCount={Math.ceil(list.length / n)}
         itemSize={200}
         offset={0}
+        style={autoSizerStyle}
       >
         {rowRenderer}
       </AutoSizeList>

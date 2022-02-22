@@ -3,6 +3,8 @@ import _JSXStyle from "styled-jsx/style";
 import { AutoSizeList } from '../AutoSizeList';
 import { QueueHeader, QueueItem } from '../Queue';
 
+const autoSizerStyle = { overflow: 'overlay' };
+
 export const Queue = ({ playMode, tracks, index, onSelect, onShuffle, onRepeat }) => {
   const [className, setClassName] = useState('init');
   useEffect(() => setClassName('open'), []);
@@ -36,13 +38,14 @@ export const Queue = ({ playMode, tracks, index, onSelect, onShuffle, onRepeat }
           itemSize={50}
           offset={0}
           initialScrollOffset={Math.max(0, index - 2) * 50}
+          style={autoSizerStyle}
         >
           {rowRenderer}
         </AutoSizeList>
       </div>
       <style jsx>{`
         .queue {
-          overflow: auto;
+          overflow: overlay;
           cursor: default;
           background: var(--gradient);
           transition: opacity 0.2s linear, max-height 0.1s ease;

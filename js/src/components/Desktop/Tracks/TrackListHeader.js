@@ -9,6 +9,8 @@ import { TrackRow } from './TrackRow';
 import { useCurrentTrack } from '../../Player/Context';
 import { ColumnMenu } from './ColumnMenu';
 
+const autoSizerStyle = { overflow: 'overlay' };
+
 const resizePos = { x: 0 };
 
 const TrackListColumnHeader = ({

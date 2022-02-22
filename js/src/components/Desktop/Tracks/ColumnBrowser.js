@@ -3,6 +3,8 @@ import _JSXStyle from "styled-jsx/style";
 import { useFocus } from '../../../lib/useFocus';
 import { AutoSizeList } from '../../AutoSizeList';
 
+const autoSizerStyle = { overflow: 'overlay' };
+
 const ColBrowserRow = React.memo(({
   index,
   item,
@@ -85,6 +87,7 @@ export const ColumnBrowser = ({
         xref={listRef}
         itemCount={items.length}
         itemSize={18}
+        style={autoSizerStyle}
       >
         {rowRenderer}
       </AutoSizeList>

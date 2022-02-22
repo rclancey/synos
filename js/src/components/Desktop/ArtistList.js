@@ -15,6 +15,8 @@ import { AutoSizeList } from '../AutoSizeList';
 import { CoverArt } from '../CoverArt';
 import ArtistView from './Tracks/ArtistView';
 
+const autoSizerStyle = { overflow: 'overlay' };
+
 const ArtistIndexItem = ({ name, xref }) => {
   const onClick = useCallback(() => {
     if (!xref || !xref.current) {
@@ -136,7 +138,7 @@ export const ArtistList = () => {
         .artists .artistList {
           flex: 1;
           height: 100%;
-          overflow-y: auto;
+          overflow-y: overlay;
           overflow-x: hidden;
           border-right: solid var(--border) 1px;
         }
@@ -170,7 +172,7 @@ export const ArtistList = () => {
         .artists .albumViews {
           flex: 4;
           height: 100%;
-          overflow-y: auto;
+          overflow-y: overlay;
           overflow-x: hidden;
         }
       `}</style>
@@ -182,6 +184,7 @@ export const ArtistList = () => {
           itemSize={53}
           offset={0}
           initialScrollOffset={initialScrollOffset}
+          style={autoSizerStyle}
         >
           {rowRenderer}
         </AutoSizeList>

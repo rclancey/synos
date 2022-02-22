@@ -29,7 +29,7 @@ export const TrackList = ({
   //const [, , setTLNode] = useMeasure(100, 100);
   const currentTrack = useCurrentTrack();
 
-  const style = useMemo(() => ({ width: `${columns.width}px`, minWidth: '100%' }), [columns.width]);
+  const style = useMemo(() => ({ width: `${columns.width}px`, minWidth: '100%', overflow: 'overlay' }), [columns.width]);
 
   const setNode = useCallback((xnode) => {
     if (xnode) {
@@ -98,12 +98,14 @@ export const TrackList = ({
           font-size: 12px;
           color: var(--text);
         }
+        /*
         .trackList::-webkit-scrollbar {
           display: none;
         }
         .trackList :global(.autosizer::-webkit-scrollbar) {
           display: none;
         }
+        */
         .trackList .header {
           border-bottom-color: var(--border);
           background-color: var(--contrast3);

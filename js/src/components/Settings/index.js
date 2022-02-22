@@ -22,7 +22,7 @@ export const Settings = ({
           height: calc(100vh - 120px);
           padding: 1em;
           padding-top: 0px;
-          overflow: auto;
+          overflow: overlay;
         }
         .settings hr {
           grid-column: span 2;

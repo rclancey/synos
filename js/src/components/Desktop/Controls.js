@@ -424,7 +424,7 @@ const PrefsContent = ({ onClose, onOpenUserAdmin }) => {
       <style jsx>{`
         .prefs {
           background: var(--gradient);
-          overflow: auto;
+          overflow: overlay;
           padding: 1em;
           font-size: 14px;
         }

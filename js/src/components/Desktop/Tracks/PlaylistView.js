@@ -102,7 +102,7 @@ export const PlaylistView = ({ playlist, onToggleView }) => {
           padding-left: 2em;
         }
         .playlistView .contents {
-          overflow: auto;
+          overflow: overlay;
           margin-left: 2em;
           flex: 10;
           padding: 2em;

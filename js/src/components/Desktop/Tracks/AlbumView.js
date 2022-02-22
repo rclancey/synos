@@ -100,7 +100,7 @@ export const AlbumView = ({ artist, album, playback, controlAPI }) => {
         }
         .albumView .contents {
           flex: 10;
-          overflow: auto;
+          overflow: overlay;
           padding: 2em;
         }
         .albumView :global(.header .play) {
