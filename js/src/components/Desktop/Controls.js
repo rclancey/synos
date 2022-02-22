@@ -15,6 +15,7 @@ import { Cover } from '../Cover';
 import { UserAdmin } from './Admin/UserAdmin';
 import { ThemeContext } from '../../lib/theme';
 import Settings from './Settings';
+import OwnersMenu from './OwnersMenu';
 
 import HeadphonesIcon from '../icons/Headphones';
 import HamburgerMenuIcon from '../icons/HamburgerMenu';
@@ -553,6 +554,11 @@ const Tools = React.memo(({
     <div className="queuebutton">
       <div className="padding" />
       <PrefsMenu />
+      <div className="padding" />
+    </div>
+    <div className="queuebutton">
+      <div className="padding" />
+      <OwnersMenu />
       <div className="padding" />
     </div>
     <div className="padding" />
