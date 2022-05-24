@@ -36,7 +36,7 @@ BUILDFLAGS = -X $(GOPKG)/api.SynosBuildDate=$(BUILDTIME) -X $(GOPKG)/api.SynosCo
 ifeq "$(TAGNAME)" ""
 	ALLBUILDFLAGS = $(BUILDFLAGS)
 else
-	ALLBUILDFLAGS= $(BUILDFLAGS) -X $(GOPKG)/api.SynosVersion=$(TAGNAME)"
+	ALLBUILDFLAGS= $(BUILDFLAGS) -X $(GOPKG)/api.SynosVersion=$(TAGNAME)
 endif
 
 GOSRC := $(shell find * -type f -name "*.go")
