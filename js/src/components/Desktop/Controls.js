@@ -601,6 +601,35 @@ export const Controls = ({
   const onEnableSonos = useCallback(() => setPlayer('sonos'), [setPlayer]);
   const onDisableSonos = useCallback(() => setPlayer('local'), [setPlayer]);
 
+  const { playStatus } = (playbackInfo || {});
+  useEffect(() => {
+    if (track && playStatus === 'PLAYING') {
+      let body = track.name;
+      if (track.artist) {
+        body += ` by ${track.artist}`;
+      }
+      if (track.album) {
+        body += ` from ${track.album}`;
+      }
+      const icon = `${document.location.origin}/api/art/track/${track.persistent_id}`;
+      if (!window.Notification || !document.hidden) {
+        console.debug(`Now playing: ${track.name} by ${track.artist} from ${track.album}`);
+      } else if (Notification.permission === 'granted') {
+        const n = new Notification('Now playing', { body, icon });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then((perm) => {
+          if (perm === 'granted') {
+            const n = new Notification('Now playing', { body, icon });
+          } else {
+            console.debug(`Now playing: ${track.name} by ${track.artist} from ${track.album}`);
+          }
+        });
+      } else {
+        console.debug(`Now playing: ${track.name} by ${track.artist} from ${track.album}`);
+      }
+    }
+  }, [track, playStatus]);
+
   return (
     <div className="controls">
       <Player

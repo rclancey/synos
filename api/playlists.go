@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"encoding/gob"
 	"log"
 	"net/http"
 	"path"
@@ -8,6 +10,7 @@ import (
 	"strings"
 
 	H "github.com/rclancey/httpserver/v2"
+	"github.com/rclancey/itunes/loader"
 	"github.com/rclancey/itunes/persistentId"
 	"github.com/rclancey/synos/musicdb"
 )
@@ -27,6 +30,7 @@ func PlaylistAPI(router H.Router, authmw H.Middleware) {
 	router.DELETE("/playlist/:id", authmw(H.HandlerFunc(DeletePlaylist)))
 	router.PUT("/shared/:id", authmw(H.HandlerFunc(SharePlaylist)))
 	router.DELETE("/shared/:id", authmw(H.HandlerFunc(UnsharePlaylist)))
+	router.GET("/itunes-playlist/:id", authmw(H.HandlerFunc(GetItunesPlaylist)))
 }
 
 /*
@@ -88,6 +92,28 @@ func GetPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 		}
 	}
 	return pl, nil
+}
+
+func GetItunesPlaylist(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	id, err := getPathId(req)
+	if err != nil {
+		return nil, err
+	}
+	qs := `SELECT data FROM itunes_playlist WHERE id = ?`
+	row := db.QueryRow(qs, id.String())
+	var data []byte
+	err = row.Scan(&data)
+	if err != nil {
+		return nil, err
+	}
+	buf := bytes.NewBuffer(data)
+	dec := gob.NewDecoder(buf)
+	obj := &loader.Playlist{}
+	err = dec.Decode(obj)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
 }
 
 func PlaylistTrackIDs(w http.ResponseWriter, req *http.Request) (interface{}, error) {

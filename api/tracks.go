@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"encoding/gob"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +14,7 @@ import (
 	"time"
 
 	H "github.com/rclancey/httpserver/v2"
+	"github.com/rclancey/itunes/loader"
 	"github.com/rclancey/itunes/persistentId"
 	"github.com/rclancey/synos/musicdb"
 )
@@ -43,6 +46,7 @@ func TrackAPI(router H.Router, authmw H.Middleware) {
 	router.GET("/tracks/search", authmw(H.HandlerFunc(SearchTracks)))
 	router.GET("/tracks", authmw(H.HandlerFunc(ListTracks)))
 	router.PUT("/tracks", authmw(H.HandlerFunc(UpdateTracks)))
+	router.GET("/itunes-track/:id", H.HandlerFunc(GetItunesTrack))
 }
 
 func TrackHandler(w http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -91,6 +95,28 @@ func TracksHandler(w http.ResponseWriter, req *http.Request) (interface{}, error
 		return UpdateTracks(w, req)
 	}
 	return nil, H.MethodNotAllowed
+}
+
+func GetItunesTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	id, err := getPathId(req)
+	if err != nil {
+		return nil, err
+	}
+	qs := `SELECT data FROM itunes_track WHERE id = ?`
+	row := db.QueryRow(qs, id.String())
+	var data []byte
+	err = row.Scan(&data)
+	if err != nil {
+		return nil, err
+	}
+	buf := bytes.NewBuffer(data)
+	dec := gob.NewDecoder(buf)
+	obj := &loader.Track{}
+	err = dec.Decode(obj)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
 }
 
 func GetTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {

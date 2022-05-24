@@ -2,6 +2,7 @@ package musicdb
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/gob"
 	"io"
 	"log"
@@ -146,6 +147,7 @@ func (p *Playlist) Update(orig, cur *Playlist) (*pid.PersistentID, bool) {
 		if !bytes.Equal(sorig, scur) {
 			p.Smart = cur.Smart
 		}
+		p.Smart = cur.Smart
 	} else if cur.Smart != nil {
 		return nil, false
 	}
@@ -230,9 +232,14 @@ func PlaylistFromITunes(ipl *loader.Playlist) *Playlist {
 	}
 	if !pl.Folder {
 		if ipl.IsSmart() {
-			ispl, err := itunes.ParseSmartPlaylist(ipl.SmartInfo, ipl.SmartCriteria)
+			info := []byte(base64.StdEncoding.EncodeToString(ipl.SmartInfo))
+			crit := []byte(base64.StdEncoding.EncodeToString(ipl.SmartCriteria))
+			ispl, err := itunes.ParseSmartPlaylist(info, crit)
 			if err == nil && len(ispl.Criteria.Rules) > 0 {
 				pl.Smart = SmartPlaylistFromITunes(ispl)
+			}
+			if pl.Smart == nil {
+				log.Printf("error parsing smart playlist %s: %s", ipl.GetName(), err)
 			}
 		}
 		if pl.Smart == nil {

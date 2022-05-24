@@ -197,6 +197,8 @@ github.com/rclancey/go-sonos v0.0.1 h1:NnbF+mW9wTZ2++2duQyzGfDc5UyVO4iC/10HslFq/
 github.com/rclancey/go-sonos v0.0.1/go.mod h1:XIyBToVzgn77OhyxJ+Fb/QMSaYZ1sJhaRQv5bSPLjuA=
 github.com/rclancey/httpserver/v2 v2.2.0 h1:4GSSIhIRldMhszzZEh7wvijBSo9rWCWEJYi3WwWEckI=
 github.com/rclancey/httpserver/v2 v2.2.0/go.mod h1:PmRzysSAKeNFYlnKnPJQEsapyWJLbSJZNr0TfWVCJZE=
+github.com/rclancey/httpserver/v2 v2.2.1 h1:H2K2EqzQ2XZA94E8rDVDu8sG9ke9D7YaNP02pxtdQtk=
+github.com/rclancey/httpserver/v2 v2.2.1/go.mod h1:PmRzysSAKeNFYlnKnPJQEsapyWJLbSJZNr0TfWVCJZE=
 github.com/rclancey/itunes v0.3.2 h1:H3uiwpqERh7adz2WeXinQomgd3VFQAnJL+VRzzYepjw=
 github.com/rclancey/itunes v0.3.2/go.mod h1:bD42RKNk+IJzTt4D/j4yqkl3LsHNSnS4SoclY/KAwEg=
 github.com/rclancey/jooki v0.1.1 h1:Ttln3JLN0jH1ae1ohH9qLfvPFpclqgkIYSER3bLs+hk=

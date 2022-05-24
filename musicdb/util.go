@@ -38,13 +38,15 @@ func TimepCompare(a, b *Time) bool {
 
 func uintpCompare(a, b *uint) bool {
 	if a == nil && b == nil { return true }
-	if a == nil || b == nil { return false }
+	if a == nil { return *b == 0 }
+	if b == nil { return *a == 0 }
 	return *a == *b
 }
 
 func uint8pCompare(a, b *uint8) bool {
 	if a == nil && b == nil { return true }
-	if a == nil || b == nil { return false }
+	if a == nil { return *b == 0 }
+	if b == nil { return *a == 0 }
 	return *a == *b
 }
 
