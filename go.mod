@@ -10,6 +10,7 @@ require (
 	github.com/hajimehoshi/go-mp3 v0.3.2
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/lib/pq v1.10.3
+	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mmcdole/gofeed v1.1.3
 	github.com/pkg/errors v0.9.1
 	github.com/rclancey/argparse v1.0.1
@@ -18,7 +19,7 @@ require (
 	github.com/rclancey/file-monitor v0.1.1
 	github.com/rclancey/fsutil v0.0.3 // indirect
 	github.com/rclancey/go-sonos v0.0.1
-	github.com/rclancey/httpserver/v2 v2.2.0
+	github.com/rclancey/httpserver/v2 v2.2.1
 	github.com/rclancey/itunes v0.3.2
 	github.com/rclancey/jooki v0.1.1
 	github.com/rclancey/lastfm v0.0.1

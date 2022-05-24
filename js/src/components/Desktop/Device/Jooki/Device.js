@@ -32,7 +32,7 @@ export const JookiDevice = ({ setPlayer }) => {
         .jooki.device {
           width: 100%;
           max-height: 100%;
-          overflow: auto;
+          overflow: overlay;
         }
         .header {
           display: flex;

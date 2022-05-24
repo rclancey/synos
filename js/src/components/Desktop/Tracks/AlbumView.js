@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import _JSXStyle from 'styled-jsx/style';
 import { useRouteMatch } from 'react-router-dom';
 
+import { ThemeContext } from '../../../lib/theme';
 import { TH } from '../../../lib/trackList';
 import { API } from '../../../lib/api';
 import { useAPI } from '../../../lib/useAPI';
@@ -71,6 +72,18 @@ const Header = ({ tracks, playback, controlAPI, onClose }) => (
 );
 
 export const AlbumView = ({ artist, album, playback, controlAPI }) => {
+  const { setDarkMode, setTheme } = useContext(ThemeContext);
+  const api = useAPI(API);
+  useEffect(() => {
+    if (album.tracks) {
+      api.trackColor(album.tracks).then((color) => {
+        if (color) {
+          setDarkMode(color.dark);
+          setTheme(color.theme);
+        }
+      });
+    }
+  }, [setDarkMode, setTheme, api, album]);
   return (
     <div className="albumView">
       <style jsx>{`
@@ -87,7 +100,7 @@ export const AlbumView = ({ artist, album, playback, controlAPI }) => {
         }
         .albumView .contents {
           flex: 10;
-          overflow: auto;
+          overflow: overlay;
           padding: 2em;
         }
         .albumView :global(.header .play) {

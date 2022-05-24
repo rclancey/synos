@@ -65,23 +65,23 @@ func (r *Rule) Where() (string, []interface{}) {
 		switch r.Operator {
 		case CONTAINS:
 			if r.Not() {
-				qs += " NOT LIKE ?"
+				qs += " NOT ILIKE ?"
 			} else {
-				qs += " LIKE ?"
+				qs += " ILIKE ?"
 			}
 			args = append(args, "%" + r.StringValues[0] + "%")
 		case STARTSWITH:
 			if r.Not() {
-				qs += " NOT LIKE ?"
+				qs += " NOT ILIKE ?"
 			} else {
-				qs += " LIKE ?"
+				qs += " ILIKE ?"
 			}
 			args = append(args, r.StringValues[0] + "%")
 		case ENDSWITH:
 			if r.Not() {
-				qs += " NOT LIKE ?"
+				qs += " NOT ILIKE ?"
 			} else {
-				qs += " LIKE ?"
+				qs += " ILIKE ?"
 			}
 			args = append(args, "%" + r.StringValues[0])
 		case GREATERTHAN:
@@ -487,6 +487,16 @@ func ruleFromITunes(irule itunes.SmartRule) *Rule {
 	return nil
 }
 
+func swapUint32ByteOrder(i uint32) uint32 {
+	b := []uint32{
+		i >> 24,
+		(i >> 16) & 0xff,
+		(i >> 8) & 0xff,
+		(i) & 0xff,
+	}
+	return b[0] + (b[1] >> 8) + (b[2] >> 16) + (b[2] >> 24)
+}
+
 func smartInfoFromITunes(iinfo *itunes.SmartPlaylistInfo) *SmartLimit {
 	if !iinfo.HasLimit || iinfo.SortField == nil || iinfo.LimitUnit == nil || iinfo.LimitSize == nil {
 		return nil
@@ -494,6 +504,10 @@ func smartInfoFromITunes(iinfo *itunes.SmartPlaylistInfo) *SmartLimit {
 	lim := &SmartLimit{}
 	if iinfo.Descending {
 		lim.Descending = true
+	}
+	if *iinfo.SortField > 0xffff {
+		*iinfo.SortField = itunes.SelectionMethod(swapUint32ByteOrder(uint32(*iinfo.SortField)))
+		*iinfo.LimitSize = int(swapUint32ByteOrder(uint32(*iinfo.LimitSize)))
 	}
 	lim.Field = LimitField(*iinfo.SortField)
 	n := uint64(*iinfo.LimitSize)

@@ -2,6 +2,7 @@ package musicdb
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"path"
@@ -514,166 +515,225 @@ func (t *Track) GetExt() string {
 	return t.FileType.FileExtension()
 }
 
-func (t *Track) Update(orig, cur *Track) {
+func (t *Track) Update(orig, cur *Track) bool {
 	mod := false
-	if !stringpCompare(cur.Album, orig.Album) {
+	if !stringpCompare(cur.Album, orig.Album) && cur.Album != nil {
 		t.Album = cur.Album
 		t.SortAlbum = cur.SortAlbum
 		mod = true
+		log.Printf("track %s album changed", orig.PersistentID)
 	}
-	if !stringpCompare(cur.AlbumArtist, orig.AlbumArtist) {
+	if !stringpCompare(cur.AlbumArtist, orig.AlbumArtist) && cur.AlbumArtist != nil {
 		t.AlbumArtist = cur.AlbumArtist
 		t.SortAlbumArtist = cur.SortAlbumArtist
 		mod = true
+		log.Printf("track %s album artist changed", orig.PersistentID)
 	}
-	if !stringpCompare(cur.Artist, orig.Artist) {
+	if !stringpCompare(cur.Artist, orig.Artist) && cur.Artist != nil {
 		t.Artist = cur.Artist
 		t.SortArtist = cur.SortArtist
 		mod = true
+		log.Printf("track %s artist changed", orig.PersistentID)
 	}
-	if !uintpCompare(cur.BitRate, orig.BitRate) {
+	if !uintpCompare(cur.BitRate, orig.BitRate) && cur.BitRate != nil {
 		t.BitRate = cur.BitRate
 		mod = true
+		args := []interface{}{orig.PersistentID}
+		if orig.BitRate != nil {
+			args = append(args, *orig.BitRate)
+		} else {
+			args = append(args, orig.BitRate)
+		}
+		if cur.BitRate != nil {
+			args = append(args, *cur.BitRate)
+		} else {
+			args = append(args, cur.BitRate)
+		}
+		log.Printf("track %s bitrate changed %v => %v", args...)
 	}
-	if !uint16pCompare(cur.BPM, orig.BPM) {
+	if !uint16pCompare(cur.BPM, orig.BPM) && cur.BPM != nil {
 		t.BPM = cur.BPM
 		mod = true
+		log.Printf("track %s bpm changed", orig.PersistentID)
 	}
 	if !stringpCompare(cur.Comments, orig.Comments) {
 		t.Comments = cur.Comments
 		mod = true
+		log.Printf("track %s comments changed", orig.PersistentID)
 	}
 	if cur.Compilation != orig.Compilation {
 		t.Compilation = cur.Compilation
 		mod = true
+		log.Printf("track %s compilation changed", orig.PersistentID)
 	}
-	if !stringpCompare(cur.Composer, orig.Composer) {
+	if !stringpCompare(cur.Composer, orig.Composer) && cur.Composer != nil {
 		t.Composer = cur.Composer
 		t.Composer = cur.SortComposer
 		mod = true
+		log.Printf("track %s composer changed", orig.PersistentID)
 	}
-	if !uint8pCompare(cur.DiscCount, orig.DiscCount) {
+	if !uint8pCompare(cur.DiscCount, orig.DiscCount) && cur.DiscCount != nil {
 		t.DiscCount = cur.DiscCount
 		mod = true
+		log.Printf("track %s disc count changed", orig.PersistentID)
 	}
-	if !uint8pCompare(cur.DiscNumber, orig.DiscNumber) {
+	if !uint8pCompare(cur.DiscNumber, orig.DiscNumber) && cur.DiscNumber != nil {
 		t.DiscNumber = cur.DiscNumber
 		mod = true
+		log.Printf("track %s disc num changed", orig.PersistentID)
 	}
 	if cur.Gapless != orig.Gapless {
 		t.Gapless = cur.Gapless
 		mod = true
+		log.Printf("track %s gapless changed", orig.PersistentID)
 	}
-	if !stringpCompare(cur.Genre, orig.Genre) {
+	if !stringpCompare(cur.Genre, orig.Genre) && cur.Genre != nil {
 		t.Genre = cur.Genre
 		t.SortGenre = cur.SortGenre
 		mod = true
+		log.Printf("track %s genre changed", orig.PersistentID)
 	}
-	if !stringpCompare(cur.Grouping, orig.Grouping) {
+	if !stringpCompare(cur.Grouping, orig.Grouping) && cur.Grouping != nil {
 		t.Grouping = cur.Grouping
 		mod = true
+		log.Printf("track %s grouping changed", orig.PersistentID)
 	}
-	if !stringpCompare(cur.Kind, orig.Kind) {
+	if !stringpCompare(cur.Kind, orig.Kind) && cur.Kind != nil {
 		t.Kind = cur.Kind
 		mod = true
+		log.Printf("track %s kind changed", orig.PersistentID)
 	}
 	if !boolpCompare(cur.Loved, orig.Loved) {
 		t.Loved = cur.Loved
 		mod = true
+		log.Printf("track %s loved changed", orig.PersistentID)
 	}
-	if !uint8pCompare(cur.MovementCount, orig.MovementCount) {
+	if !uint8pCompare(cur.MovementCount, orig.MovementCount) && cur.MovementCount != nil {
 		t.MovementCount = cur.MovementCount
 		mod = true
+		log.Printf("track %s movement count changed", orig.PersistentID)
 	}
-	if !stringpCompare(cur.MovementName, orig.MovementName) {
+	if !stringpCompare(cur.MovementName, orig.MovementName) && cur.MovementName != nil {
 		t.MovementName = cur.MovementName
 		mod = true
+		log.Printf("track %s movement name changed", orig.PersistentID)
 	}
-	if !uint8pCompare(cur.MovementNumber, orig.MovementNumber) {
+	if !uint8pCompare(cur.MovementNumber, orig.MovementNumber) && cur.MovementNumber != nil {
 		t.MovementNumber = cur.MovementNumber
 		mod = true
+		log.Printf("track %s movement num changed", orig.PersistentID)
 	}
-	if !stringpCompare(cur.Name, orig.Name) {
+	if !stringpCompare(cur.Name, orig.Name) && cur.Name != nil {
 		t.Name = cur.Name
 		t.Name = cur.SortName
 		mod = true
+		log.Printf("track %s name changed", orig.PersistentID)
 	}
 	if !uint8pCompare(cur.Rating, orig.Rating) {
 		t.Rating = cur.Rating
 		mod = true
+		args := []interface{}{orig.PersistentID}
+		if orig.Rating != nil {
+			args = append(args, *orig.Rating)
+		} else {
+			args = append(args, orig.Rating)
+		}
+		if cur.Rating != nil {
+			args = append(args, *cur.Rating)
+		} else {
+			args = append(args, cur.Rating)
+		}
+		log.Printf("track %s rating changed %v => %v", args...)
 	}
-	if !TimepCompare(cur.ReleaseDate, orig.ReleaseDate) {
+	if !TimepCompare(cur.ReleaseDate, orig.ReleaseDate) && cur.ReleaseDate != nil {
 		t.ReleaseDate = cur.ReleaseDate
 		mod = true
+		log.Printf("track %s release date changed", orig.PersistentID)
 	}
-	if !uintpCompare(cur.SampleRate, orig.SampleRate) {
+	if !uintpCompare(cur.SampleRate, orig.SampleRate) && cur.SampleRate != nil {
 		t.SampleRate = cur.SampleRate
 		mod = true
+		log.Printf("track %s sample rate changed", orig.PersistentID)
 	}
 	if !stringpCompare(cur.SortAlbum, orig.SortAlbum) {
 		t.SortAlbum = cur.SortAlbum
 		mod = true
+		log.Printf("track %s sort album changed", orig.PersistentID)
 	}
 	if !stringpCompare(cur.SortAlbumArtist, orig.SortAlbumArtist) {
 		t.SortAlbumArtist = cur.SortAlbumArtist
 		mod = true
+		log.Printf("track %s sort album artist changed", orig.PersistentID)
 	}
 	if !stringpCompare(cur.SortArtist, orig.SortArtist) {
 		t.SortArtist = cur.SortArtist
 		mod = true
+		log.Printf("track %s sort artist changed", orig.PersistentID)
 	}
 	if !stringpCompare(cur.SortComposer, orig.SortComposer) {
 		t.SortComposer = cur.SortComposer
 		mod = true
+		log.Printf("track %s sort composer changed", orig.PersistentID)
 	}
 	if !stringpCompare(cur.SortGenre, orig.SortGenre) {
 		t.SortGenre = cur.SortGenre
 		mod = true
+		log.Printf("track %s sort genre changed", orig.PersistentID)
 	}
 	if !stringpCompare(cur.SortName, orig.SortName) {
 		t.SortName = cur.SortName
 		mod = true
+		log.Printf("track %s sort name changed", orig.PersistentID)
 	}
-	if !uint8pCompare(cur.TrackCount, orig.TrackCount) {
+	if !uint8pCompare(cur.TrackCount, orig.TrackCount) && cur.TrackCount != nil {
 		t.TrackCount = cur.TrackCount
 		mod = true
+		log.Printf("track %s track count changed", orig.PersistentID)
 	}
-	if !uint8pCompare(cur.TrackNumber, orig.TrackNumber) {
+	if !uint8pCompare(cur.TrackNumber, orig.TrackNumber) && cur.TrackNumber != nil {
 		t.TrackNumber = cur.TrackNumber
 		mod = true
+		log.Printf("track %s track num changed", orig.PersistentID)
 	}
 	if !uint8pCompare(cur.VolumeAdjustment, orig.VolumeAdjustment) {
 		t.VolumeAdjustment = cur.VolumeAdjustment
 		mod = true
+		log.Printf("track %s volume changed", orig.PersistentID)
 	}
-	if !stringpCompare(cur.Work, orig.Work) {
+	if !stringpCompare(cur.Work, orig.Work) && cur.Work != nil {
 		t.Work = cur.Work
 		mod = true
+		log.Printf("track %s work changed", orig.PersistentID)
 	}
 	if cur.PlayDate != nil {
 		if t.PlayDate == nil || *cur.PlayDate > *t.PlayDate {
 			t.PlayDate = cur.PlayDate
 			mod = true
+			log.Printf("track %s play date changed", orig.PersistentID)
 		}
 	}
 	if cur.SkipDate != nil {
 		if t.SkipDate == nil || *cur.SkipDate > *t.SkipDate {
 			t.SkipDate = cur.SkipDate
 			mod = true
+			log.Printf("track %s skip date changed", orig.PersistentID)
 		}
 	}
 	if cur.PlayCount > orig.PlayCount {
 		t.PlayCount += (cur.PlayCount - orig.PlayCount)
 		mod = true
+		log.Printf("track %s play count changed", orig.PersistentID)
 	}
 	if cur.SkipCount > orig.SkipCount {
 		t.SkipCount += (cur.SkipCount - orig.SkipCount)
 		mod = true
+		log.Printf("track %s skip count changed", orig.PersistentID)
 	}
 	if mod {
 		t.DateModified = new(Time)
 		t.DateModified.Set(time.Now().In(time.UTC))
 	}
+	return mod
 }
 
 func (t *Track) GetSortName() string {
@@ -834,6 +894,7 @@ func TrackFromITunes(itr *loader.Track) *Track {
 		DiscCount:        itr.DiscCount,
 		DiscNumber:       itr.DiscNumber,
 		Genre:            itr.Genre,
+		Grouping:         itr.Grouping,
 		Kind:             itr.Kind,
 		Loved:            itr.Loved,
 		Name:             itr.Name,

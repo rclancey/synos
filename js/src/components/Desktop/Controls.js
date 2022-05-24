@@ -15,6 +15,7 @@ import { Cover } from '../Cover';
 import { UserAdmin } from './Admin/UserAdmin';
 import { ThemeContext } from '../../lib/theme';
 import Settings from './Settings';
+import OwnersMenu from './OwnersMenu';
 
 import HeadphonesIcon from '../icons/Headphones';
 import HamburgerMenuIcon from '../icons/HamburgerMenu';
@@ -423,7 +424,7 @@ const PrefsContent = ({ onClose, onOpenUserAdmin }) => {
       <style jsx>{`
         .prefs {
           background: var(--gradient);
-          overflow: auto;
+          overflow: overlay;
           padding: 1em;
           font-size: 14px;
         }
@@ -555,6 +556,11 @@ const Tools = React.memo(({
       <PrefsMenu />
       <div className="padding" />
     </div>
+    <div className="queuebutton">
+      <div className="padding" />
+      <OwnersMenu />
+      <div className="padding" />
+    </div>
     <div className="padding" />
     <Search search={search} onSearch={onSearch} />
     <style jsx>{`
@@ -594,6 +600,35 @@ export const Controls = ({
   const sonos = useMemo(() => playbackInfo.player === 'sonos', [playbackInfo]);
   const onEnableSonos = useCallback(() => setPlayer('sonos'), [setPlayer]);
   const onDisableSonos = useCallback(() => setPlayer('local'), [setPlayer]);
+
+  const { playStatus } = (playbackInfo || {});
+  useEffect(() => {
+    if (track && playStatus === 'PLAYING') {
+      let body = track.name;
+      if (track.artist) {
+        body += ` by ${track.artist}`;
+      }
+      if (track.album) {
+        body += ` from ${track.album}`;
+      }
+      const icon = `${document.location.origin}/api/art/track/${track.persistent_id}`;
+      if (!window.Notification || !document.hidden) {
+        console.debug(`Now playing: ${track.name} by ${track.artist} from ${track.album}`);
+      } else if (Notification.permission === 'granted') {
+        const n = new Notification('Now playing', { body, icon });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then((perm) => {
+          if (perm === 'granted') {
+            const n = new Notification('Now playing', { body, icon });
+          } else {
+            console.debug(`Now playing: ${track.name} by ${track.artist} from ${track.album}`);
+          }
+        });
+      } else {
+        console.debug(`Now playing: ${track.name} by ${track.artist} from ${track.album}`);
+      }
+    }
+  }, [track, playStatus]);
 
   return (
     <div className="controls">

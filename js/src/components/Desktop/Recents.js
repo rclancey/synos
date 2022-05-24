@@ -11,6 +11,8 @@ import { MixCover } from '../MixCover';
 import AlbumView from './Tracks/AlbumView';
 import PlaylistView from './Tracks/PlaylistView';
 
+const autoSizerStyle = { overflow: 'overlay' };
+
 const recentItemKey = (item) => {
   switch (item.type) {
     case 'playlist':
@@ -118,7 +120,7 @@ export const Recents = ({}) => {
           */
           padding-left: 10px;
           padding-top: 10px;
-          overflow: auto;
+          overflow: overlay;
           width: 100%;
           box-sizing: border-box;
         }
@@ -155,6 +157,7 @@ export const Recents = ({}) => {
         itemCount={Math.ceil(recent.length / n)}
         itemSize={200}
         offset={0}
+        style={autoSizerStyle}
       >
         {rowRenderer}
       </AutoSizeList>

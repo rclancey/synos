@@ -36,6 +36,21 @@ var ParentNotAFolder = builtinErrors.New("parent playlist is not a folder")
 var PlaylistFolderNotEmpty = builtinErrors.New("Playlist folder not empty")
 var ErrUnknownSocialDriver = builtinErrors.New("unknown social login provider")
 
+func init() {
+	// register concrete types for gob
+	gob.Register(&loader.SmartPlaylistCriteria{})
+	gob.Register(&loader.SmartPlaylistCommonRule{})
+	gob.Register(&loader.SmartPlaylistStringRule{})
+	gob.Register(&loader.SmartPlaylistIntegerRule{})
+	gob.Register(&loader.SmartPlaylistBooleanRule{})
+	gob.Register(&loader.SmartPlaylistMediaKindRule{})
+	gob.Register(&loader.SmartPlaylistDateRule{})
+	gob.Register(&loader.SmartPlaylistPlaylistRule{})
+	gob.Register(&loader.SmartPlaylistLoveRule{})
+	gob.Register(&loader.SmartPlaylistCloudRule{})
+	gob.Register(&loader.SmartPlaylistLocationRule{})
+}
+
 func serializeGob(obj interface{}) []byte {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
@@ -1176,6 +1191,7 @@ func (db *DB) UpdateSmartTracks() error {
 		if err != nil {
 			return err
 		}
+		log.Printf("%6d tracks in smart playlist %s %s", len(tracks), pl.PersistentID.String(), pl.Name)
 		trackIds := make([]pid.PersistentID, len(tracks))
 		for i, track := range tracks {
 			trackIds[i] = track.PersistentID
@@ -1296,7 +1312,7 @@ func (db *DB) SmartTracks(spl *Smart) ([]*Track, error) {
 		}
 		*/
 	}
-	log.Printf("%d tracks", len(tracks))
+	//log.Printf("%d tracks", len(tracks))
 	return tracks, nil
 }
 
@@ -1729,7 +1745,7 @@ func (db *DB) UpdateITunesTrack(tr *loader.Track, user *User) (bool, error) {
 			_, err = tx.Exec(qs, id, serializeGob(tr), time.Now().In(time.UTC), user.PersistentID)
 			if err != nil {
 				tx.Rollback()
-				log.Println("erorr %s in %s", err.Error(), qs)
+				log.Printf("erorr %s in %s", err.Error(), qs)
 				return true, err
 			}
 			return true, tx.Commit()
@@ -1761,7 +1777,9 @@ func (db *DB) UpdateITunesTrack(tr *loader.Track, user *User) (bool, error) {
 	trjs, _ := json.Marshal(tr)
 	log.Println("tracks differ:", string(origjs), "vs", string(trjs))
 	*/
-	track.Update(TrackFromITunes(orig), TrackFromITunes(tr))
+	if !track.Update(TrackFromITunes(orig), TrackFromITunes(tr)) {
+		return false, nil
+	}
 	track.Validate()
 	tx, err := db.Begin()
 	if err != nil {
@@ -1854,7 +1872,8 @@ func (db *DB) UpdateITunesPlaylist(pl *loader.Playlist, user *User) (bool, error
 	orig := &loader.Playlist{}
 	err = deserializeGob(data, orig)
 	if err != nil {
-		return true, err
+		log.Printf("error deserializing orig gob for %s (%s): %s", pl.GetName(), *pl.PersistentID, err)
+		//return true, err
 	}
 	parentPid, parentUpdated := playlist.Update(PlaylistFromITunes(orig), PlaylistFromITunes(pl))
 	if parentUpdated {
@@ -2288,5 +2307,43 @@ func (db *DB) MixArtistTracks(artist string, ownerId *pid.PersistentID, minRatin
 	rand.Shuffle(len(tracks), func(i, j int) {
 		tracks[i], tracks[j] = tracks[j], tracks[i]
 	})
+	return tracks, nil
+}
+
+func (db *DB) PlayCounts(since Time) ([]*Track, error) {
+	query := `SELECT id, play_count, play_date FROM track WHERE play_date >= ?`
+	rows, err := db.Query(query, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	tracks := []*Track{}
+	for rows.Next() {
+		track := &Track{}
+		err = rows.StructScan(track)
+		if err != nil {
+			return nil, err
+		}
+		tracks = append(tracks, track)
+	}
+	return tracks, nil
+}
+
+func (db *DB) SkipCounts(since Time) ([]*Track, error) {
+	query := `SELECT id, skip_count, skip_date FROM track WHERE skip_date >= ?`
+	rows, err := db.Query(query, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	tracks := []*Track{}
+	for rows.Next() {
+		track := &Track{}
+		err = rows.StructScan(track)
+		if err != nil {
+			return nil, err
+		}
+		tracks = append(tracks, track)
+	}
 	return tracks, nil
 }

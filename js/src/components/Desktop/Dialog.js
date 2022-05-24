@@ -62,7 +62,7 @@ export const Dialog = ({
           }
           .dialog .body {
             flex: 10;
-            overflow: auto;
+            overflow: overlay;
             padding: 1em;
           }
         `}</style>

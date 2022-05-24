@@ -91,7 +91,7 @@ const handlePagingEvent = (event) => {
 const emptyTracks = [];
 export const TrackBrowser = ({
   columnBrowser = false,
-  columns = defaultColumns,
+  //columns = defaultColumns,
   tracks = emptyTracks,
   playlist = null,
   search = null,
@@ -145,6 +145,16 @@ export const TrackBrowser = ({
   }, [setDisplayTracks, setSelected]);
 
   useEffect(() => {
+    const h = () => {
+      setDisplayTracks(tsl.tracks);
+      setSelected(tsl.selected);
+    };
+    tsl.on('filter', h);
+    return () => {
+      tsl.off('filter', h);
+    };
+  }, []);
+  useEffect(() => {
     //console.debug('tracks updated: %o !== %o', tracks, prevTracks.current);
     //console.debug('tracks updated: %o', playlist);
     //console.debug('update = %o', update);
@@ -155,7 +165,7 @@ export const TrackBrowser = ({
       console.debug('sorting updated tracks (%o !== %o)', sortKey, tsl.sortKey);
       tsl.sort(sortKey);
     }
-    update();
+    //update();
   }, [tracks, update, playlist]);
 
   useEffect(() => {
@@ -166,7 +176,7 @@ export const TrackBrowser = ({
 
   useEffect(() => {
     tsl.search(search);
-    update();
+    //update();
   }, [search, update]);
 
   useEffect(() => {
@@ -253,7 +263,7 @@ export const TrackBrowser = ({
         if (tsl.onFilterClick(f, index, mods)) {
           event.stopPropagation();
           event.preventDefault();
-          update();
+          //update();
         }
       },
       onKeyPress: (event) => {
@@ -262,7 +272,7 @@ export const TrackBrowser = ({
           event.stopPropagation();
           event.preventDefault();
           //event.target.focus();
-          update();
+          //update();
         } else if (handlePagingEvent(event)) {
           event.stopPropagation();
           event.preventDefault();
@@ -302,7 +312,6 @@ export const TrackBrowser = ({
         </div>
       ) : null }
       <TrackList
-        columns={columns}
         tracks={displayTracks}
         playlist={playlist}
         selected={selected}

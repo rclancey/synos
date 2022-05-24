@@ -282,6 +282,7 @@ func startup() (*logging.Logger, *httpserver.Server, error) {
 	api := srv.Prefix("/api")
 	authen.LoginAPI(api)
 	SetupAPI(srv, nil)
+	VersionAPI(api, authmw)
 	TrackAPI(api, authmw)
 	PlaylistAPI(api, authmw)
 	GeniusAPI(api.Prefix("/genius"), authmw)

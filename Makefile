@@ -1,4 +1,5 @@
 PKGNAME    := synos
+GOPKG      := github.com/rclancey/synos
 GITHASH    := $(shell git rev-parse --short HEAD)
 FULLBRANCH := $(shell git branch --show-current)
 TAGNAME    := $(shell git describe --exact-match --tags $(GITHASH) 2>/dev/null)
@@ -6,6 +7,7 @@ BRANCHNAME := $(shell basename "$(FULLBRANCH)")
 DATE       := $(shell date '+%Y%m%d')
 GITVERSION := $(shell sh -c 'if [ "x$(TAGNAME)" = "x" ] ; then echo $(GITHASH) ; else echo $(TAGNAME) ; fi')
 VERSION    ?= $(GITVERSION)
+BUILDTIME  := $(shell date '+%s')
 TARGET     ?= local
 BUILDDIR   = build
 TARFILE    = $(PKGNAME)-$(VERSION).tar.gz
@@ -30,6 +32,13 @@ CGO_ENABLED = 1
 LDFLAGS = -linkmode external -extldflags -static
 endif
 
+BUILDFLAGS = -X $(GOPKG)/api.SynosBuildDate=$(BUILDTIME) -X $(GOPKG)/api.SynosCommit=$(GITHASH) -X $(GOPKG)/api.SynosBranch=$(FULLBRANCH)
+ifeq "$(TAGNAME)" ""
+	ALLBUILDFLAGS = $(BUILDFLAGS)
+else
+	ALLBUILDFLAGS= $(BUILDFLAGS) -X $(GOPKG)/api.SynosVersion=$(TAGNAME)"
+endif
+
 GOSRC := $(shell find * -type f -name "*.go")
 JSSRC := $(shell find js/*.js js/*.json js/src -type f)
 
@@ -38,9 +47,8 @@ NODE_ENV ?= production
 all: compile
 
 $(BUILDDIR)/$(PKGNAME)/bin/%: $(GOSRC) go.mod go.sum
-	echo $(TAGNAME) > api/version/version.txt
 	mkdir -p $(BUILDDIR)/$(PKGNAME)/bin
-	env CC=$(CC) CXX=$(CXX) GOARCH=$(GOARCH) GOOS=$(GOOS) CGO_ENABLED=$(CGO_ENABLED) go build -ldflags "$(LDFLAGS)" -o $@ cmd/$*.go
+	env CC=$(CC) CXX=$(CXX) GOARCH=$(GOARCH) GOOS=$(GOOS) CGO_ENABLED=$(CGO_ENABLED) go build -ldflags "$(LDFLAGS) $(ALLBUILDFLAGS)" -o $@ cmd/$*.go
 
 $(BUILDDIR)/$(PKGNAME)/htdocs/index.html: $(JSSRC)
 	cd js && yarn install && env NODE_ENV=$(NODE_ENV) yarn build

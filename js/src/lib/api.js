@@ -6,7 +6,7 @@ export class APIBase {
     this.onLoginRequired = onLoginRequired;
   }
 
-  fetch(url, xargs) {
+  async fetch(url, xargs) {
     const args = Object.assign({}, xargs);
     if (!args.method) {
       if (args.body) {
@@ -43,27 +43,27 @@ export class APIBase {
       });
   }
 
-  get(url) {
+  async get(url) {
     const method = 'GET';
     return this.fetch(url, { method });
   }
 
-  post(url, body, args) {
+  async post(url, body, args) {
     const method = 'POST';
     return this.fetch(url, Object.assign({}, args, { method, body }));
   }
 
-  put(url, body, args) {
+  async put(url, body, args) {
     const method = 'PUT';
     return this.fetch(url, Object.assign({}, args, { method, body }));
   }
 
-  patch(url, body, args) {
+  async patch(url, body, args) {
     const method = 'PATCH';
     return this.fetch(url, Object.assign({}, args, { method, body }));
   }
 
-  delete(url) {
+  async delete(url) {
     const method = 'DELETE';
     return this.fetch(url, { method });
   }
@@ -84,7 +84,17 @@ export class API extends APIBase {
   loadTrackCount(since) {
     const url = `/api/tracks/count?since=${since}`;
     return this.get(url);
-  };
+  }
+
+  loadPlayCounts(since) {
+    const url = `/api/tracks/plays?since=${since}`;
+    return this.get(url);
+  }
+
+  loadSkipCounts(since) {
+    const url = `/api/tracks/skips?since=${since}`;
+    return this.get(url);
+  }
 
   loadPlaylists(folderId) {
     let url = `/api/playlists`;
@@ -92,7 +102,7 @@ export class API extends APIBase {
       url += `/${folderId}`;
     }
     return this.get(url);
-  };
+  }
 
   loadPlaylistTrackIds(pl) {
     const url = `/api/playlist/${pl.persistent_id}/track-ids`;
@@ -133,6 +143,16 @@ export class API extends APIBase {
   listGeniusGenres() {
     const url = `/api/genius/genres`;
     return this.get(url);
+  }
+
+  async trackColor(tracks) {
+    for (let i = 0; i < tracks.length; i += 1) {
+      const info = await this.get(`/api/art/color/${tracks[i].persistent_id}`);
+      if (info.status === 'ok') {
+        return info;
+      }
+    }
+    return null;
   }
 
   addToPlaylist(dst, tracks) {

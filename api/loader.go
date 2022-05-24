@@ -56,7 +56,7 @@ func WatchITunes() (chan bool, error) {
 	quit := make(chan bool)
 	uchan := db.UserUpdateChannel()
 	go func() {
-		mon := monitor.NewFileMonitor(10 * time.Second, 5 * time.Minute, fns...)
+		mon := monitor.NewFileMonitor(10 * time.Second, 1 * time.Minute, fns...)
 		for {
 			select {
 			case <-quit:

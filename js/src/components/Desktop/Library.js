@@ -13,6 +13,7 @@ import { TH } from '../../lib/trackList';
 import { WS } from '../../lib/ws';
 import { API } from '../../lib/api';
 import { useAPI } from '../../lib/useAPI';
+import { usePlaylistColumns } from '../../lib/playlistColumns';
 import { useControlAPI } from '../Player/Context';
 import { PlaylistBrowser } from './Playlists/PlaylistBrowser';
 import { TrackBrowser } from './Tracks/TrackBrowser';
@@ -55,6 +56,33 @@ const addPlaylistTimestamp = (pls, timestamp) => {
   });
 };
 
+const updateCounts = (api, setTracks) => {
+  trackDB.autoUpdatePlayCounts(api).then((playCounts) => {
+    const playCountsById = {};
+    playCounts.forEach(({ persistent_id, play_count, play_date }) => {
+      playCountsById[persistent_id] = { play_count, play_date };
+    });
+    trackDB.autoUpdateSkipCounts(api).then((skipCounts) => {
+      const skipCountsById = {};
+      skipCounts.forEach(({ persistent_id, skip_count, skip_date }) => {
+        skipCountsById[persistent_id] = { skip_count, skip_date };
+      });
+      setTracks((orig) => orig.map((tr) => {
+        let out = tr;
+        const playCount = playCountsById[tr.persistent_id];
+        if (playCount) {
+          out = { ...out, ...playCount };
+        }
+        const skipCount = skipCountsById[tr.persistent_id];
+        if (skipCount) {
+          out = { ...out, ...skipCount };
+        }
+        return out;
+      }));
+    });
+  });
+};
+
 export const Library = ({
   playlist,
   track,
@@ -73,6 +101,7 @@ export const Library = ({
   const [tracks, setTracks] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const newest = useRef(0);
+  const columns = usePlaylistColumns(null);
 
   const [device, setDevice] = useState(null);
 
@@ -104,12 +133,20 @@ export const Library = ({
       .then(updatePlaylists)
       .then(() => trackDB.loadTracks(1000, () => onProgress(1000)))
       .then(tracks => setTracks(tracks))
+      .then(() => updateCounts(api, setTracks))
       .then(() => trackDB.getNewest())
       .then(t => newest.current = t)
       .then(() => { setLoadingComplete(true); loading.current = false; });
   }, [api, libraryUpdate]);
 
   useEffect(() => TH.update(tracks), [tracks]);
+
+  useEffect(() => {
+    const interval = setInterval(() => updateCounts(api, setTracks), 3600000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [api]);
 
   useEffect(() => {
     const openHandler = () => {
@@ -276,6 +313,7 @@ export const Library = ({
           />
           <Route exact path="/">
             <TrackBrowser
+              columns={columns}
               columnBrowser={true}
               tracks={tracks}
               search={search}

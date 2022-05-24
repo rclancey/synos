@@ -24,22 +24,25 @@ const stringSorter = v => {
   return x;
 };
 
-export const SEARCH_FILTER = 1;
-export const GENRE_FILTER  = 2;
-export const ARTIST_FILTER = 4;
-export const ALBUM_FILTER  = 8;
+export const OWNER_FILTER  = 1;
+export const SEARCH_FILTER = 2;
+export const GENRE_FILTER  = 4;
+export const ARTIST_FILTER = 8;
+export const ALBUM_FILTER  = 16;
 
 const filterKeys = {
   [SEARCH_FILTER]: ['name', 'album', 'artist', 'album_artist', 'composer'],
   [GENRE_FILTER]:  ['genre'],
   [ARTIST_FILTER]: ['artist', 'album_artist', 'composer'],
   [ALBUM_FILTER]:  ['album'],
+  [OWNER_FILTER]:  ['owner_id'],
 };
 
 const filterValues = {
   [GENRE_FILTER]:  ['genre'],
   [ARTIST_FILTER]: ['artist', 'album_artist'],
   [ALBUM_FILTER]:  ['album'],
+  [OWNER_FILTER]:  ['owner_id'],
 };
 
 const filterNames = {
@@ -47,6 +50,7 @@ const filterNames = {
   [GENRE_FILTER]:  ['Genre',  'Genres'],
   [ARTIST_FILTER]: ['Artist', 'Artists'],
   [ALBUM_FILTER]:  ['Album',  'Albums'],
+  [OWNER_FILTER]:  ['Owner',  'Owner'],
 };
 
 export class TrackHierarchy {
@@ -216,7 +220,23 @@ export class TrackHierarchy {
       });
     });
     this.index = artistIndex;
+    this.tracks = tracks;
     this.emit('update');
+  }
+
+  deltaUpdate(updates) {
+    const byId = {};
+    updates.forEach((update) => {
+      byId[update.persistent_id] = update;
+    });
+    const newTracks = this.tracks.map((tr) => {
+      const update = byId[tr.persistent_id];
+      if (update) {
+        return { ...tr, ...update };
+      }
+      return tr;
+    });
+    this.update(newTracks);
   }
 };
 
@@ -227,19 +247,23 @@ export class TrackSelectionList {
       [GENRE_FILTER]:  null,
       [ARTIST_FILTER]: null,
       [ALBUM_FILTER]:  null,
+      [OWNER_FILTER]:  null,
     };
     this.appliedFilters = {
       [SEARCH_FILTER]: new Set(),
       [GENRE_FILTER]:  new Set(),
       [ARTIST_FILTER]: new Set(),
       [ALBUM_FILTER]:  new Set(),
+      [OWNER_FILTER]:  new Set(),
     };
     this.lastFilterIndex = {
       [SEARCH_FILTER]: -1,
       [GENRE_FILTER]:  -1,
       [ARTIST_FILTER]: -1,
       [ALBUM_FILTER]:  -1,
+      [OWNER_FILTER]:  -1,
     };
+    this._listeners = {};
     this._typing = '';
     this._clearTyping = null;
     this._sortKey = null;
@@ -250,6 +274,35 @@ export class TrackSelectionList {
     this.allTracks = tracks;
   }
 
+  on(name, handler) {
+    if (!this._listeners[name]) {
+      this._listeners[name] = [];
+    }
+    if (!this._listeners[name].includes(handler)) {
+      this._listeners[name].push(handler);
+    }
+  }
+
+  off(name, handler) {
+    if (!this._listeners[name]) {
+      return;
+    }
+    this._listeners[name] = this._listeners[name].filter((h) => h !== handler);
+  }
+
+  emit(name, data) {
+    if (!this._listeners[name]) {
+      return;
+    }
+    this._listeners[name].forEach((h) => {
+      try {
+        h({ type: name, data });
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
+
   wrap(track, index) {
     return {
       index: index,
@@ -257,6 +310,21 @@ export class TrackSelectionList {
       selected: 0,
       track: Object.assign({}, track, { origIndex: index }),
     };
+  }
+
+  updateTracks(updates) {
+    const byId = {};
+    updates.forEach((update) => {
+      byId[update.persistent_id] = update;
+    });
+    const newTracks = this.allTracks.map((tr) => {
+      const update = byId[tr.track.persistent_id];
+      if (update) {
+        return { ...tr.track, ...update };
+      }
+      return tr.track;
+    });
+    this.setTracks(newTracks);
   }
 
   setTracks(tracks) {
@@ -273,8 +341,9 @@ export class TrackSelectionList {
       [GENRE_FILTER]:  new Set(),
       [ARTIST_FILTER]: new Set(),
       [ALBUM_FILTER]:  new Set(),
+      [OWNER_FILTER]:  new Set(),
     };
-    [SEARCH_FILTER, GENRE_FILTER, ARTIST_FILTER, ALBUM_FILTER].forEach(f => {
+    [SEARCH_FILTER, GENRE_FILTER, ARTIST_FILTER, ALBUM_FILTER, OWNER_FILTER].forEach(f => {
       //console.debug('filtering tracks with %o %o', f, Array.from(applied[f]));
       this.allTracks = this.applyFilter(f, Array.from(applied[f]));
     });
@@ -300,6 +369,7 @@ export class TrackSelectionList {
     this.genres = this.filters(GENRE_FILTER);
     this.artists = this.filters(ARTIST_FILTER);
     this.albums = this.filters(ALBUM_FILTER);
+    this.emit('filter');
   }
 
   setToFilter(f, s) {
@@ -345,6 +415,10 @@ export class TrackSelectionList {
 
   filterAlbum(values) {
     this.allTracks = this.applyFilter(ALBUM_FILTER, values);
+  }
+
+  filterOwner(values) {
+    this.allTracks = this.applyFilter(OWNER_FILTER, values);
   }
 
   applySearch(query) {
