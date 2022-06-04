@@ -15,6 +15,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rclancey/argparse v1.0.1
 	github.com/rclancey/authenticator v0.0.4
+	github.com/rclancey/azlyrics v0.0.1 // indirect
 	github.com/rclancey/cache v0.0.6 // indirect
 	github.com/rclancey/file-monitor v0.1.1
 	github.com/rclancey/fsutil v0.0.3 // indirect

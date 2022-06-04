@@ -88,3 +88,5 @@ export const Sorting = ({
     </Grid>
   );
 };
+
+Sorting.displayName = 'Sorting';

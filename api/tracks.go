@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/gob"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -35,6 +36,8 @@ func TrackAPI(router H.Router, authmw H.Middleware) {
 	router.GET("/track/:id/info", H.HandlerFunc(GetTrackInfo))
 	router.GET("/track/:id/cover", H.HandlerFunc(GetTrackCover))
 	router.GET("/track/:id/hascover", H.HandlerFunc(TrackHasCover))
+	router.GET("/track/:id/lyrics", H.HandlerFunc(GetTrackLyrics))
+	router.PUT("/track/:id/lyrics", H.HandlerFunc(SetTrackLyrics))
 	router.GET("/track/:id", H.HandlerFunc(GetTrack))
 	router.PUT("/track/:id", authmw(H.HandlerFunc(UpdateTrack)))
 	router.POST("/track", authmw(H.HandlerFunc(AddTrack)))
@@ -95,6 +98,63 @@ func TracksHandler(w http.ResponseWriter, req *http.Request) (interface{}, error
 		return UpdateTracks(w, req)
 	}
 	return nil, H.MethodNotAllowed
+}
+
+func GetTrackLyrics(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	tr, err := getTrackById(req)
+	if err != nil {
+		return nil, err
+	}
+	lyricsPtr, err := tr.GetLyrics()
+	if err != nil {
+		return nil, err
+	}
+	if lyricsPtr != nil {
+		return tr, nil
+	}
+	var index int = 0
+	indexStr, ok := req.URL.Query()["index"]
+	if ok && len(indexStr) > 0 {
+		index, err = strconv.Atoi(indexStr[0])
+		if err != nil {
+			return nil, err
+		}
+		if index < 0 {
+			return nil, H.NotFound
+		}
+	}
+	search, err := azClient.Search(musicdb.LyricsTrack(*tr))
+	if err != nil {
+		return nil, err
+	}
+	if index >= len(search.Results) {
+		return nil, H.NotFound
+	}
+	err = azClient.LoadResult(search.Results[index])
+	if err != nil {
+		return nil, err
+	}
+	return search, nil
+}
+
+func SetTrackLyrics(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	tr, err := getTrackById(req)
+	if err != nil {
+		return nil, err
+	}
+	_, err = tr.GetLyrics()
+	if err != nil {
+		return nil, err
+	}
+	lyricsBytes, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
+	err = tr.SetLyrics(string(lyricsBytes))
+	if err != nil {
+		return nil, err
+	}
+	return tr, nil
 }
 
 func GetItunesTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {

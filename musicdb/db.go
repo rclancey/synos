@@ -391,6 +391,7 @@ func (db *DB) GetTrack(p pid.PersistentID) (*Track, error) {
 		}
 		return nil, errors.Wrap(err, "can't query track " + p.String())
 	}
+	track.db = db
 	return &track, nil
 }
 

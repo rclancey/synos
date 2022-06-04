@@ -36,10 +36,14 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/PuerkitoBio/goquery v1.5.1 h1:PSPBGne8NIUWw+/7vFBV+kG2J/5MOjbzc7154OaKCSE=
 github.com/PuerkitoBio/goquery v1.5.1/go.mod h1:GsLWisAFVj4WgDibEWF4pvYnkVQBpKBKeU+7zCJoLcc=
+github.com/PuerkitoBio/goquery v1.8.0 h1:PJTF7AmFCFKk1N6V6jmKfrNH9tV5pNE6lZMkG0gta/U=
+github.com/PuerkitoBio/goquery v1.8.0/go.mod h1:ypIiRMtY7COPGk+I/YbZLbxsxn9g5ejnI2HSMtkjZvI=
 github.com/alexandrevicenzi/unchained v1.3.0 h1:oFU4ANCe7/r/b69MfcP3M5Yks4jar+UCOjnPoOPzpJM=
 github.com/alexandrevicenzi/unchained v1.3.0/go.mod h1:uxW6vYNh0D47NKgo+eULGrbNAJAC8aEryNd+u/+UQSg=
 github.com/andybalholm/cascadia v1.1.0 h1:BuuO6sSfQNFRu1LppgbD25Hr2vLYW25JvxHs5zzsLTo=
 github.com/andybalholm/cascadia v1.1.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9PqHO0sqidkEA4Y=
+github.com/andybalholm/cascadia v1.3.1 h1:nhxRkql1kdYCc8Snf7D5/D3spOX+dBgjA6u8x004T2c=
+github.com/andybalholm/cascadia v1.3.1/go.mod h1:R4bJ1UQfqADjvDa4P6HZHLh/3OxWWEqc0Sk8XGwHqvA=
 github.com/aws/aws-sdk-go v1.38.33/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
@@ -183,6 +187,8 @@ github.com/rclancey/argparse v1.0.1/go.mod h1:kluYI/PjlIKtMyDmuGK6h8kEHjm5XfDG4+
 github.com/rclancey/authenticator v0.0.2/go.mod h1:gy07poZ9xtcIN2Ngy1Sx80fnfQsOSFv2nN+0Bj92aZw=
 github.com/rclancey/authenticator v0.0.4 h1:9sHGtfJC8x+Uh9f2fXbkMC3/f1xtZ46rVdlFk8F28F4=
 github.com/rclancey/authenticator v0.0.4/go.mod h1:gy07poZ9xtcIN2Ngy1Sx80fnfQsOSFv2nN+0Bj92aZw=
+github.com/rclancey/azlyrics v0.0.1 h1:MH1jsJJt7i7W0Xz0BKukTyGFl/QaFeF109oLLVoAfhM=
+github.com/rclancey/azlyrics v0.0.1/go.mod h1:3CYFvetNB5oquz0ewkYOWNwuNq7PRrAC4jZ40KzRjQw=
 github.com/rclancey/cache v0.0.4/go.mod h1:9q0WUvNNEkXviyzUREKLK4VI/mGzQF30QFKNntfpgNM=
 github.com/rclancey/cache v0.0.5/go.mod h1:owmHC6lA6xA6aIMRwzbA5Gbl2n9V0W64OaJiwBI8zGs=
 github.com/rclancey/cache v0.0.6 h1:cPRaAhFsDHcjvjT0sxN7+6Dak3At04VNvsWU9lM/gug=
@@ -322,6 +328,8 @@ golang.org/x/net v0.0.0-20210226172049-e18ecbb05110/go.mod h1:m0MpNAwzfU5UDzcl9v
 golang.org/x/net v0.0.0-20210505024714-0287a6fb4125/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20210510120150-4163338589ed h1:p9UgmWI9wKpfYmgaV/IZKGdXc5qEK45tDwwwDyjS26I=
 golang.org/x/net v0.0.0-20210510120150-4163338589ed/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
+golang.org/x/net v0.0.0-20210916014120-12bc252f5db8 h1:/6y1LfuqNuQdHAm0jjtPtgRcxIxjVZgm5OTu8/QhZvk=
+golang.org/x/net v0.0.0-20210916014120-12bc252f5db8/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
 golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
 golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=

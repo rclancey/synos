@@ -64,7 +64,7 @@ export const Tab = ({
 }) => {
   return (
     <div className={`tab ${selected ? 'selected' : ''}`} onClick={onClick}>
-      {tab.name}
+      {tab.displayName}
     </div>
   );
 };
