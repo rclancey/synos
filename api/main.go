@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
+	"github.com/rclancey/azlyrics"
 	"github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/httpserver/v2/auth"
 	"github.com/rclancey/logging"
@@ -25,6 +26,7 @@ var smtp *sendmail.SMTPClient
 var cfg *SynosConfig
 var lastFm *lastfm.LastFM
 var spot *spotify.SpotifyClient
+var azClient *azlyrics.LyricsClient
 
 func APIMain() {
 	var errlog *logging.Logger
@@ -228,6 +230,7 @@ func startup() (*logging.Logger, *httpserver.Server, error) {
 	cfg.Finder.FileFinder()
 	lastFm = cfg.LastFM.Client()
 	spot = cfg.Spotify.Client()
+	azClient = cfg.Lyrics.Client()
 	watch, err := WatchITunes()
 	if err != nil {
 		errlog.Errorln("error watching itunes libraries:", err)

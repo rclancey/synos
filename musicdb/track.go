@@ -1,6 +1,7 @@
 package musicdb
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/url"
@@ -78,6 +79,8 @@ type Track struct {
 	SpotifyArtistID      *string      `json:"spotify_artist_id,omitempty" db:"spotify_artist_id"`
 	SpotifyTrackID       *string      `json:"spotify_track_id,omitempty" db:"spotify_track_id"`
 	Homedir              *string      `json:"-" db:"homedir" dbignore:"insert update"`
+	LyricsID         *pid.PersistentID `json:"lyrics_id" db:"lyrics_id"`
+	Lyrics           *string           `json:"lyrics" db:"-"`
 	db *DB
 }
 
@@ -87,6 +90,89 @@ func (t *Track) ID() pid.PersistentID {
 
 func (t *Track) SetID(p pid.PersistentID) {
 	t.PersistentID = p
+}
+
+func (t *Track) GetLyrics() (*string, error) {
+	if t.Lyrics != nil {
+		return t.Lyrics, nil
+	}
+	if t.db == nil {
+		return nil, nil
+	}
+	artist, _ := t.GetArtist()
+	name, _ := t.GetName()
+	search := strings.ToLower(fmt.Sprintf("%s %s", artist, name))
+	query := `SELECT id, lyrics FROM lyrics WHERE `
+	args := []interface{}{}
+	if t.LyricsID != nil {
+		query += `id = ?`
+		args = append(args, t.LyricsID)
+	} else {
+		query += `search = ?`
+		args = append(args, search)
+	}
+	row := t.db.QueryRow(query, args...)
+	var lyricsId pid.PersistentID
+	var lyrics string
+	err := row.Scan(&lyricsId, &lyrics)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	t.Lyrics = &lyrics
+	if t.LyricsID == nil {
+		query = `UPDATE track SET lyrics_id = ? WHERE id = ?`
+		t.db.Exec(query, lyricsId, t.PersistentID)
+		t.LyricsID = &lyricsId
+	}
+	return &lyrics, nil
+}
+
+func (t *Track) SetLyrics(lyrics string) error {
+	if t.LyricsID != nil {
+		log.Println("track already has lyrics")
+		return nil
+	}
+	if t.db == nil {
+		return errors.New("no database")
+	}
+	id := pid.NewPersistentID().Pointer()
+	query := `INSERT INTO lyrics (id, search, lyrics) VALUES(?, ?, ?)`
+	artist, _ := t.GetArtist()
+	name, _ := t.GetName()
+	args := []interface{}{
+		id,
+		fmt.Sprintf("%s %s", artist, name),
+		lyrics,
+	}
+	tx, err := t.db.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	query = `UPDATE track SET lyrics_id = ? WHERE id = ?`
+	args = []interface{}{
+		id,
+		t.PersistentID,
+	}
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	t.LyricsID = id
+	t.Lyrics = &lyrics
+	return nil
 }
 
 func (t *Track) String() string {
@@ -1037,4 +1123,24 @@ func (t *Track) AsSpotify() *spotify.Track {
 		Album: album,
 		Artists: artists,
 	}
+}
+
+type LyricsTrack Track
+
+func (lt LyricsTrack) GetArtist() string {
+	t := Track(lt)
+	artist, _ := t.GetArtist()
+	return artist
+}
+
+var parenRe = regexp.MustCompile(`\(.*?\)`)
+var bracketRe = regexp.MustCompile(`\[.*?\]`)
+
+func (lt LyricsTrack) GetName() string {
+	t := Track(lt)
+	name, _ := t.GetName()
+	name = parenRe.ReplaceAllString(name, "")
+	name = bracketRe.ReplaceAllString(name, "")
+	name = strings.TrimSpace(name)
+	return name
 }

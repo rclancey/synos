@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/rclancey/argparse"
+	"github.com/rclancey/azlyrics"
 	"github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/httpserver/v2/auth"
 	"github.com/rclancey/itunes/loader"
@@ -297,6 +298,36 @@ func (cfg *SpotifyConfig) Client() *spotify.SpotifyClient {
 	return cfg.client
 }
 
+type LyricsConfig struct {
+	CacheDirectory string `json:"cache"`//         arg:"--lyrics-cache"`
+	CacheTime      int    `json:"cache_time"`//    arg:"--lyrics-cache-time"`
+	client *azlyrics.LyricsClient
+}
+
+func (cfg *LyricsConfig) Init(top *SynosConfig) error {
+	dn, err := top.Abs(cfg.CacheDirectory)
+	if err != nil {
+		return err
+	}
+	err = top.WritableDir(dn)
+	if err != nil {
+		return err
+	}
+	cfg.CacheDirectory = dn
+	return nil
+}
+
+func (cfg *LyricsConfig) Client() *azlyrics.LyricsClient {
+	if cfg.client == nil {
+		client, err := azlyrics.NewLyricsClient(cfg.CacheDirectory, time.Duration(cfg.CacheTime) * time.Second)
+		if err != nil {
+			return nil
+		}
+		cfg.client = client
+	}
+	return cfg.client
+}
+
 type SynosConfig struct {
 	*httpserver.ServerConfig
 	Auth     auth.AuthConfig `json:"auth"     arg="auth"`
@@ -309,6 +340,7 @@ type SynosConfig struct {
 	ITunes   ITunesConfig    `json:"itunes"   arg:"itunes"`
 	LastFM   LastFMConfig    `json:"lastfm"   arg:"lastfm"`
 	Spotify  SpotifyConfig   `json:"spotify"  arg:"spotify"`
+	Lyrics   LyricsConfig    `json:"lyrics"   arg:"lyrics"`
 }
 
 func (cfg *SynosConfig) Init() error {
@@ -417,6 +449,10 @@ func DefaultSynosConfig() *SynosConfig {
 		},
 		Spotify: SpotifyConfig{
 			CacheDirectory: "var/cache/spotify",
+			CacheTime: 30 * 24 * 60 * 60,
+		},
+		Lyrics: LyricsConfig{
+			CacheDirectory: "var/cache/lyrics",
 			CacheTime: 30 * 24 * 60 * 60,
 		},
 	}

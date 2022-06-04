@@ -49,8 +49,8 @@ export const ProgressBar = React.memo(({ total, complete }) => {
           left: 25vw;
           width: 50vw;
           border: solid black 1px;
-          height: 1vh;
-          border-radius: 1vh;
+          height: 6px;
+          border-radius: 10px;
           overflow: hidden;
           background-color: rgba(255, 255, 255, 0.5);
         } 

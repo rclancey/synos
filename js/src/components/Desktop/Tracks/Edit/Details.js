@@ -119,3 +119,5 @@ export const Details = ({
     </Grid>
   );
 };
+
+Details.displayName = 'Details';

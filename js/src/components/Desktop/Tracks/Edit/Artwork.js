@@ -83,3 +83,5 @@ export const Artwork = ({
     </div>
   );
 };
+
+Artwork.displayName = 'Artwork';

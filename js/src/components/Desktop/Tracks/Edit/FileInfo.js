@@ -29,3 +29,5 @@ export const FileInfo = ({
     </Grid>
   );
 };
+
+FileInfo.displayName = 'FileInfo';

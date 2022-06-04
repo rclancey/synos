@@ -379,6 +379,24 @@ export class API extends APIBase {
     return this.put(url, body);
   }
 
+  getLyrics(track_id, index) {
+    let url = `/api/track/${track_id}/lyrics`;
+    if (index !== null && index !== undefined) {
+      url += `?index=${index}`;
+    }
+    return this.get(url);
+  }
+
+  setLyrics(track_id, lyrics) {
+    const url = `/api/track/${track_id}/lyrics`;
+    const args = {
+      headers: {
+        'Content-Type': 'text/plain',
+      },
+    };
+    return this.put(url, lyrics, args);
+  }
+
   queueManip(method, tracks) {
     const url = `/api/sonos/queue`;
     const args = { method };

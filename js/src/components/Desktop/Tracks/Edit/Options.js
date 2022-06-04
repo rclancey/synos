@@ -61,3 +61,5 @@ export const Options = ({
     </Grid>
   );
 };
+
+Options.displayName = 'Options';
