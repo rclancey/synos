@@ -91,3 +91,11 @@ func getUser(r *http.Request) *musicdb.User {
 	}
 	return user
 }
+
+func getUsername(r *http.Request) string {
+	user := getUser(r)
+	if user == nil {
+		return "nobody"
+	}
+	return user.Username
+}

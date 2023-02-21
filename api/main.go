@@ -156,6 +156,7 @@ func safeMode(cfg *SynosConfig, cause error) (*logging.Logger, *httpserver.Serve
 	if err != nil {
 		log.Fatal(err)
 	}
+	httpserver.Measure("safe_mode", nil, 1)
 	SetupAPI(srv, cause)
 	errlog.Infoln("Synos server running in safe mode")
 	return errlog, srv, nil
@@ -284,6 +285,7 @@ func startup() (*logging.Logger, *httpserver.Server, error) {
 
 	api := srv.Prefix("/api")
 	authen.LoginAPI(api)
+	httpserver.Measure("safe_mode", nil, 0)
 	SetupAPI(srv, nil)
 	VersionAPI(api, authmw)
 	TrackAPI(api, authmw)
