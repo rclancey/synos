@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/rclancey/file-monitor"
+	"github.com/rclancey/httpserver/v2"
 	"github.com/rclancey/itunes"
 	"github.com/rclancey/itunes/loader"
 	"github.com/rclancey/itunes/persistentId"
@@ -109,6 +110,7 @@ func WatchITunes() (chan bool, error) {
 					}
 				}
 				errlog.Infoln("itunes library update", user.Username, fn)
+				httpserver.Measure("library_update", map[string]string{"user": user.Username}, 1)
 				err := updateItunes(user, fn, errlog)
 				if err != nil {
 					errlog.Error(err)
@@ -132,6 +134,7 @@ func WatchITunes() (chan bool, error) {
 				} else if hub != nil {
 					hub.Broadcast([]byte(`{"type":"library update"}`))
 				}
+				httpserver.Measure("library_update", map[string]string{"user": user.Username}, 0)
 			}
 		}
 	}()

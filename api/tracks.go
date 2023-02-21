@@ -188,6 +188,14 @@ func GetTrack(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	log.Printf("get track %s: %s\n", tr.PersistentID, fn)
 	rng := req.Header.Get("Range")
 	if rng == "" || strings.HasPrefix(rng, "bytes=0-") {
+		user := getUsername(req)
+		H.Count("tracks_played", map[string]string{"user": user})
+		if tr.Size != nil {
+			H.Increment("tracks_played_size", map[string]string{"user": user}, float64(*tr.Size))
+		}
+		if tr.TotalTime != nil {
+			H.Increment("tracks_played_time", map[string]string{"user": user}, float64(*tr.TotalTime))
+		}
 		tr.PlayCount += 1
 		if tr.PlayDate == nil {
 			tr.PlayDate = new(musicdb.Time)
