@@ -51,7 +51,7 @@ $(BUILDDIR)/$(PKGNAME)/bin/%: $(GOSRC) go.mod go.sum
 	env CC=$(CC) CXX=$(CXX) GOARCH=$(GOARCH) GOOS=$(GOOS) CGO_ENABLED=$(CGO_ENABLED) go build -ldflags "$(LDFLAGS) $(ALLBUILDFLAGS)" -o $@ cmd/$*.go
 
 $(BUILDDIR)/$(PKGNAME)/htdocs/index.html: $(JSSRC)
-	cd js && yarn install && env NODE_ENV=$(NODE_ENV) yarn build
+	cd js && yarn install && env NODE_OPTIONS=--openssl-legacy-provider make js-compile NODE_ENV=$(NODE_ENV) yarn build
 	rm -rf $(BUILDDIR)/$(PKGNAME)/htdocs
 	mkdir -p $(BUILDDIR)/$(PKGNAME)/htdocs
 	rsync -a js/build/ $(BUILDDIR)/$(PKGNAME)/htdocs/
