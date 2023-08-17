@@ -294,6 +294,8 @@ github.com/rclancey/httpserver/v2 v2.3.0 h1:r7uAEY7vptCzvWX8bZ2xr9+0agxgy6MaBLH5
 github.com/rclancey/httpserver/v2 v2.3.0/go.mod h1:QREY8GSrOqWht9UGhQP1u3vfUmgu03eRWtUITZ/Nty8=
 github.com/rclancey/itunes v0.3.2 h1:H3uiwpqERh7adz2WeXinQomgd3VFQAnJL+VRzzYepjw=
 github.com/rclancey/itunes v0.3.2/go.mod h1:bD42RKNk+IJzTt4D/j4yqkl3LsHNSnS4SoclY/KAwEg=
+github.com/rclancey/itunes v0.3.3 h1:UzMWia5gPG+2UqAJukH2b8vLSLTN2DUbOfJ5XyUUPEQ=
+github.com/rclancey/itunes v0.3.3/go.mod h1:bD42RKNk+IJzTt4D/j4yqkl3LsHNSnS4SoclY/KAwEg=
 github.com/rclancey/jooki v0.1.1 h1:Ttln3JLN0jH1ae1ohH9qLfvPFpclqgkIYSER3bLs+hk=
 github.com/rclancey/jooki v0.1.1/go.mod h1:T0q1vcrIe/Z0TYssH2xg4IFj723EcycM/2HyoiKxJyw=
 github.com/rclancey/lastfm v0.0.1 h1:eMS3/nUEpyUDoXzRrlkpJ/t319HSsqpQugeTCzg+ick=

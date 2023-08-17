@@ -159,6 +159,9 @@ func (p *Playlist) Update(orig, cur *Playlist) (*pid.PersistentID, bool) {
 	} else if orig.DateAdded != nil && orig.DateAdded.Time().Before(cur.DateAdded.Time()) {
 		p.DateAdded = orig.DateAdded
 	}
+	if orig.SortField != cur.SortField {
+		p.SortField = cur.SortField
+	}
 	tracksDiffer := false
 	if len(orig.TrackIDs) != len(cur.TrackIDs) {
 		tracksDiffer = true
@@ -250,6 +253,9 @@ func PlaylistFromITunes(ipl *loader.Playlist) *Playlist {
 		}
 	} else {
 		pl.Children = []*Playlist{}
+	}
+	if ipl.SortField != nil {
+		pl.SortField = *ipl.SortField
 	}
 	if ipl.GetMaster() {
 		pl.Kind = MasterPlaylist

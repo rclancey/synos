@@ -179,6 +179,6 @@ func ListRecents(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 		return false
 	})
 	end = time.Now()
-	log.Println("sorted %d items in %s", len(recents), end.Sub(start))
+	log.Printf("sorted %d items in %s", len(recents), end.Sub(start))
 	return recents, nil
 }
